@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v6 Design Review — 3GPP UE RCA Skill Suite</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+
+<style>
+:root {
+  --bg: #F5F0E6;
+  --bg-card: #FBF7EE;
+  --bg-darker: #E8DFCD;
+  --ink: #1A1A1A;
+  --ink-muted: #4A4540;
+  --ink-light: #6B655E;
+  --accent: #A03A1A;
+  --accent-soft: #D89071;
+  --rule: #1A1A1A;
+  --rule-soft: #C8BFAE;
+  --warning: #8B5A2B;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(160,58,26,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(160,58,26,0.03) 0%, transparent 50%);
+  min-height: 100vh;
+  padding: 0;
+}
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 4rem 3rem 6rem;
+}
+
+/* Typography */
+.mono, code, pre, .label {
+  font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace;
+}
+
+h1, h2, h3, h4 {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+h1 {
+  font-size: 2.4rem;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.03em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 4rem 0 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--rule);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+h2::before {
+  content: attr(data-num);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 2.5rem 0 1rem;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+h4 {
+  font-size: 0.95rem;
+  margin: 1.5rem 0 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
+p { margin-bottom: 1rem; }
+
+p.lead {
+  font-size: 1.2rem;
+  font-style: italic;
+  color: var(--ink-muted);
+  line-height: 1.5;
+  margin: 1.5rem 0 2rem;
+  max-width: 56ch;
+}
+
+a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { background: var(--accent); color: var(--bg); text-decoration: none; }
+
+ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+li { margin-bottom: 0.4rem; }
+
+strong { font-weight: 600; }
+em { color: var(--ink-muted); }
+
+code {
+  font-size: 0.9em;
+  background: var(--bg-darker);
+  padding: 0.1em 0.4em;
+  border-radius: 2px;
+  color: var(--ink);
+}
+
+/* Header */
+.doc-header {
+  border-bottom: 3px double var(--rule);
+  padding-bottom: 2.5rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.eyebrow::after {
+  content: "";
+  height: 1px;
+  background: var(--accent);
+  flex: 1;
+}
+
+.doc-meta {
+  display: flex;
+  gap: 3rem;
+  margin-top: 1.5rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.doc-meta-item .label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-light);
+  margin-bottom: 0.3rem;
+}
+
+/* TOC */
+.toc {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent);
+  padding: 1.5rem 2rem;
+  margin: 2rem 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.92rem;
+}
+
+.toc h3 { margin: 0 0 1rem; font-size: 0.85rem; }
+
+.toc ol {
+  list-style: none;
+  padding: 0;
+  columns: 2;
+  column-gap: 2rem;
+}
+
+.toc li {
+  margin: 0.3rem 0;
+  padding: 0.15rem 0;
+  break-inside: avoid;
+}
+
+.toc a {
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toc a:hover {
+  color: var(--accent);
+  background: transparent;
+}
+
+.toc a span {
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 1.5em;
+}
+
+/* Cards */
+.callout {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 1.25rem 1.5rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid var(--accent);
+}
+
+.callout.muted { border-left-color: var(--ink-muted); }
+.callout.warn { border-left-color: var(--warning); background: rgba(139, 90, 43, 0.06); }
+
+.callout h4 {
+  margin-top: 0;
+  color: var(--accent);
+}
+
+.callout.warn h4 { color: var(--warning); }
+
+/* Mermaid container */
+.diagram {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 2rem 1.5rem;
+  margin: 2rem 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.diagram-title {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-muted);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px dashed var(--rule-soft);
+  padding-bottom: 0.75rem;
+}
+
+.diagram-title .figref {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mermaid {
+  font-family: "IBM Plex Mono", monospace !important;
+}
+
+/* Tables */
+.table-wrap {
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  border: 1px solid var(--rule);
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  background: var(--bg-card);
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+}
+
+th {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  background: var(--bg-darker);
+  color: var(--ink);
+  border-bottom: 2px solid var(--rule);
+  position: sticky;
+  top: 0;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg-darker); }
+
+td.mono, td .mono {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+td.skill-name {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  color: var(--accent);
+}
+
+td .item {
+  display: block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  margin: 0.15rem 0;
+  color: var(--ink-muted);
+}
+
+td .item.in { color: var(--ink); }
+td .item.out { color: var(--accent); }
+td .item.tool::before { content: "→ "; color: var(--ink-light); }
+
+/* Tags */
+.tag {
+  display: inline-block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.2em 0.6em;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: var(--bg);
+  font-weight: 500;
+  margin-right: 0.4em;
+}
+
+.tag.new { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.tag.v5 { background: transparent; color: var(--ink-muted); border-color: var(--rule-soft); }
+.tag.checkpoint { background: var(--warning); color: var(--bg); border-color: var(--warning); }
+.tag.retrieval { background: var(--bg-darker); color: var(--ink); }
+
+/* Layer cards (skill catalog) */
+.layer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.layer-card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 1.25rem 1.4rem;
+}
+
+.layer-card h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+
+.layer-card .skill {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.85rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--rule-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.layer-card .skill:last-child { border-bottom: none; }
+.layer-card .skill .name { font-weight: 600; color: var(--ink); }
+.layer-card .skill .role { font-family: "Newsreader", serif; font-size: 0.85rem; color: var(--ink-muted); font-style: italic; text-align: right; }
+
+/* Two-column comparison */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin: 1.5rem 0;
+}
+
+.compare > div {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 1.25rem 1.4rem;
+}
+
+.compare h4 { margin-top: 0; }
+.compare ul { padding-left: 1.2rem; }
+
+/* Discussion items */
+.discuss-item {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--warning);
+  padding: 1.25rem 1.5rem;
+  margin: 1rem 0;
+}
+
+.discuss-item .q-num {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--warning);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.discuss-item h4 { margin-top: 0; color: var(--ink); }
+
+/* Decisions ribbon */
+.decisions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.decision {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+}
+
+.decision .d-key {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.decision .d-val {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 0.3rem 0;
+}
+
+.decision .d-note {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  font-style: italic;
+}
+
+/* Footer */
+.doc-footer {
+  margin-top: 6rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.8rem;
+  color: var(--ink-light);
+}
+
+/* Section header decoration */
+.section-marker {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 4rem;
+  margin-bottom: -2rem;
+  border-top: 1px solid var(--rule-soft);
+  padding-top: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .container { padding: 2rem 1.5rem 4rem; }
+  .layer-grid, .compare, .decisions { grid-template-columns: 1fr; }
+  .toc ol { columns: 1; }
+  .doc-meta { flex-wrap: wrap; gap: 1.5rem; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.2rem; }
+}
+
+@media print {
+  body { background: white; }
+  .diagram, .callout, .layer-card, .compare > div { break-inside: avoid; }
+  h2 { break-before: page; }
+  .toc { break-after: page; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- HEADER                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<header class="doc-header">
+  <div class="eyebrow">Design Review · v6 · Internal</div>
+  <h1>3GPP UE Root Cause Analysis<br>Skill Suite — Version 6</h1>
+  <p class="lead">Per-level iterative Fault Tree Analysis with user-gated top event selection and iteration-by-iteration checkpoints. Built for Cline (VS Code) without MCP.</p>
+
+  <div class="doc-meta">
+    <div class="doc-meta-item"><span class="label">Version</span>v6.0 (baseline)</div>
+    <div class="doc-meta-item"><span class="label">Skills</span>12 + 1 workflow + 1 rule</div>
+    <div class="doc-meta-item"><span class="label">Files</span>33 (5 shared, 24 skill, 2 control, 2 wrapper)</div>
+    <div class="doc-meta-item"><span class="label">Status</span>Built · Pre-test</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- TOC                                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<nav class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#tldr"><span>01</span> What changed in v6</a></li>
+    <li><a href="#architecture"><span>02</span> Four-layer architecture</a></li>
+    <li><a href="#catalog"><span>03</span> Skill catalog</a></li>
+    <li><a href="#sequence"><span>04</span> End-to-end sequence</a></li>
+    <li><a href="#iteration"><span>05</span> Iteration model</a></li>
+    <li><a href="#fsm"><span>06</span> State machine</a></li>
+    <li><a href="#fta-flow"><span>07</span> Per-iteration FTA flow</a></li>
+    <li><a href="#skill-io"><span>08</span> Skill I/O reference</a></li>
+    <li><a href="#tool-io"><span>09</span> Python tool I/O reference</a></li>
+    <li><a href="#state-ownership"><span>10</span> State file ownership</a></li>
+    <li><a href="#discussion"><span>11</span> Discussion topics</a></li>
+  </ol>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §01 TL;DR                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§01" id="tldr">What changed in v6</h2>
+
+<p>v6 introduces <strong>per-level iterative FTA</strong>. v5 ran one fault tree top-to-bottom and emitted one root cause. v6 runs <em>N iterations</em> of FTA, each producing an iteration-local root cause; the user decides at each checkpoint whether to dig deeper or accept the current finding as terminal. The pipeline halts at <strong>three to N+1 user gates</strong> per run (one Checkpoint A, N Checkpoint Bs).</p>
+
+<div class="compare">
+  <div>
+    <h4>v5 model</h4>
+    <ul>
+      <li>One <code>phase3_hybrid_tree</code></li>
+      <li>One <code>phase3_root_cause</code></li>
+      <li>No user gates (halt-on-error only)</li>
+      <li>Top event set automatically</li>
+      <li>10 skills + workflow + rule</li>
+    </ul>
+  </div>
+  <div>
+    <h4>v6 model</h4>
+    <ul>
+      <li><code>fta_iterations[]</code> — one per drill level</li>
+      <li><code>phase3_root_cause_chain</code> synthesized at terminal</li>
+      <li>Checkpoint A (top event) + Checkpoint B per iteration</li>
+      <li>Top event chosen from curated <code>top_event_candidates[]</code></li>
+      <li>12 skills (added top-event-confirmation, iteration-controller)</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Design decisions locked in v6.0</h3>
+
+<div class="decisions">
+  <div class="decision">
+    <span class="d-key">D1 · Iteration budget</span>
+    <div class="d-val">5</div>
+    <div class="d-note">Default cap; user can override into iteration 6+ via explicit confirmation</div>
+  </div>
+  <div class="decision">
+    <span class="d-key">D2 · Fast mode</span>
+    <div class="d-val">DROPPED</div>
+    <div class="d-note">Every iteration requires user gate — no auto-accept escape valve</div>
+  </div>
+  <div class="decision">
+    <span class="d-key">D3 · Top event alternatives</span>
+    <div class="d-val">≤3 candidates</div>
+    <div class="d-note">1 primary + up to 2 defensible alternatives; no padding with hallucinated alts</div>
+  </div>
+  <div class="decision">
+    <span class="d-key">D4 · User override</span>
+    <div class="d-val">ALLOWED</div>
+    <div class="d-note">With explicit "confirm override" prompt; logged with overrode_recommendation flag</div>
+  </div>
+  <div class="decision">
+    <span class="d-key">D5 · Cross-iter cross-ref</span>
+    <div class="d-val">DEFERRED</div>
+    <div class="d-note">Iteration N+1 doesn't cross-ref against iteration N's commanded values — v6.1</div>
+  </div>
+  <div class="decision">
+    <span class="d-key">D6 · Build strategy</span>
+    <div class="d-val">FULL REBUILD</div>
+    <div class="d-note">All 12 SKILL.md files rewritten from scratch — no patching v5 in place</div>
+  </div>
+</div>
+
+<div class="callout warn">
+  <h4>Cost honesty</h4>
+  <p style="margin-bottom:0">A typical 3-iteration run costs roughly <strong>2× the tokens and 3.5× the wall-clock</strong> of an equivalent v5 run. The wall-clock multiplier is dominated by user pause times (one pause per iteration plus Checkpoint A). v6 is the right answer if the failure mode you most want to prevent is the agent <em>confidently producing wrong root causes</em>. If your dominant cost is engineer time, v5's autonomous run is faster.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §02 ARCHITECTURE                                                -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§02" id="architecture">Four-layer architecture</h2>
+
+<p>Five layers separated by clear contracts: the engineer interacts only with Cline's <code>/rca</code> workflow; the workflow dispatches to skills; skills delegate retrieval to wrapper skills; wrapper skills exec Python scripts; scripts talk to the underlying data stores. The state file is the cross-cutting source of truth — every layer reads and writes to it via slice operations.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 1 — System layers and data flow</span>
+    <span class="figref">FIG-01</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'13px'}}}%%
+flowchart TD
+    USER["👤 Engineer<br/>Cline · VS Code"]:::user
+
+    USER -->|"/rca [input]"| WF["/rca workflow<br/><i>dispatcher</i>"]:::wf
+
+    WF --> ORCH["3gpp-rca-orchestrator<br/><i>init + finalize</i>"]:::orch
+    WF --> PHASE["Phase skills<br/>scoping · event-timeline<br/>fta-build-tree · fta-evaluate-branches<br/>fta-cross-reference · fta-root-cause"]:::phase
+    WF --> CHKPT["Checkpoint skills<br/>top-event-confirmation (A)<br/>fta-iteration-controller (B)"]:::chkpt
+
+    PHASE --> RETR["Retrieval wrapper skills<br/>spec-retrieval · code-retrieval · log-queries"]:::retr
+
+    RETR --> SPEC["spec_query.py"]:::py
+    RETR --> CODE["code_search.py"]:::py
+    RETR --> LOG["log_query.py"]:::py
+
+    SPEC --> GRAG[("3GPP Spec<br/>GraphRAG")]:::data
+    CODE --> SRC[("UE Codebase<br/>C/C++")]:::data
+    LOG --> DB[("DuckDB<br/>signaling + trace")]:::data
+
+    STATE[("State file<br/>/tmp/rca_state_TS.json")]:::state
+
+    ORCH -.->|read+write| STATE
+    PHASE -.->|read+write| STATE
+    CHKPT -.->|read+write| STATE
+    SPEC -.->|auto-write| STATE
+    CODE -.->|auto-write| STATE
+    LOG -.->|auto-write| STATE
+
+    classDef user fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef wf fill:#E8DFCD,stroke:#1A1A1A,stroke-width:2px;
+    classDef orch fill:#FBF7EE,stroke:#1A1A1A,stroke-width:2px;
+    classDef phase fill:#FBF7EE,stroke:#1A1A1A;
+    classDef chkpt fill:#D89071,stroke:#1A1A1A,stroke-width:2px;
+    classDef retr fill:#F5F0E6,stroke:#1A1A1A,stroke-dasharray:5 3;
+    classDef py fill:#F5F0E6,stroke:#1A1A1A;
+    classDef data fill:#E8DFCD,stroke:#1A1A1A,stroke-width:1.5px;
+    classDef state fill:#FBF7EE,stroke:#A03A1A,stroke-width:2px,stroke-dasharray:3 3;
+  </div>
+</div>
+
+<div class="callout">
+  <h4>Why a dispatcher workflow?</h4>
+  <p style="margin-bottom:0">In v5 the <code>/rca</code> workflow ran linearly start-to-finish. In v6 the pipeline must <em>halt at user gates</em>. Each <code>/rca</code> invocation reads <code>meta.current_phase</code> from the state file and runs only the next step — then halts. This makes the pipeline resumable from any checkpoint and lets the user respond to a gate by typing <code>/rca &lt;option&gt;</code> in a fresh turn.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §03 CATALOG                                                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§03" id="catalog">Skill catalog</h2>
+
+<p>12 skills grouped into four roles. Orchestration runs once at the start and once at the end. Phase skills do the actual analysis work. Checkpoint skills handle user gates. Retrieval skills are thin wrappers around the Python tools.</p>
+
+<div class="layer-grid">
+  <div class="layer-card">
+    <h4>Orchestration · 1 skill</h4>
+    <div class="skill">
+      <span class="name">3gpp-rca-orchestrator</span>
+      <span class="role">Phase 0 init + Phase 4 finalize</span>
+    </div>
+  </div>
+
+  <div class="layer-card">
+    <h4>Checkpoint · 2 skills <span class="tag new">NEW v6</span></h4>
+    <div class="skill">
+      <span class="name">3gpp-top-event-confirmation</span>
+      <span class="role">Checkpoint A — top event</span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-fta-iteration-controller</span>
+      <span class="role">Checkpoint B — per iteration</span>
+    </div>
+  </div>
+
+  <div class="layer-card" style="grid-column: span 2;">
+    <h4>Phase · 6 skills</h4>
+    <div class="skill">
+      <span class="name">3gpp-scoping</span>
+      <span class="role">Phase 1 — IS/IS-NOT scope filter <span class="tag v5">v5 verbatim</span></span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-event-timeline</span>
+      <span class="role">Phase 2 — timeline + top_event_candidates[] <span class="tag new">v6 amended</span></span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-fta-build-tree</span>
+      <span class="role">Phase 3.1 — hybrid tree per iteration <span class="tag new">v6 amended</span></span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-fta-evaluate-branches</span>
+      <span class="role">Phase 3.2 + 3.3 — Gate A pruning + Gate B verification <span class="tag new">v6 amended</span></span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-fta-cross-reference</span>
+      <span class="role">Phase 3.4 — commanded vs actual value <span class="tag new">v6 amended</span></span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-fta-root-cause</span>
+      <span class="role">Phase 3.5 — iteration root cause synthesis <span class="tag new">v6 amended</span></span>
+    </div>
+  </div>
+
+  <div class="layer-card" style="grid-column: span 2;">
+    <h4>Retrieval wrappers · 3 skills <span class="tag v5">v5 verbatim</span></h4>
+    <div class="skill">
+      <span class="name">3gpp-spec-retrieval</span>
+      <span class="role">Wraps spec_query.py (6 operations)</span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-code-retrieval</span>
+      <span class="role">Wraps code_search.py (3 operations)</span>
+    </div>
+    <div class="skill">
+      <span class="name">3gpp-log-queries</span>
+      <span class="role">Wraps log_query.py (5 phase tags)</span>
+    </div>
+  </div>
+</div>
+
+<p>Plus one always-on rule (<code>3gpp-rca-collaboration.md</code>) and one workflow file (<code>/rca</code>), and five shared resources in <code>_shared/</code>.</p>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §04 SEQUENCE                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§04" id="sequence">End-to-end sequence</h2>
+
+<p>The diagram below shows a realistic two-iteration run from <code>/rca</code> trigger to final report. Notice the three HALT points where the workflow ends a turn and waits for the user.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 2 — End-to-end sequence (2-iteration example)</span>
+    <span class="figref">FIG-02</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px','actorBorder':'#1A1A1A','actorBkg':'#F5F0E6'}}}%%
+sequenceDiagram
+    actor U as Engineer
+    participant W as /rca workflow
+    participant S as Phase skills
+    participant C as Checkpoint skills
+    participant T as Python tools
+    participant DB as Data sources
+    participant ST as State file
+
+    U->>W: /rca "5G HO fails, no RAR after Reconfig"
+    W->>S: 3gpp-rca-orchestrator (init)
+    S->>ST: write meta block
+    W->>S: 3gpp-scoping (Phase 1)
+    S->>T: spec_query lightweight_procedure (is_is_not)
+    T->>DB: GraphRAG query
+    DB-->>T: spec metadata
+    T->>ST: write spec_lookup + audit
+    S->>ST: write phase1_scope_filter
+    W->>S: 3gpp-event-timeline (Phase 2)
+    S->>T: spec_query (ecf) + log_query phase2
+    T->>DB: signaling rows
+    T->>ST: write expected_flow + events
+    S->>ST: write top_event_candidates[]
+    W->>C: 3gpp-top-event-confirmation (PRESENT)
+    C->>U: Checkpoint A prompt
+    Note over W,U: ━━ HALT 1 ━━ workflow ends turn
+
+    U->>W: /rca confirm
+    W->>C: 3gpp-top-event-confirmation (RECORD)
+    C->>ST: write top_event + user_confirmation
+
+    rect rgb(248, 240, 224)
+    Note over W,DB: Iteration 1 ─ all writes scoped to fta_iterations[0]
+    W->>S: 3.1 build-tree
+    S->>T: spec_query skeleton + code_search bind_module
+    W->>S: 3.2/3.3 evaluate-branches
+    S->>T: log_query gate_a (signaling)
+    S->>T: code_search expand_failure_modes
+    S->>T: log_query gate_b (trace)
+    W->>S: 3.4 cross-reference
+    S->>T: spec find_commanded_values + log cross_ref + code find_implementation
+    W->>S: 3.5 fta-root-cause
+    S->>ST: write iteration_root_cause
+    W->>C: iteration-controller (PRESENT)
+    C->>ST: compute agent_recommendation
+    end
+
+    C->>U: Checkpoint B-1 prompt
+    Note over W,U: ━━ HALT 2 ━━
+
+    U->>W: /rca dig deeper into P2.2
+    W->>C: iteration-controller (RECORD)
+    C->>ST: write user_decision + start fta_iterations[1]
+
+    rect rgb(248, 240, 224)
+    Note over W,DB: Iteration 2 ─ scoped to fta_iterations[1]
+    W->>S: 3.1 build-tree (skeleton returns empty → fallback)
+    S->>T: spec generate_hypotheses + code_search bind_module
+    W->>S: 3.2/3.3/3.4/3.5 (code-only path)
+    S->>ST: write iteration_root_cause (ABSENCE)
+    W->>C: iteration-controller
+    end
+
+    C->>U: Checkpoint B-2 prompt
+    Note over W,U: ━━ HALT 3 ━━
+
+    U->>W: /rca accept
+    W->>C: iteration-controller (RECORD)
+    C->>ST: synthesize phase3_root_cause_chain
+    W->>S: 3gpp-rca-orchestrator (finalize)
+    S->>ST: validate provenance + write report path
+    S->>U: report ready · /home/.../report_*.md
+  </div>
+</div>
+
+<div class="callout">
+  <h4>Reading this diagram</h4>
+  <p style="margin-bottom:0">The three <strong>HALT</strong> annotations are where the agent's turn literally ends. The user must send a new <code>/rca</code> message to resume. The state machine in §06 explains how the workflow knows where to resume.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §05 ITERATION MODEL                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§05" id="iteration">Iteration model</h2>
+
+<p>The central concept of v6: <strong>one FTA iteration = one full Phase 3.1→3.5 cycle</strong> over a single input top event, producing one iteration-local root cause. Iterations chain together — iteration N's user-selected base event becomes iteration N+1's input top event.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 3 — Iteration chaining (causal chain)</span>
+    <span class="figref">FIG-03</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'13px'}}}%%
+flowchart LR
+    TE["TOP EVENT<br/>5G_HO_Execution_Failure<br/>(from Checkpoint A)"]:::input
+
+    subgraph I1["ITERATION 1 ─ spec-anchored"]
+        direction TB
+        I1A["Build tree:<br/>P1 RRC + P2 Sync"] --> I1B["Gate A: prune P1<br/>Gate B: P2.1, P2.2"]
+        I1B --> I1C["Cross-ref P2.2:<br/>commanded -110dBm<br/>actual -10dBm"]
+        I1C --> I1D["iteration_root_cause<br/>VALUE_DISCREPANCY<br/>at P2.2 Preamble_Power"]:::rc
+    end
+
+    TE --> I1
+    I1 --> CB1{Checkpoint B-1<br/><i>dig deeper / accept / abort</i>}:::gate
+
+    CB1 -.->|"dig deeper into P2.2<br/>(P2.2 → next top event)"| I2
+    CB1 -->|accept terminal| END_A[Phase 4]
+    CB1 -->|abort| END_B[Reject report]
+
+    subgraph I2["ITERATION 2 ─ code-only fallback"]
+        direction TB
+        I2A["Build tree:<br/>skeleton empty<br/>→ generate_hypotheses"] --> I2B["Gate B only<br/>Q3 confirmed"]
+        I2B --> I2C["Cross-ref:<br/>no commanded IE"]
+        I2C --> I2D["iteration_root_cause<br/>ABSENCE<br/>missing bounds check"]:::rc
+    end
+
+    I2 --> CB2{Checkpoint B-2}:::gate
+    CB2 -->|accept terminal| TERM["phase3_root_cause_chain<br/>synthesized across iter 1+2"]:::final
+    CB2 -.->|"dig deeper"| I3["Iteration 3+<br/>(bounded by budget=5)"]:::cont
+
+    TERM --> P4[Phase 4 finalize<br/>RCA report]:::phase4
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef rc fill:#E8DFCD,stroke:#1A1A1A,font-weight:bold;
+    classDef gate fill:#D89071,stroke:#1A1A1A,stroke-width:2px;
+    classDef final fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE;
+    classDef phase4 fill:#FBF7EE,stroke:#A03A1A,stroke-width:2px;
+    classDef cont fill:#F5F0E6,stroke:#1A1A1A,stroke-dasharray:5 3;
+  </div>
+</div>
+
+<h3>What changes at each iteration boundary</h3>
+
+<div class="compare">
+  <div>
+    <h4>Iteration 1 (typical)</h4>
+    <ul>
+      <li><code>input_top_event.source</code> = <code>phase2_ecf.top_event</code></li>
+      <li><code>spec_anchored: true</code></li>
+      <li>Skeleton populates branches (spec phases)</li>
+      <li>Gate A signaling drives pivot-pruning</li>
+      <li>Likely VALUE_DISCREPANCY or MULTI_CAUSE</li>
+    </ul>
+  </div>
+  <div>
+    <h4>Iteration ≥ 2 (typical)</h4>
+    <ul>
+      <li><code>input_top_event.source</code> = <code>fta_iterations[N-1].base_events[id]</code></li>
+      <li><code>spec_anchored: false</code></li>
+      <li>Skeleton often empty → <code>fallback_used: generate_hypotheses</code></li>
+      <li>Gate A skipped on code-only branches</li>
+      <li>Likely ABSENCE; eventually terminal</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §06 STATE MACHINE                                               -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§06" id="fsm">State machine</h2>
+
+<p>The workflow dispatcher reads <code>meta.current_phase</code> from the state file on every <code>/rca</code> invocation and runs the next applicable step. Every skill writes the next-phase value before halting or returning.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 4 — meta.current_phase transitions</span>
+    <span class="figref">FIG-04</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+stateDiagram-v2
+    [*] --> phase0: /rca (fresh)
+    phase0 --> phase1: orchestrator init
+    phase1 --> phase2_running: scoping done
+    phase2_running --> phase2_pending_confirmation: timeline done
+    phase2_pending_confirmation --> phase2_confirmed: confirm / use alt
+    phase2_pending_confirmation --> phase2_running: refine
+    phase2_pending_confirmation --> phase1: reject_and_restart
+    phase2_pending_confirmation --> complete: abort
+    phase2_confirmed --> iteration_1_running
+    iteration_1_running --> iteration_1_pending_decision: root cause deduced
+    iteration_1_pending_decision --> iteration_2_running: dig_deeper
+    iteration_1_pending_decision --> phase4_finalizing: accept_terminal
+    iteration_1_pending_decision --> complete: abort
+    iteration_2_running --> iteration_2_pending_decision
+    iteration_2_pending_decision --> iteration_3_running: dig_deeper
+    iteration_2_pending_decision --> phase4_finalizing: accept_terminal
+    iteration_2_pending_decision --> complete: abort
+    iteration_3_running --> iteration_3_pending_decision: ...
+    iteration_3_pending_decision --> phase4_finalizing
+    phase4_finalizing --> complete: report written
+    complete --> [*]
+  </div>
+</div>
+
+<div class="callout muted">
+  <h4>Resumability</h4>
+  <p style="margin-bottom:0">If the Cline task dies mid-iteration, the state file still has <code>meta.current_phase = "iteration_N_running"</code> and partial writes in <code>fta_iterations[N-1]</code>. The next <code>/rca</code> picks up from the last-completed sub-phase. This is why every phase skill is idempotent — it checks what's already in the iteration record before redoing work.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §07 FTA FLOW                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§07" id="fta-flow">Per-iteration FTA flow</h2>
+
+<p>Within a single iteration, five phase sub-steps run in sequence. Below each box: the skill that owns the step and the Python tools it invokes.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 5 — One FTA iteration internal flow</span>
+    <span class="figref">FIG-05</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+    INPUT["input_top_event<br/>(from prior phase or iteration)"]:::input
+
+    INPUT --> S31
+
+    subgraph S31["Phase 3.1 ─ Build Tree"]
+        direction TB
+        S31A["fta-build-tree skill"]
+        S31B["spec_query skeleton<br/>code_search bind_module"]
+        S31A --- S31B
+    end
+
+    S31 -->|skeleton empty<br/>iter ≥ 2| FB["fallback:<br/>spec_query generate_hypotheses<br/>(code-only branches)"]:::fallback
+    S31 --> S32
+    FB --> S32
+
+    subgraph S32["Phase 3.2 ─ Gate A (signaling, pivot-prune)"]
+        direction TB
+        S32A["fta-evaluate-branches skill"]
+        S32B["log_query phase3_gate_a<br/>(opt. spec extract_ies)"]
+        S32A --- S32B
+    end
+
+    S32 -->|all branches normal| HALT_ALL["abort:<br/>failure not in skeleton"]:::halt
+    S32 --> S33
+
+    subgraph S33["Phase 3.3 ─ Gate B (trace, expand failure modes)"]
+        direction TB
+        S33A["fta-evaluate-branches skill"]
+        S33B["code_search expand_failure_modes<br/>log_query phase3_gate_b"]
+        S33A --- S33B
+    end
+
+    S33 --> S34
+
+    subgraph S34["Phase 3.4 ─ Cross-Reference"]
+        direction TB
+        S34A["fta-cross-reference skill"]
+        S34B["spec_query find_commanded_values<br/>log_query phase3_cross_ref (× 2)<br/>code_search find_implementation"]
+        S34A --- S34B
+    end
+
+    S34 --> S35
+
+    subgraph S35["Phase 3.5 ─ Iteration Root Cause"]
+        direction TB
+        S35A["fta-root-cause skill<br/>(no tools — pure synthesis)"]
+        S35B["writes iteration_root_cause"]
+        S35A --- S35B
+    end
+
+    S35 --> CTRL
+
+    subgraph CTRL["Checkpoint B ─ Iteration Controller"]
+        direction TB
+        CTRLA["fta-iteration-controller skill<br/>(no tools)"]
+        CTRLB["compute 7 termination signals<br/>derive agent_recommendation"]
+        CTRLA --- CTRLB
+    end
+
+    CTRL --> CKPT["⏸ Present prompt · HALT"]:::ckpt
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef fallback fill:#E8DFCD,stroke:#1A1A1A,stroke-dasharray:4 2;
+    classDef halt fill:#8B5A2B,stroke:#1A1A1A,color:#FBF7EE;
+    classDef ckpt fill:#D89071,stroke:#1A1A1A,stroke-width:2px;
+  </div>
+</div>
+
+<div class="callout">
+  <h4>Anti-laziness invariants (preserved from v3+)</h4>
+  <ul style="margin-bottom:0">
+    <li><strong>All branches evaluated</strong> — Gate A processes every top-level branch even if one already shows failure</li>
+    <li><strong>All failure modes evaluated</strong> — Gate B processes every expanded failure mode even if one is confirmed</li>
+    <li><strong>Table isolation enforced at the script layer</strong> — log_query.py refuses Phase 1/2 queries against UE_Trace_log</li>
+    <li><strong>Keyword provenance auto-appended</strong> — every tool invocation logs which keywords it produced and which iteration they belong to</li>
+  </ul>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §08 SKILL I/O                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§08" id="skill-io">Skill I/O reference</h2>
+
+<p>What each skill reads from the state file, what it writes back, and which Python tools it invokes. This is the contract surface — any change to a skill must preserve these I/O shapes or all downstream consumers break.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 16%;">Skill</th>
+      <th style="width: 8%;">Phase</th>
+      <th style="width: 26%;">Input (reads from state file)</th>
+      <th style="width: 26%;">Output (writes to state file)</th>
+      <th style="width: 24%;">Tools invoked</th>
+    </tr>
+  </thead>
+  <tbody>
+
+    <tr>
+      <td class="skill-name">3gpp-rca-orchestrator<br><span class="tag" style="font-size:0.6rem">init mode</span></td>
+      <td class="mono">0</td>
+      <td>
+        <span class="item in">engineer_input (from CLI)</span>
+        <span class="item in">duckdb_path, tool_dir</span>
+      </td>
+      <td>
+        <span class="item out">meta (all fields)</span>
+        <span class="item out">user_decisions: []</span>
+        <span class="item out">fta_iterations: []</span>
+        <span class="item out">keyword_provenance_audit: []</span>
+        <span class="item out">.rca/current_state_path.txt</span>
+      </td>
+      <td><em>None</em> — file ops only</td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-scoping</td>
+      <td class="mono">1</td>
+      <td>
+        <span class="item in">meta.engineer_input</span>
+      </td>
+      <td>
+        <span class="item out">phase1_scope_filter (full block)</span>
+        <span class="item out">  ├ spec_lookup</span>
+        <span class="item out">  └ signaling_sanity_check (opt.)</span>
+      </td>
+      <td>
+        <span class="item tool">spec_query lightweight_procedure (is_is_not)</span>
+        <span class="item tool">log_query phase1 (optional)</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-event-timeline<br><span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td class="mono">2</td>
+      <td>
+        <span class="item in">phase1_scope_filter</span>
+      </td>
+      <td>
+        <span class="item out">phase2_ecf.observable_symptoms</span>
+        <span class="item out">phase2_ecf.top_event_candidates[1-3]</span>
+        <span class="item out">phase2_ecf.top_event = null</span>
+        <span class="item out">phase2_ecf.user_confirmation = null</span>
+      </td>
+      <td>
+        <span class="item tool">spec_query lightweight_procedure (ecf)</span>
+        <span class="item tool">log_query phase2</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-top-event-confirmation<br><span class="tag checkpoint" style="font-size:0.6rem">CHKPT A</span></td>
+      <td class="mono">A</td>
+      <td>
+        <span class="item in">phase2_ecf.top_event_candidates</span>
+        <span class="item in">phase2_ecf.observable_symptoms.log_coverage</span>
+        <span class="item in">user_action (RECORD mode only)</span>
+      </td>
+      <td>
+        <span class="item out">phase2_ecf.top_event (selected)</span>
+        <span class="item out">phase2_ecf.user_confirmation</span>
+        <span class="item out">user_decisions[] (append)</span>
+        <span class="item out">meta.current_phase</span>
+      </td>
+      <td><em>None</em> — presentation only</td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-fta-build-tree<br><span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td class="mono">3.1</td>
+      <td>
+        <span class="item in">iteration_id (param)</span>
+        <span class="item in">phase1_scope_filter</span>
+        <span class="item in">fta_iterations[iter-1].input_top_event</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[iter-1].hybrid_tree</span>
+        <span class="item out">  ├ spec_skeleton_source</span>
+        <span class="item out">  ├ branches[].modules</span>
+        <span class="item out">  └ fallback_used (if applicable)</span>
+      </td>
+      <td>
+        <span class="item tool">spec_query skeleton</span>
+        <span class="item tool">spec_query generate_hypotheses (fallback)</span>
+        <span class="item tool">code_search bind_module (per branch)</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-fta-evaluate-branches<br><span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td class="mono">3.2/3.3</td>
+      <td>
+        <span class="item in">iteration_id (param)</span>
+        <span class="item in">fta_iterations[iter-1].hybrid_tree</span>
+        <span class="item in">phase2_ecf.observable_symptoms.missing_events</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[iter-1].hybrid_tree.branches[].gate_a_result</span>
+        <span class="item out">  └ branches[].children[] (failure modes)</span>
+        <span class="item out">  └ children[].gate_b_result</span>
+        <span class="item out">fta_iterations[iter-1].pruned_branches[]</span>
+        <span class="item out">fta_iterations[iter-1].base_events[]</span>
+        <span class="item out">fta_iterations[iter-1].rejected[]</span>
+        <span class="item out">fta_iterations[iter-1].open_items[]</span>
+      </td>
+      <td>
+        <span class="item tool">spec_query extract_ies (optional)</span>
+        <span class="item tool">log_query phase3_gate_a</span>
+        <span class="item tool">code_search expand_failure_modes</span>
+        <span class="item tool">spec_query expand_sub_causes (fallback)</span>
+        <span class="item tool">log_query phase3_gate_b</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-fta-cross-reference<br><span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td class="mono">3.4</td>
+      <td>
+        <span class="item in">iteration_id (param)</span>
+        <span class="item in">fta_iterations[iter-1].base_events[]</span>
+        <span class="item in">fta_iterations[iter-1].hybrid_tree (parent branches)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[iter-1].cross_reference_findings[]</span>
+        <span class="item out">  ├ commanded_ie_lookup</span>
+        <span class="item out">  ├ commanded_value / actual_value</span>
+        <span class="item out">  ├ delta / root_cause_class</span>
+        <span class="item out">  └ implementation_location</span>
+      </td>
+      <td>
+        <span class="item tool">spec_query find_commanded_values</span>
+        <span class="item tool">log_query phase3_cross_ref (signaling)</span>
+        <span class="item tool">code_search find_implementation</span>
+        <span class="item tool">log_query phase3_cross_ref (trace)</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-fta-root-cause<br><span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td class="mono">3.5</td>
+      <td>
+        <span class="item in">iteration_id (param)</span>
+        <span class="item in">full fta_iterations[iter-1] slice</span>
+        <span class="item in">  (tree, base_events, cross_ref findings, etc.)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[iter-1].iteration_root_cause</span>
+        <span class="item out">  ├ root_cause_class</span>
+        <span class="item out">  ├ failing_phase / pruned_phases</span>
+        <span class="item out">  ├ base_event_chain</span>
+        <span class="item out">  ├ description</span>
+        <span class="item out">  ├ implementation_location / spec_violation</span>
+        <span class="item out">  └ evidence_chain</span>
+      </td>
+      <td><em>None</em> — pure synthesis</td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-fta-iteration-controller<br><span class="tag checkpoint" style="font-size:0.6rem">CHKPT B</span></td>
+      <td class="mono">B</td>
+      <td>
+        <span class="item in">iteration_id (param)</span>
+        <span class="item in">fta_iterations[iter-1] (full)</span>
+        <span class="item in">all prior fta_iterations[*] (for cross-iter signals)</span>
+        <span class="item in">meta.iteration_budget</span>
+        <span class="item in">user_action (RECORD mode)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[iter-1].agent_recommendation</span>
+        <span class="item out">fta_iterations[iter-1].user_decision</span>
+        <span class="item out">user_decisions[] (append)</span>
+        <span class="item out"><strong>dig_deeper:</strong> fta_iterations[iter] (new entry)</span>
+        <span class="item out"><strong>accept_terminal:</strong> phase3_root_cause_chain</span>
+        <span class="item out">meta.current_phase + current_iteration_id</span>
+      </td>
+      <td><em>None</em> — pure logic</td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-rca-orchestrator<br><span class="tag" style="font-size:0.6rem">finalize mode</span></td>
+      <td class="mono">4</td>
+      <td>
+        <span class="item in">Full state file (only place a full read occurs)</span>
+      </td>
+      <td>
+        <span class="item out">phase4_rca_report</span>
+        <span class="item out">  ├ finalized_at, iteration_count</span>
+        <span class="item out">  ├ report_path</span>
+        <span class="item out">  └ termination_reason</span>
+        <span class="item out">.rca/report_&lt;ts&gt;.md (Markdown file)</span>
+        <span class="item out">phase3_root_cause_chain.user_override_count</span>
+        <span class="item out">phase3_root_cause_chain.high_disagreement_run</span>
+      </td>
+      <td><em>None</em> — validation + write</td>
+    </tr>
+
+    <tr style="background: var(--bg-darker);">
+      <td colspan="5" style="text-align:center; font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: var(--ink-muted); padding: 0.5rem;">
+        ───── Retrieval wrapper skills (thin pass-through to Python tools) ─────
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-spec-retrieval<br><span class="tag retrieval" style="font-size:0.6rem">wrapper</span></td>
+      <td class="mono">multi</td>
+      <td>
+        <span class="item in">operation + op-specific args (from caller)</span>
+      </td>
+      <td><em>(none directly — script auto-writes)</em></td>
+      <td>
+        <span class="item tool">spec_query.py (6 ops)</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-code-retrieval<br><span class="tag retrieval" style="font-size:0.6rem">wrapper</span></td>
+      <td class="mono">multi</td>
+      <td>
+        <span class="item in">operation + op-specific args (from caller)</span>
+      </td>
+      <td><em>(none directly — script auto-writes)</em></td>
+      <td>
+        <span class="item tool">code_search.py (3 ops)</span>
+      </td>
+    </tr>
+
+    <tr>
+      <td class="skill-name">3gpp-log-queries<br><span class="tag retrieval" style="font-size:0.6rem">wrapper</span></td>
+      <td class="mono">multi</td>
+      <td>
+        <span class="item in">phase_tag + table + keywords + filters (from caller)</span>
+      </td>
+      <td><em>(none directly — script auto-writes per phase_tag)</em></td>
+      <td>
+        <span class="item tool">log_query.py (5 phase tags)</span>
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+</div>
+
+<div class="callout muted">
+  <h4>State file slice-read discipline</h4>
+  <p style="margin-bottom:0">Every skill reads <em>only</em> the slice it needs. Loading the full state file is reserved for orchestrator finalize. This keeps token usage proportional to the iteration depth, not to total run history. A 5-iteration run with a Phase 3 retry should still fit in the context window because no single skill needs to see more than its own iteration plus the immediate predecessor.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §09 PYTHON TOOL I/O                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§09" id="tool-io">Python tool I/O reference</h2>
+
+<p>Each Python tool exposes multiple <em>operations</em> selected by a CLI flag. Every invocation receives <code>--state-file</code> and writes structured output to the relevant section directly; stdout returns a compressed JSON summary for the skill to inspect. <strong>Tool scripts also auto-append to <code>keyword_provenance_audit</code></strong> — this is how anti-hallucination invariants are enforced mechanically rather than by skill discipline.</p>
+
+<h3>spec_query.py — 3GPP spec GraphRAG (6 operations)</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 18%;">--operation</th>
+      <th style="width: 28%;">Required args</th>
+      <th style="width: 28%;">Stdout shape (compressed)</th>
+      <th style="width: 26%;">State file destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="skill-name">skeleton</td>
+      <td>
+        <span class="item">--procedure</span>
+        <span class="item">--rat</span>
+        <span class="item">--top-event</span>
+      </td>
+      <td>
+        <span class="item">phases[] (id, name, spec_ref,</span>
+        <span class="item">mandatory_messages, layer)</span>
+        <span class="item">gate_at_top, spec_refs[]</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].hybrid_tree</span>
+        <span class="item out">  .spec_skeleton_source</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">lightweight_procedure</td>
+      <td>
+        <span class="item">--procedure --rat</span>
+        <span class="item">--need is_is_not | ecf</span>
+      </td>
+      <td>
+        <span class="item">is_is_not: primary_layers, key_timers,</span>
+        <span class="item">  initiating_message, spec_refs</span>
+        <span class="item">ecf: expected_flow[order, message,</span>
+        <span class="item">  direction, layer]</span>
+      </td>
+      <td>
+        <span class="item out">is_is_not → phase1_scope_filter.spec_lookup</span>
+        <span class="item out">ecf → phase2_ecf.observable_symptoms</span>
+        <span class="item out">      .expected_flow_source</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">extract_ies</td>
+      <td>
+        <span class="item">--message --procedure</span>
+        <span class="item">--spec-ref --hypothesis-id</span>
+      </td>
+      <td>
+        <span class="item">message_definitions[] (name,</span>
+        <span class="item">  mandatory_ies, optional_ies, direction)</span>
+      </td>
+      <td>
+        <span class="item out">phase3_evaluations[id]</span>
+        <span class="item out">  .spec_ie_extraction</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">find_commanded_values</td>
+      <td>
+        <span class="item">--base-event-name --base-event-layer</span>
+        <span class="item">--upstream-messages</span>
+      </td>
+      <td>
+        <span class="item">commanded_value_ies[] (ie_name,</span>
+        <span class="item">  message, meaning, spec_ref,</span>
+        <span class="item">  ue_action, range_unit)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].cross_reference</span>
+        <span class="item out">  _findings[id].commanded_ie_lookup</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">generate_hypotheses<br><em style="font-size:0.75rem">fallback</em></td>
+      <td>
+        <span class="item">--event --procedure --rat</span>
+      </td>
+      <td>
+        <span class="item">hypotheses[] (id, cause, spec_ref,</span>
+        <span class="item">  gate, ie_names, message_names, layer)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].hybrid_tree</span>
+        <span class="item out">  (when skeleton empty)</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">expand_sub_causes<br><em style="font-size:0.75rem">fallback</em></td>
+      <td>
+        <span class="item">--parent-cause --parent-spec-ref</span>
+        <span class="item">--procedure</span>
+      </td>
+      <td>
+        <span class="item">sub_causes_exist (bool)</span>
+        <span class="item">sub_causes[] (cause, spec_ref, gate,</span>
+        <span class="item">  ie_names, message_names)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].hybrid_tree</span>
+        <span class="item out">  .branches[id].children[]</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>code_search.py — UE codebase semantic search (3 operations)</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 18%;">--operation</th>
+      <th style="width: 28%;">Required args</th>
+      <th style="width: 28%;">Stdout shape (compressed)</th>
+      <th style="width: 26%;">State file destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="skill-name">bind_module</td>
+      <td>
+        <span class="item">--phase-name --phase-ref</span>
+        <span class="item">--scope-layer</span>
+      </td>
+      <td>
+        <span class="item">modules[] (file, primary_function,</span>
+        <span class="item">  relevance, evidence)</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].hybrid_tree</span>
+        <span class="item out">  .branches[id].modules</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">expand_failure_modes</td>
+      <td>
+        <span class="item">--module --phase-context</span>
+      </td>
+      <td>
+        <span class="item">failure_modes[] (id_suffix, name,</span>
+        <span class="item">  detection_code, log_keywords*,</span>
+        <span class="item">  log_tags*, function_signature, layer)</span>
+        <span class="item" style="color:var(--accent)">* literal macro strings, NEVER inferred</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].hybrid_tree</span>
+        <span class="item out">  .branches[id].children[]</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="skill-name">find_implementation</td>
+      <td>
+        <span class="item">--hypothesis-cause</span>
+        <span class="item">--spec-ie-names --scope-procedure</span>
+        <span class="item">--scope-layer</span>
+      </td>
+      <td>
+        <span class="item">found (bool), confidence</span>
+        <span class="item">log_keywords*, log_tags*</span>
+        <span class="item">function_names, implementation_files</span>
+        <span class="item">evidence_summary</span>
+      </td>
+      <td>
+        <span class="item out">fta_iterations[N-1].cross_reference</span>
+        <span class="item out">  _findings[id].actual_value_lookup</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout">
+  <h4>Log macro literal extraction (critical)</h4>
+  <p>All <code>log_keywords</code> returned by <code>code_search.py</code> are <strong>literal strings</strong> extracted from these exact macros — never inferred from naming conventions:</p>
+  <p class="mono" style="background:var(--bg-darker); padding: 0.75rem 1rem; font-size:0.8rem; line-height:1.6; margin-top:0.75rem;">
+    MSG_HIGH(...) · NAS_MSG_HIGH(...) · LOG_MSG(code, ...) · QCRIL_LOG_DEBUG(...) · RRC_LOG_MSG(level, ...) ·<br>
+    SYS_ERR(...) · DS_MSG_HIGH_1(...) · printf("[TAG] ...") · fprintf(stderr, ...) · syslog(level, ...)
+  </p>
+</div>
+
+<h3>log_query.py — DuckDB query (5 phase tags)</h3>
+
+<p>Table isolation is enforced at script entry. Mismatched <code>--phase-tag</code> + <code>--table</code> combinations exit with code 3 and a policy violation JSON. The script <em>refuses</em> the query rather than letting downstream skills bypass the rule.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 16%;">--phase-tag</th>
+      <th style="width: 18%;">Allowed --table</th>
+      <th style="width: 24%;">Caller skill</th>
+      <th style="width: 18%;">--return-ie-values?</th>
+      <th style="width: 24%;">State file destination</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="skill-name">phase1</td>
+      <td class="mono">UE_3gpp_signaling_log <strong>ONLY</strong></td>
+      <td class="mono">3gpp-scoping</td>
+      <td class="mono">no</td>
+      <td class="mono">phase1_scope_filter.signaling_sanity_check</td>
+    </tr>
+    <tr>
+      <td class="skill-name">phase2</td>
+      <td class="mono">UE_3gpp_signaling_log <strong>ONLY</strong></td>
+      <td class="mono">3gpp-event-timeline</td>
+      <td class="mono">no</td>
+      <td class="mono">phase2_ecf.observable_symptoms.events[]</td>
+    </tr>
+    <tr>
+      <td class="skill-name">phase3_gate_a</td>
+      <td class="mono">UE_3gpp_signaling_log <strong>ONLY</strong></td>
+      <td class="mono">3gpp-fta-evaluate-branches</td>
+      <td class="mono">no</td>
+      <td class="mono">fta_iterations[N-1].hybrid_tree.branches[id].gate_a_result</td>
+    </tr>
+    <tr>
+      <td class="skill-name">phase3_gate_b</td>
+      <td class="mono">UE_Trace_log <strong>ONLY</strong></td>
+      <td class="mono">3gpp-fta-evaluate-branches</td>
+      <td class="mono">no</td>
+      <td class="mono">fta_iterations[N-1].hybrid_tree.branches[*].children[id].gate_b_result</td>
+    </tr>
+    <tr>
+      <td class="skill-name">phase3_cross_ref</td>
+      <td class="mono">EITHER (caller specifies)</td>
+      <td class="mono">3gpp-fta-cross-reference</td>
+      <td class="mono"><strong>yes</strong> (always)</td>
+      <td>
+        <span class="item">signaling → .commanded_value</span>
+        <span class="item">trace → .actual_value</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout warn">
+  <h4>Exit code conventions (uniform across all three Python tools)</h4>
+  <table style="margin-top:0.5rem; background:transparent;">
+    <tr><td class="mono" style="width:6em;">0</td><td>Success — stdout valid JSON, state file updated</td></tr>
+    <tr><td class="mono">1</td><td>Invalid args (bug in calling skill — halt with error)</td></tr>
+    <tr><td class="mono">2</td><td>Tool unavailable (backend down — halt pipeline)</td></tr>
+    <tr><td class="mono">3</td><td>Policy violation (e.g. table isolation — never retry)</td></tr>
+    <tr><td class="mono">4</td><td>Empty result (valid; caller decides fallback)</td></tr>
+  </table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §10 STATE OWNERSHIP                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§10" id="state-ownership">State file ownership</h2>
+
+<p>Single state file at <code>/tmp/rca_state_&lt;ts&gt;.json</code>. Path is stored at <code>.rca/current_state_path.txt</code>. Every section has exactly one write owner (multiple readers); this matrix is the cross-reference for any debugging session.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width: 32%;">State file section</th>
+      <th style="width: 30%;">Written by</th>
+      <th style="width: 38%;">Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono">meta.*</td>
+      <td>3gpp-rca-orchestrator (init)</td>
+      <td><code>current_phase</code> updated by every skill on entry/exit</td>
+    </tr>
+    <tr>
+      <td class="mono">meta.current_phase</td>
+      <td>Every skill on entry/exit</td>
+      <td>State machine progression — read by workflow dispatcher</td>
+    </tr>
+    <tr>
+      <td class="mono">phase1_scope_filter</td>
+      <td>3gpp-scoping</td>
+      <td>Sub-fields written by spec_query and log_query</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.top_event</td>
+      <td>3gpp-top-event-confirmation</td>
+      <td>Selected from candidates by user</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.observable_symptoms</td>
+      <td>3gpp-event-timeline</td>
+      <td>Sub-fields written by spec_query and log_query</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.top_event_candidates[]</td>
+      <td>3gpp-event-timeline <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>1–3 entries; never padded with hallucinated alts</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.user_confirmation</td>
+      <td>3gpp-top-event-confirmation <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>Recorded after Checkpoint A user response</td>
+    </tr>
+    <tr>
+      <td class="mono">user_decisions[]</td>
+      <td>3gpp-top-event-confirmation, 3gpp-fta-iteration-controller <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>Append-only audit log of every checkpoint decision</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].input_top_event</td>
+      <td>3gpp-rca-orchestrator (iter 1) <em>or</em> 3gpp-fta-iteration-controller (iter ≥2)</td>
+      <td>Iter 1 sourced from <code>phase2_ecf.top_event</code>; iter ≥2 from prior iteration's base event</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].hybrid_tree</td>
+      <td>3gpp-fta-build-tree</td>
+      <td>Initially populated with branches only; children added by evaluate-branches</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].pruned_branches, base_events, rejected, open_items</td>
+      <td>3gpp-fta-evaluate-branches</td>
+      <td>Iteration-scoped classification output</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].cross_reference_findings[]</td>
+      <td>3gpp-fta-cross-reference</td>
+      <td>One entry per base event (even if commanded_value_ies empty)</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].iteration_root_cause</td>
+      <td>3gpp-fta-root-cause</td>
+      <td>Pure synthesis — no new tool calls</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].agent_recommendation</td>
+      <td>3gpp-fta-iteration-controller <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>Mechanical logic over 7 termination signals + root_cause_class</td>
+    </tr>
+    <tr>
+      <td class="mono">fta_iterations[i].user_decision</td>
+      <td>3gpp-fta-iteration-controller <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>Recorded after Checkpoint B user response; tracks overrode_recommendation flag</td>
+    </tr>
+    <tr>
+      <td class="mono">phase3_root_cause_chain</td>
+      <td>3gpp-fta-iteration-controller (on accept_terminal) <span class="tag new" style="font-size:0.6rem">v6</span></td>
+      <td>Synthesizes causal chain across all iterations; finalize computes override stats</td>
+    </tr>
+    <tr>
+      <td class="mono">phase4_rca_report</td>
+      <td>3gpp-rca-orchestrator (finalize)</td>
+      <td>Includes report_path to written Markdown report</td>
+    </tr>
+    <tr>
+      <td class="mono">keyword_provenance_audit[]</td>
+      <td>All three Python tools (auto-append)</td>
+      <td>Iteration-scoped; validated at Phase 4 finalize</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §11 DISCUSSION                                                  -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§11" id="discussion">Discussion topics for the review</h2>
+
+<p>These are open risks and design choices worth re-examining with the team. None of them are blockers for v6.0 — but each is a place where v6 could surprise us in production, and the team's experience may shift our position.</p>
+
+<div class="discuss-item">
+  <span class="q-num">Q1 — Rubber-stamping risk</span>
+  <h4>Will engineers actually engage with checkpoints, or just type "confirm" and move on?</h4>
+  <p>v6's value proposition rests on engineers reviewing the agent's evidence at each checkpoint. If review becomes a reflex acceptance, we've added user-pause cost without buying snowball-error prevention. The checkpoint presentation format (<code>_shared/checkpoint-presentation-formats.md</code>) shows full evidence and rationale to make engaged review easier than blind acceptance — but discipline still matters. <strong>Question for the team:</strong> do we need additional friction (e.g. requiring a rationale string when accepting) for high-stakes runs?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q2 — Iteration budget and runaway prevention</span>
+  <h4>Is 5 the right default? Is the budget-near-exhaustion heuristic strong enough?</h4>
+  <p>Default 5 should cover typical depth-2 to depth-4 chains comfortably. The controller's recommendation logic forces <code>accept_terminal</code> when budget-1 is reached, but users can still override. <strong>Question:</strong> should we treat budget exhaustion as a hard wall (no override allowed) for non-admin engineers, or trust the override-confirmation flow?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q3 — Code-implementation floor detection</span>
+  <h4>The controller terminates when ≥2 signals fire (same file across iters, single-branch tree, no commanded IEs, etc). Is the heuristic right?</h4>
+  <p>Termination signals are mechanical, listed in <code>references/recommendation-logic.md</code>. In testing we may find that some real failures naturally fire 2+ signals at iteration 2 (e.g. a clear PHY bug isolated to one module). That's fine — accept_terminal is the right recommendation, user can still dig if needed. <strong>Question:</strong> should we keep this set of 7 signals as v6.0 baseline, or wait for real-run data before locking them in?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q4 — Cross-iteration cross-reference (D5 deferred)</span>
+  <h4>v6 baseline does NOT cross-reference iteration N's findings against iteration N-1's commanded values. Should v6.1 add this?</h4>
+  <p>Scenario: iter 1 finds VALUE_DISCREPANCY at P2.2 (commanded -110 dBm, actual -10 dBm). User digs into P2.2; iter 2 finds an ABSENCE in <code>dsp_calc_preamble_tx_power</code>. Today, iter 2 does <em>not</em> automatically re-verify that the iter 1 commanded value was correctly received by the DSP layer. <strong>Question:</strong> is this gap real (worth v6.1 work) or theoretical (rarely matters in practice)?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q5 — Hard termination at verified root cause</span>
+  <h4>v3+ invariant: pipeline NEVER produces fix recommendations. Still right for v6?</h4>
+  <p>The boundary remains: pipeline produces root cause + causal chain + evidence + audit; downstream engineering processes own fix design. Phase 4 orchestrator validates that no string in the state file contains "fix:", "recommendation:", "patch:", etc. <strong>Question:</strong> any pressure from product/customers to soften this and have the agent propose code changes? If yes, that's a different product, not a v6.1.</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q6 — State file lifecycle</span>
+  <h4>State files at <code>/tmp/</code> accumulate. Cleanup policy?</h4>
+  <p>v6 doesn't auto-delete state files after completion — they're preserved for audit. <code>.rca/current_state_path.txt</code> points to the most recent. Long-running engineers may end up with dozens of historical state files. <strong>Question:</strong> add a <code>/rca cleanup</code> sub-command? Or rely on OS tmp cleanup? Or move state file out of <code>/tmp/</code> entirely?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q7 — Failure recovery from partial iteration</span>
+  <h4>If Cline crashes mid-iteration (between Gate A and Gate B), does the next /rca pick up correctly?</h4>
+  <p>State machine is <code>iteration_N_running</code> during the entire iteration. Workflow dispatches by re-running the iteration from build-tree; phase skills are designed to be idempotent (they check if their output is already populated before redoing work). <strong>Question for testing:</strong> we should verify this empirically — what's the smoke test for crash-resume?</p>
+</div>
+
+<div class="discuss-item">
+  <span class="q-num">Q8 — Mobile / shared review</span>
+  <h4>RCA reports include causal chains across iterations. Are they readable for someone not in the run?</h4>
+  <p>Report template (<code>_shared/rca-report-template.md</code>) renders Section 4 as the chain plus per-iteration detail in Section 3. Length: 5–7 pages for a 3-iteration run. <strong>Question:</strong> should we add a 1-page TL;DR header (final root cause + chain only) for engineers who just want the punch-line?</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<footer class="doc-footer">
+  <div>
+    <strong>v6 Design Review · 3GPP UE RCA Skill Suite</strong><br>
+    Single-file HTML · Mermaid via CDN
+  </div>
+  <div style="text-align:right;">
+    Files: <code>/mnt/skills/user/v6/</code> · 33 files<br>
+    Drive: <code>3gpp-skills-v6</code> root folder
+  </div>
+</footer>
+
+</div><!-- /.container -->
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- MERMAID INIT                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#FBF7EE',
+    primaryColor: '#F5F0E6',
+    primaryTextColor: '#1A1A1A',
+    primaryBorderColor: '#1A1A1A',
+    lineColor: '#1A1A1A',
+    secondaryColor: '#E8DFCD',
+    tertiaryColor: '#A03A1A',
+    fontFamily: '"IBM Plex Mono", monospace',
+    fontSize: '13px'
+  },
+  flowchart: {
+    htmlLabels: true,
+    curve: 'basis',
+    padding: 16
+  },
+  sequence: {
+    actorMargin: 60,
+    messageMargin: 40,
+    boxMargin: 12
+  }
+});
+</script>
+
+</body>
+</html>

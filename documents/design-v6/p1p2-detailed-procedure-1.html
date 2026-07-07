@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 1 &amp; Phase 2 — Detailed Procedure · 3GPP UE RCA v6</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+
+<style>
+:root {
+  --bg: #F5F0E6;
+  --bg-card: #FBF7EE;
+  --bg-darker: #E8DFCD;
+  --ink: #1A1A1A;
+  --ink-muted: #4A4540;
+  --ink-light: #6B655E;
+  --accent: #A03A1A;
+  --accent-soft: #D89071;
+  --rule: #1A1A1A;
+  --rule-soft: #C8BFAE;
+  --warning: #8B5A2B;
+  --confirm: #4A6B3A;
+  --reject: #8B2B2B;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 400;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(160,58,26,0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(160,58,26,0.03) 0%, transparent 50%);
+  min-height: 100vh;
+}
+
+.container { max-width: 1280px; margin: 0 auto; padding: 4rem 3rem 6rem; }
+
+.mono, code, pre, .label { font-family: "IBM Plex Mono", "SF Mono", Menlo, monospace; }
+
+h1, h2, h3, h4 { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+h1 { font-size: 2.4rem; line-height: 1.1; margin-bottom: 0.5rem; letter-spacing: -0.03em; }
+
+h2 {
+  font-size: 1.5rem;
+  margin: 4rem 0 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--rule);
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+h2::before { content: attr(data-num); color: var(--accent); font-weight: 700; font-size: 1.1rem; }
+
+h3 { font-size: 1.05rem; margin: 2.25rem 0 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+h4 { font-size: 0.92rem; margin: 1.4rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
+
+p { margin-bottom: 1rem; }
+p.lead { font-size: 1.2rem; font-style: italic; color: var(--ink-muted); line-height: 1.5; margin: 1.5rem 0 2rem; max-width: 60ch; }
+
+a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { background: var(--accent); color: var(--bg); text-decoration: none; }
+
+ul, ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+li { margin-bottom: 0.4rem; }
+strong { font-weight: 600; }
+em { color: var(--ink-muted); }
+
+code { font-size: 0.9em; background: var(--bg-darker); padding: 0.1em 0.4em; border-radius: 2px; color: var(--ink); }
+
+pre {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+pre code { background: transparent; padding: 0; }
+
+/* Header */
+.doc-header { border-bottom: 3px double var(--rule); padding-bottom: 2.5rem; margin-bottom: 1rem; }
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; text-transform: uppercase;
+  letter-spacing: 0.2em; color: var(--accent); font-weight: 600;
+  margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;
+}
+.eyebrow::after { content: ""; height: 1px; background: var(--accent); flex: 1; }
+.doc-meta { display: flex; gap: 3rem; margin-top: 1.5rem; font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; color: var(--ink-muted); }
+.doc-meta-item .label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--ink-light); margin-bottom: 0.3rem; }
+
+/* TOC */
+.toc {
+  background: var(--bg-card); border: 1px solid var(--rule); border-left: 4px solid var(--accent);
+  padding: 1.5rem 2rem; margin: 2rem 0; font-family: "IBM Plex Mono", monospace; font-size: 0.92rem;
+}
+.toc h3 { margin: 0 0 1rem; font-size: 0.85rem; }
+.toc ol { list-style: none; padding: 0; columns: 2; column-gap: 2rem; }
+.toc li { margin: 0.3rem 0; padding: 0.15rem 0; break-inside: avoid; }
+.toc a { color: var(--ink); text-decoration: none; display: flex; gap: 0.5rem; }
+.toc a:hover { color: var(--accent); background: transparent; }
+.toc a span { color: var(--accent); font-weight: 600; min-width: 1.5em; }
+
+/* Callouts */
+.callout { background: var(--bg-card); border: 1px solid var(--rule); padding: 1.25rem 1.5rem; margin: 1.5rem 0; border-left: 4px solid var(--accent); }
+.callout.muted { border-left-color: var(--ink-muted); }
+.callout.warn { border-left-color: var(--warning); background: rgba(139, 90, 43, 0.06); }
+.callout.confirm { border-left-color: var(--confirm); }
+.callout h4 { margin-top: 0; color: var(--accent); }
+.callout.warn h4 { color: var(--warning); }
+.callout.muted h4 { color: var(--ink-muted); }
+.callout.confirm h4 { color: var(--confirm); }
+
+/* Diagram */
+.diagram { background: var(--bg-card); border: 1px solid var(--rule); padding: 2rem 1.5rem; margin: 2rem 0; text-align: center; overflow-x: auto; }
+.diagram-title {
+  font-family: "IBM Plex Mono", monospace; font-size: 0.85rem; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--ink-muted); margin-bottom: 1.5rem;
+  display: flex; align-items: baseline; justify-content: space-between;
+  border-bottom: 1px dashed var(--rule-soft); padding-bottom: 0.75rem;
+}
+.diagram-title .figref { color: var(--accent); font-weight: 600; }
+.mermaid { font-family: "IBM Plex Mono", monospace !important; }
+
+/* Tables */
+.table-wrap { overflow-x: auto; margin: 1.5rem 0; border: 1px solid var(--rule); }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; background: var(--bg-card); }
+th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+th {
+  font-family: "IBM Plex Mono", monospace; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; font-size: 0.75rem; background: var(--bg-darker);
+  color: var(--ink); border-bottom: 2px solid var(--rule);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg-darker); }
+td.mono, td .mono { font-family: "IBM Plex Mono", monospace; font-size: 0.82rem; }
+td .item { display: block; font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; margin: 0.15rem 0; color: var(--ink-muted); }
+td .item.in { color: var(--ink); }
+td .item.out { color: var(--accent); }
+
+/* Step blocks */
+.step {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  margin: 1.25rem 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+}
+.step-num {
+  background: var(--accent);
+  color: var(--bg-card);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--rule);
+}
+.step-body { padding: 1.25rem 1.5rem; }
+.step-body h4 { margin-top: 0; color: var(--ink); font-size: 1rem; text-transform: none; letter-spacing: 0; }
+.step-body p { margin-bottom: 0.75rem; }
+.step-body p:last-child { margin-bottom: 0; }
+
+.step-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--rule-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+}
+.step-meta .key { color: var(--ink-light); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; font-weight: 600; }
+.step-meta .val { color: var(--ink); }
+
+/* Tags */
+.tag {
+  display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 0.7rem;
+  text-transform: uppercase; letter-spacing: 0.08em; padding: 0.2em 0.6em;
+  border: 1px solid var(--ink); color: var(--ink); background: var(--bg);
+  font-weight: 500; margin-right: 0.4em;
+}
+.tag.confirm { background: var(--confirm); color: var(--bg); border-color: var(--confirm); }
+.tag.reject { background: var(--reject); color: var(--bg); border-color: var(--reject); }
+.tag.prune { background: var(--ink-muted); color: var(--bg); border-color: var(--ink-muted); }
+.tag.open { background: var(--warning); color: var(--bg); border-color: var(--warning); }
+.tag.skip { background: transparent; color: var(--ink-muted); border-color: var(--rule-soft); }
+.tag.value { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.tag.high { background: var(--confirm); color: var(--bg); border-color: var(--confirm); }
+.tag.medium { background: var(--warning); color: var(--bg); border-color: var(--warning); }
+.tag.low { background: transparent; color: var(--ink-muted); border-color: var(--rule-soft); }
+
+/* IS/IS-NOT grid */
+.isnot-grid {
+  display: grid;
+  grid-template-columns: 100px 1fr 1fr;
+  border: 2px solid var(--rule);
+  margin: 1.5rem 0;
+  background: var(--bg-card);
+}
+.isnot-grid > div {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--rule-soft);
+  border-right: 1px solid var(--rule-soft);
+  font-size: 0.88rem;
+}
+.isnot-grid > div:nth-child(3n) { border-right: none; }
+.isnot-grid > div.dim-label {
+  background: var(--bg-darker);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+}
+.isnot-grid > div.col-head {
+  background: var(--ink);
+  color: var(--bg);
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Compare cards */
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin: 1.5rem 0; }
+.compare > div { background: var(--bg-card); border: 1px solid var(--rule); padding: 1.25rem 1.4rem; }
+.compare h4 { margin-top: 0; }
+.compare ul { padding-left: 1.2rem; }
+
+/* Example block */
+.example {
+  background: linear-gradient(to bottom, var(--bg-card), var(--bg-darker));
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--ink);
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+.example-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-light);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.example h4 { margin-top: 0; color: var(--ink); font-size: 0.95rem; }
+
+/* Confidence cards */
+.conf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+.conf-card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 1rem 1.25rem;
+  font-size: 0.88rem;
+}
+.conf-card.high { border-top: 3px solid var(--confirm); }
+.conf-card.medium { border-top: 3px solid var(--warning); }
+.conf-card.low { border-top: 3px solid var(--rule-soft); }
+.conf-card .conf-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--ink-light);
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.conf-card h4 { margin: 0 0 0.5rem; font-size: 0.95rem; text-transform: none; letter-spacing: 0; }
+
+/* Event classification cards */
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+.class-card {
+  background: var(--bg-card);
+  border: 1px solid var(--rule);
+  padding: 0.9rem 1rem;
+  font-size: 0.83rem;
+}
+.class-card h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.class-card .ic { font-size: 1.1rem; margin-right: 0.3em; }
+
+/* Footer */
+.doc-footer {
+  margin-top: 6rem; padding-top: 2rem; border-top: 2px solid var(--rule);
+  display: flex; justify-content: space-between;
+  font-family: "IBM Plex Mono", monospace; font-size: 0.8rem; color: var(--ink-light);
+}
+
+@media (max-width: 1000px) {
+  .class-grid { grid-template-columns: repeat(2, 1fr); }
+  .conf-grid { grid-template-columns: 1fr; }
+  .isnot-grid { grid-template-columns: 80px 1fr 1fr; }
+}
+@media (max-width: 900px) {
+  .container { padding: 2rem 1.5rem 4rem; }
+  .compare { grid-template-columns: 1fr; }
+  .toc ol { columns: 1; }
+  .step { grid-template-columns: 60px 1fr; }
+  .step-meta { grid-template-columns: 1fr; }
+  h1 { font-size: 1.8rem; }
+}
+
+@media print {
+  body { background: white; }
+  .diagram, .callout, .step, .example { break-inside: avoid; }
+  h2 { break-before: page; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- HEADER                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<header class="doc-header">
+  <div class="eyebrow">Pre-FTA · Phases 1 &amp; 2 · v6</div>
+  <h1>Scoping &amp; Event Timeline<br>Detailed Procedure</h1>
+  <p class="lead">How the v6 pipeline narrows from an engineer's prose description to a precise scope filter (Phase 1), then to a curated list of Top Event candidates ready for user confirmation (Phase 2). The two phases that decide whether FTA succeeds or wastes effort.</p>
+
+  <div class="doc-meta">
+    <div class="doc-meta-item"><span class="label">Scope</span>Phase 1 + Phase 2</div>
+    <div class="doc-meta-item"><span class="label">Skills involved</span>2 phase + 2 retrieval wrappers</div>
+    <div class="doc-meta-item"><span class="label">Tables touched</span>UE_3gpp_signaling_log ONLY</div>
+    <div class="doc-meta-item"><span class="label">Companion docs</span>fta-detailed-procedure · v6-design-review</div>
+  </div>
+</header>
+
+<nav class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#prologue"><span>01</span> The pre-FTA prologue</a></li>
+    <li><a href="#p1-philosophy"><span>02</span> Phase 1 · Principles</a></li>
+    <li><a href="#p1-mechanics"><span>03</span> Phase 1 · Mechanics</a></li>
+    <li><a href="#p1-example"><span>04</span> Phase 1 · Worked example</a></li>
+    <li><a href="#p2-philosophy"><span>05</span> Phase 2 · Principles</a></li>
+    <li><a href="#p2-mechanics"><span>06</span> Phase 2 · Mechanics</a></li>
+    <li><a href="#p2-candidates"><span>07</span> Phase 2 · Building candidates</a></li>
+    <li><a href="#p2-example"><span>08</span> Phase 2 · Worked example</a></li>
+    <li><a href="#handoff"><span>09</span> Handoff to Checkpoint A &amp; Phase 3</a></li>
+    <li><a href="#reference"><span>10</span> Quick reference · halts &amp; lookups</a></li>
+  </ol>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §01 PROLOGUE                                                    -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§01" id="prologue">The pre-FTA prologue</h2>
+
+<p>Phases 1 and 2 don't analyze causes. They prepare the ground for FTA by answering two prerequisite questions: <em>where in the system did this fail?</em> (Phase 1) and <em>what specifically did the failure look like in signaling?</em> (Phase 2). Both questions must be answered before the agent is allowed to hypothesize causes — and both must be answered without ever touching trace data or source code.</p>
+
+<h3>Why this ordering matters</h3>
+
+<p>If Phase 1's scope is wrong, FTA wastes effort building trees for procedures that aren't the real failure. If Phase 2's top event is wrong, FTA produces a confident-sounding root cause for the wrong symptom. The cost of getting these phases wrong is far higher than the cost of running them carefully — which is why v6 added Checkpoint A after Phase 2 (the user confirms the top event before FTA even starts).</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 1 — Where Phases 1 &amp; 2 sit in the pipeline</span>
+    <span class="figref">FIG-01</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+    USER["👤 Engineer description<br/>(prose)"]:::input
+
+    USER --> P0["Phase 0<br/>orchestrator init<br/>(state file)"]:::ph
+
+    P0 --> P1["📍 Phase 1<br/>SCOPING<br/>──────<br/>IS / IS-NOT<br/>scope_filter"]:::p1
+
+    P1 --> P2["📅 Phase 2<br/>EVENT TIMELINE<br/>──────<br/>top_event_candidates[]"]:::p2
+
+    P2 --> CKA{Checkpoint A<br/>user confirms<br/>top event}:::gate
+
+    CKA --> P3["Phase 3<br/>FTA iterations<br/>1 .. N"]:::p3
+
+    P3 --> P4["Phase 4<br/>finalize report"]:::ph
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef ph fill:#F5F0E6,stroke:#1A1A1A;
+    classDef p1 fill:#FBF7EE,stroke:#A03A1A,stroke-width:3px;
+    classDef p2 fill:#FBF7EE,stroke:#A03A1A,stroke-width:3px;
+    classDef gate fill:#D89071,stroke:#1A1A1A,stroke-width:2px;
+    classDef p3 fill:#E8DFCD,stroke:#1A1A1A;
+  </div>
+</div>
+
+<h3>Three principles that govern both phases</h3>
+
+<div class="compare">
+  <div>
+    <h4>1. Sequential narrowing</h4>
+    <p style="margin-bottom:0">Scope → symptom → cause. Phase 1 narrows from "5G HO fails" to a specific procedure on a specific RAT in a specific time window. Phase 2 narrows from "the procedure failed" to "the failure manifested as RRCReconfiguration with no following RAR." Phase 3 then asks "why?" — but only because the first two questions are answered.</p>
+  </div>
+  <div>
+    <h4>2. Table isolation (HARD)</h4>
+    <p style="margin-bottom:0">Both phases may ONLY query <code>UE_3gpp_signaling_log</code>. Trace data (<code>UE_Trace_log</code>) is forbidden until FTA Gate B. Code search is forbidden in both phases. The Python tool <code>log_query.py</code> enforces this at script entry with exit code 3 on violations — no skill discipline alone, an actual hard barrier.</p>
+  </div>
+  <div>
+    <h4>3. Spec-anchored, not memory-anchored</h4>
+    <p style="margin-bottom:0">Both phases derive "what should have happened" from <code>spec_query.py lightweight_procedure</code>, not from the agent's pre-trained memory. Every keyword used in any DB query traces to a spec query result in the same pipeline run. The expected message flow, the primary layers, the key timers — all come from GraphRAG output, never invention.</p>
+  </div>
+  <div>
+    <h4>4. Honest about uncertainty</h4>
+    <p style="margin-bottom:0">If Phase 1 hits ambiguities, it HALTS and asks the engineer rather than guessing. If Phase 2's log coverage is sparse, it still produces candidates but marks confidence LOW and lets Checkpoint A surface the situation to the user. Neither phase fabricates evidence to look more confident.</p>
+  </div>
+</div>
+
+<h3>Skill / tool inventory for Phases 1 &amp; 2</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width:14%;">Phase</th>
+      <th style="width:22%;">Owning skill</th>
+      <th style="width:32%;">Tools allowed</th>
+      <th style="width:32%;">Tools forbidden</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono"><strong>1</strong></td>
+      <td class="mono">3gpp-scoping</td>
+      <td>
+        <span class="item">spec_query lightweight_procedure (need=is_is_not)</span>
+        <span class="item">log_query phase1 (signaling, optional)</span>
+      </td>
+      <td>
+        <span class="item">log_query against UE_Trace_log</span>
+        <span class="item">code_search (any operation)</span>
+        <span class="item">spec_query other operations</span>
+      </td>
+    </tr>
+    <tr>
+      <td class="mono"><strong>2</strong></td>
+      <td class="mono">3gpp-event-timeline</td>
+      <td>
+        <span class="item">spec_query lightweight_procedure (need=ecf)</span>
+        <span class="item">log_query phase2 (signaling, required)</span>
+      </td>
+      <td>
+        <span class="item">log_query against UE_Trace_log</span>
+        <span class="item">code_search (any operation)</span>
+        <span class="item">spec_query other operations</span>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §02 PHASE 1 PRINCIPLES                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§02" id="p1-philosophy">Phase 1 · Principles</h2>
+
+<h3>What Phase 1 produces</h3>
+
+<p>The single output of Phase 1 is <code>phase1_scope_filter</code> — a structured object that downstream phases consult to know where to look. Every later phase reads from this object; nothing later in the pipeline can broaden the scope.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:24%;">Field</th><th style="width:18%;">Type</th><th>Meaning</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="mono">procedure</td><td class="mono">string</td><td>3GPP procedure name (e.g. "Intra-AMF 5G Handover", "LTE Initial Attach")</td></tr>
+    <tr><td class="mono">rat</td><td class="mono">enum</td><td>LTE / 5G NR / NR-NSA / WCDMA</td></tr>
+    <tr><td class="mono">bands</td><td class="mono">string[]</td><td>Carrier bands involved (e.g. ["n78"], ["B7", "B41"])</td></tr>
+    <tr><td class="mono">layers</td><td class="mono">string[]</td><td>Protocol layers in scope (from spec lookup)</td></tr>
+    <tr><td class="mono">layers_excluded</td><td class="mono">string[]</td><td>Explicitly out of scope (the IS-NOT for layers)</td></tr>
+    <tr><td class="mono">condition</td><td class="mono">string</td><td>The state/trigger at failure (e.g. "Handover from Cell A to Cell B")</td></tr>
+    <tr><td class="mono">time_window</td><td class="mono">{start_ms, end_ms}</td><td>Window in which downstream phases query logs</td></tr>
+    <tr><td class="mono">discriminator</td><td class="mono">string</td><td>The biggest IS-vs-IS-NOT contrast (the most informative difference)</td></tr>
+    <tr><td class="mono">reproducibility</td><td class="mono">string</td><td>"always" / "intermittent ~X%"</td></tr>
+    <tr><td class="mono">ambiguities</td><td class="mono">string[]</td><td><strong>MUST be empty before Phase 2.</strong> Otherwise HALT.</td></tr>
+    <tr><td class="mono">spec_lookup</td><td class="mono">object</td><td>Written by spec_query — primary_layers, key_timers, initiating_message, spec_refs</td></tr>
+    <tr><td class="mono">signaling_sanity_check</td><td class="mono">object · optional</td><td>Written by log_query phase1 if invoked</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Why IS/IS-NOT and not another scoping technique</h3>
+
+<p>The IS/IS-NOT structure comes from the Kepner-Tregoe problem-solving method. It works for two specific reasons that matter to an LLM-driven pipeline:</p>
+
+<ol>
+  <li><strong>It forces the agent to articulate negatives.</strong> "5G NR Band n78" is informative; "5G NR Band n78 but NOT LTE Band 7 in the same area" is much more informative. The negative half tells downstream phases what they can safely ignore.</li>
+  <li><strong>It yields a discriminator.</strong> The biggest IS-vs-IS-NOT gap is the most likely place the failure lives. For "fails on 5G NR n78, succeeds on LTE B7 in same cell": the discriminator is "the 5G-specific layer or the n78-specific config." That's the place FTA should focus first.</li>
+</ol>
+
+<p>The agent does not literally fill out a 4×2 grid in the output, but the reasoning behind the four dimensions (WHAT, WHERE, WHEN, EXTENT) drives <code>scope_filter.condition</code>, <code>discriminator</code>, <code>time_window</code>, and <code>reproducibility</code> respectively. The final RCA report renders the grid for the engineer.</p>
+
+<h3>The 4 IS/IS-NOT dimensions</h3>
+
+<div class="isnot-grid">
+  <div class="dim-label"></div>
+  <div class="col-head">IS (the failure)</div>
+  <div class="col-head">IS NOT (similar contexts that don't fail)</div>
+
+  <div class="dim-label">WHAT</div>
+  <div>The failing procedure — e.g. "5G NR Intra-AMF Handover"</div>
+  <div>Closely related procedures that succeed — e.g. "5G NR Initial Attach"</div>
+
+  <div class="dim-label">WHERE</div>
+  <div>Layers / bands / cells / PLMN where it happens</div>
+  <div>Layers / bands / cells where the same UE operates fine</div>
+
+  <div class="dim-label">WHEN</div>
+  <div>Conditions at failure — UE state, sequence position, time of day</div>
+  <div>Conditions when the procedure works normally</div>
+
+  <div class="dim-label">EXTENT</div>
+  <div>Severity, count, percentage — e.g. "100% of HO attempts, always"</div>
+  <div>The same failure being absent — e.g. "no failure on other procedures"</div>
+</div>
+
+<div class="callout muted">
+<h4>What the engineer sees vs what the skill does</h4>
+<p style="margin-bottom:0">The engineer types one prose paragraph. The skill silently builds the 4×2 grid as its internal reasoning, but only writes the structured fields to state. The grid appears in the final RCA report (Section 1 of the report template) so engineers downstream can verify the contrasts.</p>
+</div>
+
+<h3>Tool calls allowed in Phase 1</h3>
+
+<ul>
+  <li><strong>Required:</strong> <code>spec_query.py --operation lightweight_procedure --need is_is_not</code> — returns primary_layers, key_timers, initiating_message, spec_refs</li>
+  <li><strong>Optional:</strong> <code>log_query.py --phase-tag phase1 --table UE_3gpp_signaling_log</code> — confirms the procedure's initiating message actually appears in the capture (sanity check only)</li>
+</ul>
+
+<p>That's the entire tool surface of Phase 1. Two operations, both extremely lightweight. No code search, no trace queries, no other spec operations.</p>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §03 PHASE 1 MECHANICS                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§03" id="p1-mechanics">Phase 1 · Mechanics</h2>
+
+<p>Six numbered steps. Steps 1–2 are pure reasoning over the engineer's prose. Step 3 is the one required tool call. Step 4 is the optional sanity check. Step 5 enforces no-ambiguity. Step 6 commits to state.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 2 — Phase 1 procedure flow</span>
+    <span class="figref">FIG-02</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+    IN["engineer_input<br/>(prose from /rca)"]:::input
+
+    IN --> S1["STEP 1<br/>Extract raw facts<br/>from prose<br/>──<br/>UE / RAT / band / proc /<br/>symptom / repro"]:::step
+
+    S1 --> S2["STEP 2<br/>Build IS / IS-NOT<br/>contrasts<br/>──<br/>4 dimensions →<br/>discriminator"]:::step
+
+    S2 --> S3["STEP 3<br/>spec_query<br/>lightweight_procedure<br/>need=is_is_not"]:::tool
+
+    S3 -->|"empty result"| HALT1["HALT<br/>procedure unrecognized<br/>ask engineer"]:::halt
+
+    S3 -->|"OK"| S4{Need signaling<br/>sanity check?}:::decide
+
+    S4 -->|yes| S4Y["STEP 4 (optional)<br/>log_query phase1<br/>signaling table"]:::tool
+    S4 -->|no| S5
+
+    S4Y --> S5["STEP 5<br/>Resolve ambiguities<br/>──<br/>ambiguities[] empty?"]:::step
+
+    S5 -->|"non-empty"| HALT2["HALT<br/>ask engineer<br/>for clarification"]:::halt
+
+    S5 -->|"empty"| S6["STEP 6<br/>Write phase1_scope_filter<br/>to state · atomic"]:::step
+
+    S6 --> OUT["meta.current_phase<br/>= phase2_running<br/>──<br/>workflow → Phase 2"]:::output
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef step fill:#FBF7EE,stroke:#1A1A1A,stroke-width:2px;
+    classDef tool fill:#E8DFCD,stroke:#1A1A1A,stroke-dasharray:4 2;
+    classDef decide fill:#D89071,stroke:#1A1A1A;
+    classDef halt fill:#8B5A2B,stroke:#1A1A1A,color:#FBF7EE;
+    classDef output fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+  </div>
+</div>
+
+<h3>Step-by-step mechanics</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Extract raw facts from the engineer's prose</h4>
+    <p>Read <code>meta.engineer_input</code>. Parse for the following — each becomes a candidate field or an ambiguity entry if absent:</p>
+    <ul>
+      <li>UE model / chipset / firmware version</li>
+      <li>RAT (LTE / 5G NR / NR-NSA / WCDMA)</li>
+      <li>Band(s), EARFCN/NR-ARFCN</li>
+      <li>Network operator / PLMN</li>
+      <li>Test scenario / procedure being performed</li>
+      <li>Failure symptom as described by the engineer</li>
+      <li>Conditions at failure (state, sequence, timing)</li>
+      <li>Reproducibility (always / intermittent / specific trigger)</li>
+      <li>Environment (lab / field / specific cell)</li>
+    </ul>
+    <p>Items not mentioned in the prose are <strong>not invented</strong>. They go into <code>ambiguities[]</code> for the engineer to fill in if needed.</p>
+    <div class="step-meta">
+      <div><span class="key">Read</span><span class="val">meta.engineer_input</span></div>
+      <div><span class="key">No tool calls</span><span class="val">pure parsing</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Build IS / IS-NOT contrasts across 4 dimensions</h4>
+    <p>For each of WHAT, WHERE, WHEN, EXTENT, articulate both columns. The IS-NOT column is generated by considering closely-related contexts where the same UE should work normally — same RAT but different procedure, same procedure but different band, same band but different cell, etc.</p>
+    <p>Pick the largest meaningful IS-vs-IS-NOT gap as <code>scope_filter.discriminator</code>. This single field is the most important piece of Phase 1 output — it tells Phase 3 where to focus first.</p>
+    <div class="step-meta">
+      <div><span class="key">Writes (intermediate)</span><span class="val">discriminator, condition, time_window, reproducibility</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Call spec_query lightweight_procedure (required)</h4>
+    <p>Invoke <code>spec_query.py --operation lightweight_procedure --need is_is_not</code> with the inferred procedure and RAT. The GraphRAG returns:</p>
+    <ul>
+      <li><code>primary_layers</code> — typical protocol layers involved (e.g. ["NAS", "RRC", "MAC", "PHY"])</li>
+      <li><code>key_timers</code> — relevant procedure timers with default durations</li>
+      <li><code>initiating_message</code> — the spec-defined message that opens the procedure</li>
+      <li><code>spec_refs</code> — TS/clause references for the procedure</li>
+    </ul>
+    <p>Copy <code>primary_layers</code> into <code>scope_filter.layers</code>. The full spec_lookup is written to <code>phase1_scope_filter.spec_lookup</code> by the Python tool automatically.</p>
+    <p><strong>Halt condition:</strong> if the spec query returns empty (procedure unrecognized), append to ambiguities and HALT — ask the engineer to confirm the procedure name. This is rare in practice and almost always indicates a typo or non-standard procedure description.</p>
+    <div class="step-meta">
+      <div><span class="key">Tool</span><span class="val">spec_query.py lightweight_procedure</span></div>
+      <div><span class="key">Empty result</span><span class="val">HALT with ambiguity note</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>(Optional) Signaling sanity check</h4>
+    <p>Trigger only if at least one of these is true:</p>
+    <ul>
+      <li>Engineer description doesn't unambiguously identify the procedure (e.g. "handover failure" with no RAT specified)</li>
+      <li>Time window is unclear and signaling can help bound it</li>
+      <li>Confirming procedure presence in the capture would resolve scope ambiguity</li>
+    </ul>
+    <p>Invoke <code>log_query.py --phase-tag phase1 --table UE_3gpp_signaling_log</code> with the initiating message as the keyword and a generous time window. The skill consults the result only to confirm the procedure appears in the capture — it does NOT analyze the procedure's outcome here (that's Phase 2's job).</p>
+    <p><strong>Hard limit:</strong> Phase 1 must not query <code>UE_Trace_log</code>. The Python script enforces this with exit code 3.</p>
+    <div class="step-meta">
+      <div><span class="key">Tool (optional)</span><span class="val">log_query.py phase1</span></div>
+      <div><span class="key">Table restriction</span><span class="val">UE_3gpp_signaling_log ONLY</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <h4>Resolve ambiguities</h4>
+    <p>Review the <code>ambiguities[]</code> list accumulated so far. Each entry is a question the skill couldn't answer from the prose + tool results.</p>
+    <p><strong>Hard rule: <code>ambiguities</code> MUST be empty before Phase 2 begins.</strong> If non-empty, HALT the workflow with a prompt asking the engineer to clarify each item. The state file is preserved so the engineer's clarification can be appended without restarting.</p>
+    <p>The rationale: ambiguities at Phase 1 compound at Phase 2 (the wrong messages get retrieved) and explode at Phase 3 (the wrong fault tree gets built). Halt-and-clarify is cheaper than running the whole pipeline on bad scope.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <h4>Atomic write to state file</h4>
+    <p>Compose the complete <code>phase1_scope_filter</code> block including <code>completed_at</code> timestamp. Atomic write (<code>.tmp</code> → <code>mv</code>). Set <code>meta.current_phase = "phase2_running"</code>. The workflow's next dispatch will trigger Phase 2.</p>
+    <div class="step-meta">
+      <div><span class="key">Writes</span><span class="val">phase1_scope_filter (full block)</span></div>
+      <div><span class="key">Next phase</span><span class="val">phase2_running → 3gpp-event-timeline</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="callout warn">
+<h4>What "ambiguity resolution" looks like in practice</h4>
+<p>Common Phase 1 ambiguities:</p>
+<ul style="margin-bottom: 0.5rem;">
+<li>RAT not mentioned ("UE handover fails" — LTE or 5G?)</li>
+<li>Procedure name vague ("attach fails" — Initial Attach? Combined Attach? Re-attach?)</li>
+<li>Time window absent ("yesterday at the office" — useless for log queries)</li>
+<li>Reproducibility unclear ("sometimes" — 10% or 90%?)</li>
+</ul>
+<p style="margin-bottom: 0;">Each becomes one item in <code>ambiguities[]</code>. The HALT prompt lists them as a numbered list and asks the engineer to clarify before the pipeline proceeds.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §04 PHASE 1 WORKED EXAMPLE                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§04" id="p1-example">Phase 1 · Worked example</h2>
+
+<p>Using the same 5G handover failure example that runs through the FTA detailed procedure document.</p>
+
+<div class="example">
+<div class="example-label">Phase 1 · Engineer input (verbatim)</div>
+<pre style="border:none;border-left:3px solid var(--ink-muted);background:transparent;padding-left:1rem;font-family:'Newsreader',serif;font-style:italic;font-size:0.95rem;">
+UE 5G handover from Cell A to Cell B fails; HO Reconfig received but no service
+follows. UE: Snapdragon 888, FW 12.3. Network: Verizon 5G NR Band n78.
+Repro: 100%, occurs at every handover from Cell A 1234 to Cell B 5678.
+Capture window starts at 14:02:00, failure observed around 14:02:11.
+LTE handovers in the same area work normally.
+</pre>
+</div>
+
+<h3>Step 1 — Facts extracted</h3>
+
+<div class="example">
+<pre><code>{
+  ue: { model: "Snapdragon 888", firmware: "12.3" },
+  rat: "5G NR",
+  band: "n78",
+  operator: "Verizon",
+  procedure: "Intra-AMF Handover",          // inferred from "HO Reconfig"
+  symptom: "HO Reconfig received but no service follows",
+  reproducibility: "always (100%)",
+  trigger: "Handover from Cell A 1234 to Cell B 5678",
+  env: "field (cell IDs given)",
+  failure_time: "~14:02:11"
+}</code></pre>
+</div>
+
+<h3>Step 2 — IS / IS-NOT contrasts</h3>
+
+<div class="isnot-grid">
+  <div class="dim-label"></div>
+  <div class="col-head">IS</div>
+  <div class="col-head">IS NOT</div>
+
+  <div class="dim-label">WHAT</div>
+  <div>5G NR Intra-AMF Handover (Cell A → Cell B)</div>
+  <div>LTE handover (works fine in same area); 5G NR initial attach (no reports)</div>
+
+  <div class="dim-label">WHERE</div>
+  <div>5G NR Band n78, Cell A 1234 → Cell B 5678, Verizon PLMN</div>
+  <div>LTE handover in same area; other 5G NR cell pairs (no data either way)</div>
+
+  <div class="dim-label">WHEN</div>
+  <div>After RRCReconfiguration with reconfigurationWithSync, ~14:02:11</div>
+  <div>Other phases of the same call (call setup completes normally)</div>
+
+  <div class="dim-label">EXTENT</div>
+  <div>100% reproducibility; every HO attempt from Cell A to Cell B</div>
+  <div>Not observed on other procedures or on LTE</div>
+</div>
+
+<p><strong>Discriminator (largest gap):</strong> "Fails on 5G NR Band n78 Cell A→Cell B; succeeds on LTE handovers in the same area." This points Phase 3 toward 5G-specific or n78-specific layers.</p>
+
+<h3>Step 3 — spec_query lightweight_procedure (need=is_is_not)</h3>
+
+<div class="example">
+<pre><code>spec_query.py --operation lightweight_procedure \
+  --procedure "Intra-AMF 5G Handover" \
+  --rat "5G NR" \
+  --need is_is_not \
+  --state-file /tmp/rca_state_20260520T140200Z.json
+
+→ {
+  "operation": "lightweight_procedure",
+  "need": "is_is_not",
+  "procedure": "Intra-AMF 5G Handover",
+  "primary_layers": ["RRC", "MAC", "PHY"],
+  "key_timers": [
+    { "timer": "T304", "duration_default": "Network-config; typical 1000ms",
+      "on_expiry": "Handover failure → reestablishment attempt" }
+  ],
+  "initiating_message": "RRCReconfiguration with reconfigurationWithSync",
+  "spec_refs": ["TS 38.331 §5.5.1", "TS 23.502 §4.9.1"]
+}</code></pre>
+</div>
+
+<p>The skill copies <code>primary_layers</code> into <code>scope_filter.layers</code>. NAS is not in primary_layers (handover doesn't involve NAS layer once Reconfig is received), so NAS goes into <code>layers_excluded</code>.</p>
+
+<h3>Step 4 — Optional signaling sanity check</h3>
+
+<p>Because the engineer description is unambiguous (RAT, band, procedure all specified), the skill chooses to <em>skip</em> the optional sanity check. If the description had been "handover fails" with no RAT specified, the skill would have queried signaling for RRCReconfiguration occurrences to confirm 5G NR vs LTE.</p>
+
+<h3>Step 5 — Ambiguities check</h3>
+
+<p><code>ambiguities = []</code>. All fields populated from prose + spec_query. Proceed to Step 6.</p>
+
+<h3>Step 6 — Final scope_filter written to state</h3>
+
+<div class="example">
+<pre><code>phase1_scope_filter = {
+  completed_at: "2026-05-20T03:18:42Z",
+  procedure: "Intra-AMF 5G Handover",
+  rat: "5G NR",
+  bands: ["n78"],
+  layers: ["RRC", "MAC", "PHY"],
+  layers_excluded: ["NAS"],
+  condition: "Handover from Cell A 1234 to Cell B 5678, after RRCReconfiguration",
+  time_window: { start_ms: 14020000, end_ms: 14023000 },
+  discriminator: "Fails on 5G NR n78 Cell A→Cell B; succeeds on LTE handovers in same area",
+  reproducibility: "always (100%)",
+  ambiguities: [],
+  spec_lookup: {
+    primary_layers: ["RRC", "MAC", "PHY"],
+    key_timers: [{ timer: "T304", duration_default: "~1000ms",
+                   on_expiry: "Handover failure → reestablishment" }],
+    initiating_message: "RRCReconfiguration with reconfigurationWithSync",
+    spec_refs: ["TS 38.331 §5.5.1", "TS 23.502 §4.9.1"]
+  },
+  signaling_sanity_check: null  // not invoked in this run
+}</code></pre>
+</div>
+
+<p><strong>Phase 1 complete.</strong> <code>meta.current_phase = "phase2_running"</code>. The workflow's next dispatch triggers <code>3gpp-event-timeline</code>.</p>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §05 PHASE 2 PRINCIPLES                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§05" id="p2-philosophy">Phase 2 · Principles</h2>
+
+<h3>What Phase 2 produces (and what it deliberately does not)</h3>
+
+<p>Phase 2 produces the <code>phase2_ecf</code> block containing:</p>
+<ul>
+  <li><code>observable_symptoms</code> — the signaling timeline (classified events, missing events, log coverage assessment)</li>
+  <li><code>top_event_candidates[]</code> — <strong>1 to 3</strong> ranked candidate Top Events for the user to choose from</li>
+  <li><code>top_event = null</code> · <em>not set by this skill</em></li>
+  <li><code>user_confirmation = null</code> · <em>not set by this skill</em></li>
+</ul>
+
+<div class="callout warn">
+<h4>The v6 split: Phase 2 produces; Checkpoint A decides</h4>
+<p style="margin-bottom:0">v5 had Phase 2 set <code>top_event</code> directly and proceed. v6 splits this: Phase 2 produces a ranked list of candidates; the user chooses at Checkpoint A. The reason for the split is <strong>snowball-error prevention</strong>: if the agent silently picks the wrong top event, all of Phase 3 builds the wrong fault tree. The user gate intercepts this single most consequential decision in the pipeline.</p>
+</div>
+
+<h3>The four event classifications</h3>
+
+<p>Every signaling row retrieved in Phase 2 is classified into one of four buckets. The bucket determines whether the row becomes evidence, context, or a Top Event candidate.</p>
+
+<div class="class-grid">
+  <div class="class-card">
+    <h4><span class="ic">✓</span>normal</h4>
+    <p style="font-size:0.8rem; margin-bottom:0">Matches expected_flow ordering and timing. No failure indicators. Becomes timeline context only.</p>
+  </div>
+  <div class="class-card">
+    <h4><span class="ic">⚠</span>anomaly</h4>
+    <p style="font-size:0.8rem; margin-bottom:0">First deviation from expected flow — wrong message, wrong timing, unexpected cause code. Marks where the procedure went off-script.</p>
+  </div>
+  <div class="class-card">
+    <h4><span class="ic">↪</span>consequence</h4>
+    <p style="font-size:0.8rem; margin-bottom:0">Follows from an earlier anomaly. Real but derivative — recovery attempts, retries, reestablishment.</p>
+  </div>
+  <div class="class-card">
+    <h4><span class="ic">❌</span>symptom</h4>
+    <p style="font-size:0.8rem; margin-bottom:0">Observable failure indicator at the application level — REJECT, timer expiry, no-service entry. <strong>Symptoms become top_event_candidates.</strong></p>
+  </div>
+</div>
+
+<h3>The anomaly heuristics (signaling only)</h3>
+
+<p>Anomalies at the signaling layer come from four families. PHY/MAC/RLC anomalies are NOT visible here — those surface in FTA Gate B, not Phase 2.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:14%;">Family</th><th style="width:30%;">Pattern in signaling</th><th>Examples</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>RRC</strong></td>
+      <td>Timer expiry messages, unexpected state transitions</td>
+      <td>T304 expiry → RRC connection reestablishment attempt; unexpected RRCRelease mid-procedure</td>
+    </tr>
+    <tr>
+      <td><strong>NAS</strong></td>
+      <td>REJECT messages with non-zero cause code; unexpected EMM/5GMM state changes</td>
+      <td>ATTACH REJECT cause #11 (PLMN not allowed); SERVICE REJECT cause #7 (5GS services not allowed)</td>
+    </tr>
+    <tr>
+      <td><strong>Message gaps</strong></td>
+      <td>Expected message absent within the procedure's timer window</td>
+      <td>RRCReconfigurationComplete never sent after RRCReconfiguration received; ATTACH ACCEPT never received after ATTACH REQUEST</td>
+    </tr>
+    <tr>
+      <td><strong>Out-of-order</strong></td>
+      <td>REJECT before request; duplicate messages; ordering inversions</td>
+      <td>RRCConnectionReject before any RRCConnectionRequest; duplicate ATTACH REQUEST within seconds</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The three confidence levels for candidates</h3>
+
+<div class="conf-grid">
+  <div class="conf-card high">
+    <div class="conf-label">Tier 1</div>
+    <h4>HIGH</h4>
+    <p style="margin-bottom:0">log_coverage is <code>rich</code> AND the candidate has explicit signaling evidence — REJECT with cause code, T-timer expiry message, or unambiguous symptom row.</p>
+  </div>
+  <div class="conf-card medium">
+    <div class="conf-label">Tier 2</div>
+    <h4>MEDIUM</h4>
+    <p style="margin-bottom:0">log_coverage is <code>partial</code> OR the candidate is inferred from message absence with strong context (e.g. no RAR within the expected window after a clean RACH preamble).</p>
+  </div>
+  <div class="conf-card low">
+    <div class="conf-label">Tier 3</div>
+    <h4>LOW</h4>
+    <p style="margin-bottom:0">log_coverage is <code>sparse</code> OR the candidate is inferred from indirect signals. Still presented at Checkpoint A; the user decides whether to proceed, refine, or abort.</p>
+  </div>
+</div>
+
+<h3>Log coverage assessment</h3>
+
+<p>Phase 2 computes coverage as a ratio after retrieval. The ratio drives confidence assignment and the ambiguity handling path:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Coverage</th><th>Ratio</th><th>Interpretation</th><th>Effect on confidence</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="tag high">rich</span></td><td>≥ 0.8</td><td>Most expected messages present in signaling</td><td>HIGH possible</td></tr>
+    <tr><td><span class="tag medium">partial</span></td><td>0.4 – 0.79</td><td>Some expected messages missing — may be sampling or genuine gap</td><td>MEDIUM cap</td></tr>
+    <tr><td><span class="tag low">sparse</span></td><td>&lt; 0.4</td><td>Most expected messages missing — capture issue or wrong scope</td><td>LOW cap; suggest more capture in ambiguities</td></tr>
+  </tbody>
+</table>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §06 PHASE 2 MECHANICS                                           -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§06" id="p2-mechanics">Phase 2 · Mechanics</h2>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 3 — Phase 2 procedure flow</span>
+    <span class="figref">FIG-03</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+    IN["phase1_scope_filter<br/>(slice-read)"]:::input
+
+    IN --> RFN{user_refinements<br/>present?}:::decide
+
+    RFN -->|yes Checkpoint A refine path| RFNA["Apply refinement to<br/>analysis context<br/>(narrow window, layers)"]:::step
+    RFN -->|no fresh| S2
+
+    RFNA --> S2["STEP 2<br/>spec_query<br/>lightweight_procedure<br/>need=ecf"]:::tool
+
+    S2 -->|empty| HALT1["HALT — engineer clarification"]:::halt
+
+    S2 -->|"expected_flow[]"| S3["STEP 3<br/>log_query phase2<br/>signaling table<br/>──<br/>retrieve all expected messages<br/>in time window"]:::tool
+
+    S3 --> S4["STEP 4<br/>Classify events<br/>──<br/>normal · anomaly ·<br/>consequence · symptom"]:::step
+
+    S4 --> S5["STEP 5<br/>Identify missing events<br/>──<br/>spec-expected but<br/>absent from retrieval"]:::step
+
+    S5 --> S6["STEP 6<br/>Build top_event_candidates[]<br/>──<br/>rank symptoms + defensible alts"]:::step
+
+    S6 --> S7["STEP 7<br/>Assess log_coverage<br/>(rich / partial / sparse)"]:::step
+
+    S7 --> S8["STEP 8<br/>Assign confidence<br/>per candidate"]:::step
+
+    S8 --> S9{sparse AND no<br/>HIGH-confidence<br/>candidate?}:::decide
+
+    S9 -->|yes| AMB["Note in ambiguities[]<br/>but still produce candidates<br/>(no halt — Checkpoint A handles)"]:::step
+    S9 -->|no| S10
+
+    AMB --> S10["STEP 10<br/>Atomic write phase2_ecf<br/>top_event = null<br/>user_confirmation = null"]:::step
+
+    S10 --> OUT["meta.current_phase<br/>= phase2_running<br/>──<br/>Checkpoint A skill triggers next"]:::output
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef step fill:#FBF7EE,stroke:#1A1A1A,stroke-width:2px;
+    classDef tool fill:#E8DFCD,stroke:#1A1A1A,stroke-dasharray:4 2;
+    classDef decide fill:#D89071,stroke:#1A1A1A;
+    classDef halt fill:#8B5A2B,stroke:#1A1A1A,color:#FBF7EE;
+    classDef output fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+  </div>
+</div>
+
+<h3>Step-by-step mechanics</h3>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Read scope_filter (slice) and check for refinement context</h4>
+    <p>Slice-read <code>phase1_scope_filter</code>. Extract procedure, RAT, layers, time_window, condition, discriminator.</p>
+    <p>If <code>phase1_scope_filter.user_refinements</code> is non-empty (re-run path from Checkpoint A "refine"), apply the refinement to the analysis context — typically narrowing the time window or adjusting the expected layers. This is the only Phase 2 path that uses user-supplied context beyond the initial scope.</p>
+    <div class="step-meta">
+      <div><span class="key">Read</span><span class="val">phase1_scope_filter (slice)</span></div>
+      <div><span class="key">Refine path</span><span class="val">user_refinements[] applied if present</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Get expected message flow (spec_query)</h4>
+    <p>Invoke <code>spec_query.py --operation lightweight_procedure --need ecf</code>. The GraphRAG returns:</p>
+    <ul>
+      <li><code>expected_flow[]</code> — ordered messages with direction (UL/DL), layer, and sequence index</li>
+      <li><code>key_timers[]</code> — relevant procedure timers (already in scope_filter.spec_lookup but re-confirmed)</li>
+      <li><code>spec_refs[]</code> — citations for the expected flow</li>
+    </ul>
+    <p>The expected_flow becomes the keyword list for Step 3 and the comparison baseline for Step 5.</p>
+    <p><strong>Halt:</strong> if expected_flow is empty, the procedure isn't recognized by the GraphRAG — should have been caught in Phase 1, so this is a rare integrity error. Halt and ask engineer.</p>
+    <div class="step-meta">
+      <div><span class="key">Tool</span><span class="val">spec_query.py lightweight_procedure (need=ecf)</span></div>
+      <div><span class="key">Output</span><span class="val">expected_flow_source written to state</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Retrieve signaling timeline (log_query)</h4>
+    <p>Invoke <code>log_query.py --phase-tag phase2 --table UE_3gpp_signaling_log</code> with:</p>
+    <ul>
+      <li><code>--keywords</code> = all message names from <code>expected_flow[]</code></li>
+      <li><code>--time-window-*</code> = from scope_filter.time_window</li>
+      <li><code>--layers</code> = from scope_filter.layers</li>
+    </ul>
+    <p>Returns up to 50 rows with timestamp, layer, direction, message_name, ie_values, cause_code. Plus a compressed key_events list (≤5) for in-context display.</p>
+    <p><strong>Table isolation enforced by script.</strong> Phase 2 cannot touch UE_Trace_log; the script exits with code 3 if requested.</p>
+    <div class="step-meta">
+      <div><span class="key">Tool</span><span class="val">log_query.py phase2</span></div>
+      <div><span class="key">Returns</span><span class="val">rows[] + key_events[≤5]</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>Classify each retrieved event</h4>
+    <p>Walk the retrieved rows in time order and assign one of four labels:</p>
+    <ul>
+      <li><strong>normal</strong> — matches an entry in expected_flow at expected position with no failure indicators</li>
+      <li><strong>anomaly</strong> — first deviation from expected_flow (wrong message, wrong order, unexpected cause code)</li>
+      <li><strong>consequence</strong> — appears after an anomaly and is plausibly derivative (reestablishment attempt, retry)</li>
+      <li><strong>symptom</strong> — explicit failure indicator at application level: REJECT message, T-timer expiry, NoService entry. These are the candidates for top_event.</li>
+    </ul>
+    <p>Capture <code>earliest_anomaly</code> = timestamp of the first anomaly-classified event, or null if no anomaly observed.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <h4>Identify missing events</h4>
+    <p>For each entry in <code>expected_flow[]</code> whose message name does not appear in the retrieved rows, build a missing_event record:</p>
+<pre><code>{
+  "expected_message": "RRCReconfigurationComplete",
+  "expected_after": "RRCReconfiguration",
+  "spec_ref": "TS 38.331 §5.5.1"
+}</code></pre>
+    <p>The <code>missing_events[]</code> list is consumed by Phase 3.2 to prioritize branch evaluation (branches whose mandatory_messages are in missing_events get evaluated first).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">6</div>
+  <div class="step-body">
+    <h4>Build top_event_candidates[] — the v6 ranking algorithm</h4>
+    <p>See §07 for the full ranking algorithm. In summary:</p>
+    <ul>
+      <li><strong>rank 1 (primary):</strong> the LAST symptom in chronological order — the deepest unrecovered failure</li>
+      <li><strong>rank 2-3 (alternatives):</strong> earlier symptoms that pass the defensibility test</li>
+    </ul>
+    <p>Never pad to 3 with hallucinated alternatives. List can be size 1, 2, or 3.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">7</div>
+  <div class="step-body">
+    <h4>Assess log_coverage</h4>
+    <p>Compute <code>coverage = retrieved_present_count / expected_flow_size</code> and bucket: rich (≥0.8), partial (0.4-0.79), sparse (&lt;0.4).</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">8</div>
+  <div class="step-body">
+    <h4>Assign confidence per candidate</h4>
+    <p>For each candidate (see §05 for criteria):</p>
+    <ul>
+      <li>HIGH if coverage=rich AND explicit signaling evidence (REJECT/timer-expiry/symptom row exists for this candidate)</li>
+      <li>MEDIUM if coverage=partial OR inferred-from-absence with strong context</li>
+      <li>LOW if coverage=sparse OR indirect signals only</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">9</div>
+  <div class="step-body">
+    <h4>Ambiguity handling — DO NOT halt</h4>
+    <p>If log_coverage=sparse AND no HIGH-confidence candidate: append a note to <code>phase1_scope_filter.ambiguities[]</code> ("Capture coverage sparse; consider extending capture window") but <strong>do not halt the pipeline</strong>.</p>
+    <p>Rationale: Checkpoint A is right after Phase 2. The user sees the sparse-coverage warning, sees the LOW-confidence candidates, and decides whether to <code>refine</code> (add more context), <code>reject and restart</code> (recapture and re-run from Phase 1), or proceed anyway. Halting Phase 2 would deny the user that choice.</p>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-num">10</div>
+  <div class="step-body">
+    <h4>Atomic write phase2_ecf — note top_event left null</h4>
+    <p>Write the full <code>phase2_ecf</code> block:</p>
+    <ul>
+      <li><code>completed_at</code> set</li>
+      <li><code>top_event = null</code> — to be set by 3gpp-top-event-confirmation after Checkpoint A</li>
+      <li><code>observable_symptoms</code> fully populated (events, earliest_anomaly, missing_events, log_coverage, queried_tables, expected_flow_source)</li>
+      <li><code>top_event_candidates[]</code> populated with 1–3 ranked entries</li>
+      <li><code>user_confirmation = null</code> — to be set by the checkpoint skill</li>
+    </ul>
+    <p><code>meta.current_phase</code> remains at <code>phase2_running</code>; the Checkpoint A skill will advance it to <code>phase2_pending_confirmation</code>.</p>
+    <div class="step-meta">
+      <div><span class="key">Writes</span><span class="val">phase2_ecf (top_event still null)</span></div>
+      <div><span class="key">Next skill</span><span class="val">3gpp-top-event-confirmation (Checkpoint A)</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §07 PHASE 2 BUILDING CANDIDATES                                 -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§07" id="p2-candidates">Phase 2 · Building top_event_candidates[]</h2>
+
+<p>The Step 6 ranking algorithm is worth its own section because it is the most consequential output of Phase 2 — the curated list of candidates the user will choose from at Checkpoint A. Getting this list wrong (missing the right candidate, or padding it with weak ones) directly causes wasted FTA effort or rubber-stamped wrong root causes.</p>
+
+<h3>The ranking algorithm</h3>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 4 — top_event_candidates ranking decisions</span>
+    <span class="figref">FIG-04</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart TD
+    SYM["Collect all symptom-class<br/>events from timeline"]:::input
+
+    SYM --> SORT["Sort by timestamp<br/>(chronological)"]:::step
+
+    SORT --> PRIMARY["RANK 1 PRIMARY<br/>= LAST symptom in timeline<br/>──<br/>'deepest unrecovered failure'<br/>methodology heuristic"]:::primary
+
+    PRIMARY --> LOOP["Walk earlier symptoms<br/>candidate pool"]:::step
+
+    LOOP --> TEST{Defensibility test<br/>passes?}:::decide
+
+    TEST -->|no all 3 criteria| REJECT["EXCLUDE from list<br/>(does not appear at Checkpoint A)"]:::reject
+    TEST -->|yes all 3 criteria| ADD["Add as RANK 2<br/>or RANK 3"]:::add
+
+    ADD --> CAP{Already have<br/>3 candidates total?}:::decide
+    CAP -->|yes| STOP["Stop walking<br/>(D3 cap = 3)"]:::stop
+    CAP -->|no| LOOP
+
+    REJECT --> LOOP
+
+    STOP --> CONF["Assign confidence<br/>per candidate<br/>(HIGH / MEDIUM / LOW)"]:::step
+
+    CONF --> OUT["top_event_candidates[]<br/>1, 2, or 3 entries · NEVER padded"]:::output
+
+    classDef input fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef step fill:#FBF7EE,stroke:#1A1A1A;
+    classDef primary fill:#FBF7EE,stroke:#A03A1A,stroke-width:3px,font-weight:bold;
+    classDef decide fill:#D89071,stroke:#1A1A1A;
+    classDef reject fill:#FBF7EE,stroke:#8B2B2B,color:#8B2B2B;
+    classDef add fill:#E8DFCD,stroke:#1A1A1A;
+    classDef stop fill:#F5F0E6,stroke:#1A1A1A,stroke-dasharray:4 2;
+    classDef output fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+  </div>
+</div>
+
+<h3>The defensibility test (3 criteria · ALL required)</h3>
+
+<p>A symptom can become an alternative candidate (rank 2 or 3) only if it satisfies <strong>all three</strong> of these criteria. The conjunction is deliberately strict to prevent padding the list with weak alternatives.</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:24%;">Criterion</th><th style="width:38%;">Definition</th><th>Why it matters</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Distinct outcome</strong></td>
+      <td>The symptom represents a distinct procedure outcome, not just a consequence of an earlier event in the same chain</td>
+      <td>Otherwise the alternative is just an upstream view of the same failure — adds noise without giving the user a real choice</td>
+    </tr>
+    <tr>
+      <td><strong>Own evidence</strong></td>
+      <td>The symptom has its own signaling evidence row (REJECT, timer-expiry, etc.) — not inferred from absence alone</td>
+      <td>If the alternative is purely inferred, the user can't see what makes it defensible — it looks like guessing</td>
+    </tr>
+    <tr>
+      <td><strong>MEDIUM-distinct from primary</strong></td>
+      <td>Differs from the primary on at least one of: protocol layer, cause code family, or procedure phase</td>
+      <td>Two candidates that differ only in timestamp are not really alternatives — they're the same failure twice</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The "no padding" rule (D3 = 3 cap, not floor)</h3>
+
+<div class="callout">
+<h4>D3 sets a ceiling, not a target</h4>
+<p>The locked decision in v6 says "Top Event alternatives ≤ 3". This is a maximum, not a minimum. The candidates list may have:</p>
+<ul style="margin-bottom: 0.5rem;">
+<li><strong>1 entry</strong> — common for clean captures with one clear symptom. Checkpoint A presents it as "PRIMARY (no alternatives meet the bar). Proceed?"</li>
+<li><strong>2 entries</strong> — primary plus one defensible alternative</li>
+<li><strong>3 entries</strong> — primary plus two defensible alternatives</li>
+</ul>
+<p style="margin-bottom: 0;"><strong>NEVER 3 entries when only 1 or 2 are defensible.</strong> Inventing alternatives to fill out the menu defeats the purpose of curating it. A single defensible candidate presented for confirmation is more honest — and more useful to the user — than three with two of them weak.</p>
+</div>
+
+<h3>Rejection reasons for non-primary candidates</h3>
+
+<p>Each non-primary entry in the list has a <code>rejection_reason</code> field — a sentence explaining why the agent did not pick this one as the primary. This is the engineer's information for the Checkpoint A decision. Typical rejection reasons:</p>
+
+<ul>
+  <li><code>"Consequence of primary; not a distinct top event"</code> — failed the distinct-outcome criterion</li>
+  <li><code>"Earlier in chain but recovers; primary is the unrecovered failure"</code> — the alternative happened first but the procedure ultimately failed at the primary</li>
+  <li><code>"Different layer but lower confidence; primary has stronger evidence"</code> — both are real symptoms but primary has more support</li>
+  <li><code>"Same procedure phase as primary; not meaningfully distinct"</code> — failed the MEDIUM-distinct criterion</li>
+</ul>
+
+<p>The rejection_reason for the primary candidate is always <code>null</code>.</p>
+
+<h3>What if no symptom event is found at all?</h3>
+
+<div class="callout warn">
+<h4>The "no symptom" edge case</h4>
+<p>If Phase 2 walks the entire retrieved timeline and finds no symptom-class events — only normal, anomaly, and consequence events — there are no candidates to present. The skill then constructs an inferred candidate from the strongest anomaly evidence (e.g. "Procedure incomplete — RRCReconfigurationComplete absent within expected window") with LOW confidence and adds a note to ambiguities.</p>
+<p style="margin-bottom: 0;">This is not the same as padding. The single inferred candidate IS the strongest defensible thing the agent can present, and Checkpoint A's "refine" or "reject and restart" options give the user a clean path forward. The alternative — Phase 2 silently producing nothing — would force a halt with no information for the engineer to act on.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §08 PHASE 2 WORKED EXAMPLE                                      -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§08" id="p2-example">Phase 2 · Worked example</h2>
+
+<p>Continuing the 5G handover scenario. Phase 1 produced a clean scope_filter with no ambiguities; Phase 2 now consults the spec for the expected message flow and retrieves the actual signaling timeline.</p>
+
+<h3>Step 2 — spec_query expected flow (need=ecf)</h3>
+
+<div class="example">
+<pre><code>spec_query.py --operation lightweight_procedure \
+  --procedure "Intra-AMF 5G Handover" \
+  --rat "5G NR" \
+  --need ecf \
+  --state-file ...
+
+→ {
+  "operation": "lightweight_procedure",
+  "need": "ecf",
+  "procedure": "Intra-AMF 5G Handover",
+  "expected_flow": [
+    { "order": 1, "message": "MeasurementReport", "direction": "UL", "layer": "RRC" },
+    { "order": 2, "message": "RRCReconfiguration with reconfigurationWithSync",
+                  "direction": "DL", "layer": "RRC" },
+    { "order": 3, "message": "Random Access Preamble", "direction": "UL", "layer": "MAC/PHY" },
+    { "order": 4, "message": "Random Access Response (RAR)", "direction": "DL", "layer": "MAC/PHY" },
+    { "order": 5, "message": "RRCReconfigurationComplete", "direction": "UL", "layer": "RRC" }
+  ],
+  "key_timers": [{ "timer": "T304", "duration_default": "~1000ms", "on_expiry": "HO failure" }],
+  "spec_refs": ["TS 38.331 §5.5.1.2"]
+}</code></pre>
+</div>
+
+<h3>Step 3 — log_query signaling timeline</h3>
+
+<div class="example">
+<pre><code>log_query.py --phase-tag phase2 --table UE_3gpp_signaling_log \
+  --keywords "MeasurementReport" "RRCReconfiguration" \
+             "Random Access" "RAR" "RRCReconfigurationComplete" \
+  --time-window-start-ms 14020000 --time-window-end-ms 14023000 \
+  --layers "RRC" "MAC" "PHY" \
+  --state-file ...
+
+→ retrieved 4 rows (of 5 expected); plus T304 expiry message
+  key_events: [
+    { ts: "14:02:10.30", layer: "RRC", direction: "UL", message: "MeasurementReport" },
+    { ts: "14:02:11.00", layer: "RRC", direction: "DL",
+      message: "RRCReconfiguration",
+      kpis: { reconfigurationWithSync: true } },
+    { ts: "14:02:11.05", layer: "MAC/PHY", direction: "UL", message: "Random Access Preamble" },
+    { ts: "14:02:12.00", layer: "RRC", direction: "UL",
+      message: "T304 expiry → RRC Connection Reestablishment Request" },
+    { ts: "14:02:12.50", layer: "RRC", direction: "DL",
+      message: "RRC Connection Reestablishment Reject", cause_code: "other" }
+  ]</code></pre>
+</div>
+
+<h3>Step 4 — Event classification</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th>Timestamp</th><th>Message</th><th>Classification</th><th>Reasoning</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="mono">14:02:10.30</td><td class="mono">MeasurementReport</td><td><span class="ic">✓</span> normal</td><td>Matches expected_flow order 1</td></tr>
+    <tr><td class="mono">14:02:11.00</td><td class="mono">RRCReconfiguration</td><td><span class="ic">✓</span> normal</td><td>Matches expected_flow order 2; correct DL</td></tr>
+    <tr><td class="mono">14:02:11.05</td><td class="mono">Random Access Preamble</td><td><span class="ic">✓</span> normal</td><td>Matches expected_flow order 3</td></tr>
+    <tr><td class="mono">14:02:12.00</td><td class="mono">T304 expiry</td><td><span class="ic">⚠</span> anomaly</td><td>First deviation — T304 expired without RAR or completion. <strong>earliest_anomaly</strong></td></tr>
+    <tr><td class="mono">14:02:12.50</td><td class="mono">RRC Reestab Reject</td><td><span class="ic">❌</span> symptom</td><td>Explicit failure outcome — reject with cause_code</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>earliest_anomaly = "14:02:12.00 — T304 expiry"</code></p>
+
+<h3>Step 5 — Missing events</h3>
+
+<div class="example">
+<pre><code>missing_events = [
+  { "expected_message": "Random Access Response (RAR)",
+    "expected_after": "Random Access Preamble",
+    "spec_ref": "TS 38.321 §5.1" },
+  { "expected_message": "RRCReconfigurationComplete",
+    "expected_after": "Random Access Response (RAR)",
+    "spec_ref": "TS 38.331 §5.5.1.2" }
+]</code></pre>
+</div>
+
+<h3>Step 6 — Build top_event_candidates[]</h3>
+
+<p><strong>Symptoms in chronological order:</strong></p>
+<ol>
+<li>14:02:12.00 — T304 expiry (anomaly, but in the sequence a T-timer expiry is also a procedure outcome → could be a symptom)</li>
+<li>14:02:12.50 — RRC Connection Reestablishment Reject (definitive symptom)</li>
+</ol>
+
+<p>The agent reconsiders: T304 expiry IS the moment the procedure formally failed. The reestablishment reject is the consequence of the HO failure. Both are symptom-class but they describe different things:</p>
+
+<ul>
+<li>The first describes the original handover's outcome: <strong>5G_HO_Execution_Failure</strong> (no target cell sync after RRCReconfiguration)</li>
+<li>The second describes the recovery attempt's outcome: RRC reestablishment reject</li>
+</ul>
+
+<p>By the methodology heuristic "primary = last unrecovered symptom", the reestablishment reject is later in time but is a consequence; the HO failure is the unrecovered original event. <strong>Primary = HO execution failure.</strong></p>
+
+<p>Now apply the defensibility test to the reestablishment reject as a potential alternative:</p>
+
+<ul>
+<li><strong>Distinct outcome?</strong> Yes — it's a different procedure (reestablishment, not handover)</li>
+<li><strong>Own evidence?</strong> Yes — REJECT message with cause_code</li>
+<li><strong>MEDIUM-distinct from primary?</strong> Marginal — same RRC layer, different procedure phase. Pass.</li>
+</ul>
+
+<p>The reestablishment reject passes the defensibility test → goes in as rank 2 with rejection_reason "Consequence of primary; reestablishment after HO failure".</p>
+
+<h3>Step 7 — Log coverage</h3>
+
+<p>Expected_flow had 5 entries; 4 distinct expected messages were retrieved (Measurement Report, RRCReconfiguration, RA Preamble, plus the T304 expiry which is procedure-related though not in expected_flow). Missing: RAR, RRCReconfigurationComplete.</p>
+
+<p><code>coverage = 3/5 = 0.6 → partial</code></p>
+
+<h3>Step 8 — Confidence assignment</h3>
+
+<ul>
+<li><strong>Rank 1 (HO execution failure):</strong> coverage=partial caps at MEDIUM, BUT the symptom has very strong inferred-from-absence evidence (RRCReconfiguration with sync received, no RAR within T304 window — exactly the textbook signature). The skill upgrades to <strong>HIGH</strong> via the "strong inferred-from-absence" rule for MEDIUM.</li>
+<li><strong>Rank 2 (Reestab reject):</strong> coverage=partial, evidence is direct REJECT row → <strong>LOW</strong> (because it's a consequence, the strength of evidence doesn't elevate it past the primary)</li>
+</ul>
+
+<h3>Step 9 — Ambiguity check</h3>
+
+<p>coverage=partial AND rank 1 is HIGH confidence → no ambiguity note needed. Proceed.</p>
+
+<h3>Step 10 — Final phase2_ecf written</h3>
+
+<div class="example">
+<pre><code>phase2_ecf = {
+  completed_at: "2026-05-20T03:19:55Z",
+  top_event: null,                          // ← Checkpoint A will set
+  observable_symptoms: {
+    events: [/* 5 classified events */],
+    earliest_anomaly: "14:02:12.00 — T304 expiry",
+    missing_events: [
+      { expected_message: "Random Access Response (RAR)",
+        expected_after: "Random Access Preamble",
+        spec_ref: "TS 38.321 §5.1" },
+      { expected_message: "RRCReconfigurationComplete",
+        expected_after: "Random Access Response (RAR)",
+        spec_ref: "TS 38.331 §5.5.1.2" }
+    ],
+    log_coverage: "partial",
+    queried_tables: ["UE_3gpp_signaling_log"],
+    expected_flow_source: { /* full spec_query output */ }
+  },
+  top_event_candidates: [
+    {
+      rank: 1, is_primary: true,
+      event: "5G_HO_Execution_Failure (no target cell sync)",
+      timestamp: "14:02:11.05 onwards (T304 expiry at 14:02:12.00)",
+      layer: "RRC/PHY",
+      evidence: "RRCReconfiguration with reconfigurationWithSync received at 14:02:11.00; "
+              + "RA Preamble sent at 14:02:11.05; no RAR observed; T304 expired at 14:02:12.00",
+      confidence: "HIGH",
+      rejection_reason: null
+    },
+    {
+      rank: 2, is_primary: false,
+      event: "RRC Connection Reestablishment Reject",
+      timestamp: "14:02:12.50",
+      layer: "RRC",
+      evidence: "Reestablishment Reject with cause_code 'other' after T304 expiry",
+      confidence: "LOW",
+      rejection_reason: "Consequence of primary; reestablishment attempted only after HO failed"
+    }
+  ],
+  user_confirmation: null                   // ← Checkpoint A will set
+}</code></pre>
+</div>
+
+<p><strong>Phase 2 complete.</strong> <code>meta.current_phase = "phase2_running"</code> (unchanged); the workflow next dispatches <code>3gpp-top-event-confirmation</code> which transitions phase to <code>phase2_pending_confirmation</code> and presents Checkpoint A.</p>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §09 HANDOFF                                                     -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§09" id="handoff">Handoff to Checkpoint A &amp; Phase 3</h2>
+
+<p>Phase 2's output is consumed at two distinct downstream stages. Understanding which field flows to which stage clarifies why Phase 2 deliberately leaves some fields null.</p>
+
+<div class="diagram">
+  <div class="diagram-title">
+    <span>Fig. 5 — phase2_ecf consumers downstream</span>
+    <span class="figref">FIG-05</span>
+  </div>
+  <div class="mermaid">
+%%{init: {'theme':'base','themeVariables':{'background':'#FBF7EE','primaryColor':'#F5F0E6','primaryTextColor':'#1A1A1A','primaryBorderColor':'#1A1A1A','lineColor':'#1A1A1A','secondaryColor':'#E8DFCD','tertiaryColor':'#A03A1A','fontFamily':'IBM Plex Mono, monospace','fontSize':'12px'}}}%%
+flowchart LR
+    P2["Phase 2<br/>3gpp-event-timeline<br/>writes phase2_ecf"]:::p2
+
+    P2 --> CKA["Checkpoint A<br/>3gpp-top-event-confirmation"]:::ckpt
+    P2 -.also feeds.-> P3["Phase 3.2 evaluate-branches<br/>(iteration 1)"]:::p3
+    P2 -.also feeds.-> P4["Phase 4 finalize<br/>(report)"]:::p4
+
+    CKA --> SETS["sets phase2_ecf.top_event<br/>writes user_confirmation<br/>appends user_decisions[]"]:::sets
+
+    SETS --> ITER1["Iteration 1 begins<br/>input_top_event = phase2_ecf.top_event"]:::iter
+
+    P2 -.->|"observable_symptoms.missing_events[]"| P3
+    P2 -.->|"top_event_candidates[] (full list)"| P4
+    P2 -.->|"observable_symptoms.events[] timeline"| P4
+
+    classDef p2 fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE,font-weight:bold;
+    classDef ckpt fill:#D89071,stroke:#1A1A1A,stroke-width:2px;
+    classDef p3 fill:#E8DFCD,stroke:#1A1A1A;
+    classDef p4 fill:#F5F0E6,stroke:#1A1A1A;
+    classDef sets fill:#FBF7EE,stroke:#A03A1A,stroke-width:2px;
+    classDef iter fill:#A03A1A,stroke:#1A1A1A,color:#FBF7EE;
+  </div>
+</div>
+
+<h3>Which phase2_ecf field is consumed where</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width:30%;">Field</th>
+      <th style="width:24%;">Set by</th>
+      <th style="width:46%;">Consumed by</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono">phase2_ecf.top_event_candidates[]</td>
+      <td>Phase 2 (this skill)</td>
+      <td>Checkpoint A — rendered as the candidate list the user picks from. Also rendered in Phase 4 report Section 2 as the "alternatives considered" table.</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.observable_symptoms.events[]</td>
+      <td>Phase 2 (this skill)</td>
+      <td>Phase 4 report Section 2 — the signaling timeline rendered as evidence context.</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.observable_symptoms.missing_events[]</td>
+      <td>Phase 2 (this skill)</td>
+      <td>Phase 3.2 evaluate-branches iteration 1 — branches whose mandatory_messages match a missing_event get evaluated first (pivot-prune priority).</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.observable_symptoms.log_coverage</td>
+      <td>Phase 2 (this skill)</td>
+      <td>Checkpoint A — included in the prompt header so the user sees coverage state when choosing.</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.top_event</td>
+      <td><strong>Checkpoint A skill</strong> (not Phase 2)</td>
+      <td>Iteration 1's <code>input_top_event</code>; consumed by 3gpp-fta-build-tree as the root of the iteration 1 fault tree.</td>
+    </tr>
+    <tr>
+      <td class="mono">phase2_ecf.user_confirmation</td>
+      <td><strong>Checkpoint A skill</strong> (not Phase 2)</td>
+      <td>Phase 4 report Section 6 (user decision audit); also tracks <code>overrode_recommendation</code> for the disagreement flag.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The user's options at Checkpoint A (what Phase 2 enables)</h3>
+
+<p>Phase 2's output determines what the user can do at Checkpoint A:</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:24%;">Phase 2 output state</th><th>Checkpoint A behavior</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag confirm">single HIGH candidate</span></td>
+      <td>Confidence is high enough that "confirm" is the obvious choice. The user can still refine or reject, but the path of least resistance is acceptance.</td>
+    </tr>
+    <tr>
+      <td><span class="tag confirm">primary + 1-2 defensible alternatives</span></td>
+      <td>The user sees the full menu with evidence and rejection_reasons. "use alternative 2" or "use alternative 3" are first-class options.</td>
+    </tr>
+    <tr>
+      <td><span class="tag medium">candidate(s) with LOW confidence</span></td>
+      <td>The agent's recommendation is still "confirm rank 1" but with a confidence note. The user is more likely to choose "refine" to add context, or "reject and restart" to recapture.</td>
+    </tr>
+    <tr>
+      <td><span class="tag low">no symptom found · inferred candidate</span></td>
+      <td>Coverage is so poor that the candidate is essentially a placeholder. User should typically choose "refine" or "reject and restart". Checkpoint A's "abort" option is available if the engineer wants to escalate.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>The refine path (re-entry into Phase 2)</h3>
+
+<p>If the user types <code>/rca refine: &lt;text&gt;</code> at Checkpoint A, the Checkpoint A skill:</p>
+<ol>
+  <li>Appends the refinement text to <code>phase1_scope_filter.user_refinements[]</code> (an array — multiple refinements accumulate)</li>
+  <li>Clears <code>phase2_ecf</code> entirely</li>
+  <li>Sets <code>meta.current_phase = "phase2_running"</code></li>
+  <li>HALTs — user types <code>/rca</code> again to trigger the next dispatch</li>
+</ol>
+
+<p>The next dispatch re-runs Phase 2 (this skill) with the refined context picked up in Step 1. Phase 1's scope_filter is otherwise unchanged — only the refinement context shifts what Phase 2 retrieves and how it ranks candidates.</p>
+
+<div class="callout muted">
+<h4>Why refine doesn't restart Phase 1</h4>
+<p style="margin-bottom:0">A refine typically narrows or adds context within the same scope — "look only at 14:02:11-14:02:12 not the whole window" or "include the MAC layer in the timeline". The original scope_filter is still valid. If the scope itself is wrong, the user picks "reject and restart" which DOES restart Phase 1.</p>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- §10 QUICK REFERENCE                                             -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<h2 data-num="§10" id="reference">Quick reference · halts &amp; lookups</h2>
+
+<h3>Halt conditions across Phase 1 + Phase 2</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th style="width:22%;">Condition</th>
+      <th style="width:14%;">Phase</th>
+      <th style="width:32%;">Trigger</th>
+      <th style="width:32%;">Resume action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Procedure unrecognized</td>
+      <td class="mono">1</td>
+      <td>spec_query lightweight_procedure returned empty phases/spec_refs</td>
+      <td>Engineer confirms procedure name; <code>/rca</code> resumes Phase 1</td>
+    </tr>
+    <tr>
+      <td>Ambiguities present</td>
+      <td class="mono">1</td>
+      <td>ambiguities[] non-empty at Step 5</td>
+      <td>Engineer clarifies each item via prose; pipeline appends and re-runs Phase 1</td>
+    </tr>
+    <tr>
+      <td>Table isolation violation</td>
+      <td class="mono">1 or 2</td>
+      <td>Skill attempts to query UE_Trace_log via log_query.py</td>
+      <td>Hard fault (script exit 3); fix skill; restart from current phase</td>
+    </tr>
+    <tr>
+      <td>expected_flow empty</td>
+      <td class="mono">2</td>
+      <td>spec_query lightweight_procedure (need=ecf) returned empty</td>
+      <td>Rare — engineer confirms procedure name (should have been caught Phase 1)</td>
+    </tr>
+    <tr>
+      <td>Sparse coverage + no HIGH candidate</td>
+      <td class="mono">2</td>
+      <td>log_coverage=sparse AND all candidates LOW</td>
+      <td><strong>NOT a halt</strong> — note added to ambiguities; Checkpoint A handles via refine/reject options</td>
+    </tr>
+    <tr>
+      <td>No symptom found</td>
+      <td class="mono">2</td>
+      <td>Walked timeline; no symptom-class events identified</td>
+      <td>Inferred LOW-confidence candidate produced; Checkpoint A surfaces situation</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Event classification — decision criteria</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:14%;">Class</th><th style="width:42%;">Triggers (any matches)</th><th>Effect on candidates</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag confirm">normal</span></td>
+      <td>Matches expected_flow at expected position; no failure indicators; correct direction; cause_code absent or 0</td>
+      <td>Timeline context only; not a candidate</td>
+    </tr>
+    <tr>
+      <td><span class="tag medium">anomaly</span></td>
+      <td>First deviation from expected_flow — wrong message, wrong order, timer expiry, or unexpected cause code at any position</td>
+      <td>Sets earliest_anomaly; may or may not be a candidate (depends on Step 6 ranking)</td>
+    </tr>
+    <tr>
+      <td><span class="tag low">consequence</span></td>
+      <td>Appears after an earlier anomaly AND is plausibly derivative (reestablishment, retry, recovery attempt)</td>
+      <td>Usually rejected as candidate (rejection_reason: "consequence of primary")</td>
+    </tr>
+    <tr>
+      <td><span class="tag value">symptom</span></td>
+      <td>REJECT message, T-timer expiry, NoService entry, explicit failure indicator at application level</td>
+      <td><strong>Candidate pool</strong> — primary is the LAST symptom; alternatives must pass defensibility test</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Confidence assignment — decision criteria</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:16%;">Confidence</th><th style="width:32%;">log_coverage requirement</th><th>Evidence requirement</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="tag high">HIGH</span></td>
+      <td>rich (≥ 0.8)</td>
+      <td>Explicit signaling evidence — REJECT with cause code, T-timer expiry message, or unambiguous symptom row. Or: partial coverage + textbook inferred-from-absence signature.</td>
+    </tr>
+    <tr>
+      <td><span class="tag medium">MEDIUM</span></td>
+      <td>partial (0.4–0.79) OR rich with indirect evidence</td>
+      <td>Inferred from message absence with strong context; or direct evidence in partial-coverage capture.</td>
+    </tr>
+    <tr>
+      <td><span class="tag low">LOW</span></td>
+      <td>sparse (&lt; 0.4) OR partial without strong inference</td>
+      <td>Indirect signals only; or sparse capture even with direct evidence.</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Defensibility test (alternative candidates · ALL 3 required)</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:24%;">Criterion</th><th>Pass condition</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Distinct outcome</strong></td>
+      <td>The symptom represents a different procedure outcome than the primary, not just an upstream/downstream view of the same failure</td>
+    </tr>
+    <tr>
+      <td><strong>Own evidence</strong></td>
+      <td>The symptom has its own direct signaling evidence row (REJECT, timer-expiry, etc.); not purely inferred from absence</td>
+    </tr>
+    <tr>
+      <td><strong>MEDIUM-distinct from primary</strong></td>
+      <td>Differs from primary on at least one of: protocol layer, cause code family, procedure phase</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h3>State file write summary — Phase 1 + Phase 2</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:34%;">State file path</th><th style="width:18%;">Written by</th><th>When</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="mono">phase1_scope_filter</td><td>3gpp-scoping</td><td>Phase 1 Step 6</td></tr>
+    <tr><td class="mono">phase1_scope_filter.spec_lookup</td><td>spec_query.py</td><td>Phase 1 Step 3 (auto-write)</td></tr>
+    <tr><td class="mono">phase1_scope_filter.signaling_sanity_check</td><td>log_query.py</td><td>Phase 1 Step 4 if invoked (auto-write)</td></tr>
+    <tr><td class="mono">phase1_scope_filter.user_refinements[]</td><td>3gpp-top-event-confirmation</td><td>Checkpoint A "refine" path</td></tr>
+    <tr><td class="mono">phase2_ecf.observable_symptoms</td><td>3gpp-event-timeline</td><td>Phase 2 Step 10</td></tr>
+    <tr><td class="mono">phase2_ecf.observable_symptoms.expected_flow_source</td><td>spec_query.py</td><td>Phase 2 Step 2 (auto-write)</td></tr>
+    <tr><td class="mono">phase2_ecf.top_event_candidates[]</td><td>3gpp-event-timeline</td><td>Phase 2 Step 10</td></tr>
+    <tr><td class="mono">phase2_ecf.top_event</td><td><strong>3gpp-top-event-confirmation</strong></td><td>After Checkpoint A user response</td></tr>
+    <tr><td class="mono">phase2_ecf.user_confirmation</td><td><strong>3gpp-top-event-confirmation</strong></td><td>After Checkpoint A user response</td></tr>
+    <tr><td class="mono">user_decisions[] (Checkpoint A entry)</td><td><strong>3gpp-top-event-confirmation</strong></td><td>After Checkpoint A user response</td></tr>
+    <tr><td class="mono">meta.current_phase</td><td>each skill on exit</td><td>phase1 → phase2_running → phase2_pending_confirmation → phase2_confirmed</td></tr>
+    <tr><td class="mono">keyword_provenance_audit[]</td><td>spec_query.py + log_query.py (auto-append)</td><td>Every tool invocation in Phase 1 + Phase 2</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Tool invocation summary — Phase 1 + Phase 2</h3>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr><th style="width:30%;">Tool · operation</th><th style="width:14%;">Phase</th><th style="width:14%;">Required?</th><th>Purpose</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="mono">spec_query lightweight_procedure (need=is_is_not)</td>
+      <td class="mono">1</td>
+      <td><span class="tag confirm">required</span></td>
+      <td>Get primary_layers, key_timers, initiating_message, spec_refs</td>
+    </tr>
+    <tr>
+      <td class="mono">log_query phase1 (signaling)</td>
+      <td class="mono">1</td>
+      <td><span class="tag low">optional</span></td>
+      <td>Sanity-check that initiating_message appears in capture</td>
+    </tr>
+    <tr>
+      <td class="mono">spec_query lightweight_procedure (need=ecf)</td>
+      <td class="mono">2</td>
+      <td><span class="tag confirm">required</span></td>
+      <td>Get expected_flow[] for comparison and keyword list</td>
+    </tr>
+    <tr>
+      <td class="mono">log_query phase2 (signaling)</td>
+      <td class="mono">2</td>
+      <td><span class="tag confirm">required</span></td>
+      <td>Retrieve the actual signaling timeline for classification</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>Total: 2 required tool calls, 1 optional. Phase 1 + Phase 2 together cost roughly 1.5K-3K tokens of tool I/O — cheap compared to the FTA phase. The cost discipline matters because the workflow may re-run Phase 2 multiple times if the engineer refines at Checkpoint A.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<!-- FOOTER                                                          -->
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
+<footer class="doc-footer">
+  <div>
+    <strong>Phase 1 + Phase 2 — Detailed Procedure</strong><br>
+    v6 · Scope &amp; Top Event pipeline
+  </div>
+  <div style="text-align:right;">
+    Companion to <code>fta-detailed-procedure.html</code><br>
+    Worked example: 5G HO failure · pre-FTA prologue
+  </div>
+</footer>
+
+</div><!-- /.container -->
+
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    background: '#FBF7EE',
+    primaryColor: '#F5F0E6',
+    primaryTextColor: '#1A1A1A',
+    primaryBorderColor: '#1A1A1A',
+    lineColor: '#1A1A1A',
+    secondaryColor: '#E8DFCD',
+    tertiaryColor: '#A03A1A',
+    fontFamily: '"IBM Plex Mono", monospace',
+    fontSize: '13px'
+  },
+  flowchart: { htmlLabels: true, curve: 'basis', padding: 16 }
+});
+</script>
+
+</body>
+</html>
