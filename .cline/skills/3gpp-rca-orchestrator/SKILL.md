@@ -1,0 +1,202 @@
+---
+name: 3gpp-rca-orchestrator
+description: >
+  Initialize and finalize the 3GPP UE Root Cause Analysis pipeline v6.
+  Use this skill ONLY at Phase 0 (pipeline initialization — create state file
+  from engineer description with iteration_budget=5) and at Phase 4 (finalize —
+  validate keyword provenance across all iterations, assemble final RCA report
+  with full causal chain, terminate). All FTA work in between is owned by the
+  iteration phase skills, with user gates handled by 3gpp-top-event-confirmation
+  and 3gpp-fta-iteration-controller. Triggers: "initialize RCA state", "start
+  3GPP RCA pipeline", "finalize RCA report", "assemble verified RCA report
+  with causal chain". Always invoked by the /rca workflow.
+---
+
+# 3GPP RCA Orchestrator Skill — v6
+
+Two responsibilities only — initialization and finalization. Everything in
+between is delegated to phase skills + checkpoint skills. This skill does
+NOT call retrieval tools.
+
+## When to use this skill
+
+- **Phase 0:** Pipeline kickoff. Create state file from engineer description.
+- **Phase 4:** Final report. After user accepts terminal iteration root cause
+  and `phase3_root_cause_chain` has been written by `3gpp-fta-iteration-controller`.
+
+Do NOT use this skill for Phases 1, 2, 3.x, or any iteration — those have
+their own skills. Do NOT use this skill for user gates — those are the
+two dedicated checkpoint skills.
+
+---
+
+## Mode 1: Initialize (Phase 0)
+
+### Inputs
+- Engineer description (from user, free text)
+- DuckDB path (or workspace default)
+- Optional: tool directory path (default: `<workspace>/3gpp-tools/`)
+- Optional: iteration budget override (default 5)
+
+### Steps
+
+1. Compute UTC timestamp: `TS=$(date -u +%Y%m%dT%H%M%SZ)`
+2. State file path: `STATE=/tmp/rca_state_${TS}.json` (or `%TEMP%\rca_state_${TS}.json` on Windows)
+3. Write meta block to state file:
+
+```json
+{
+  "meta": {
+    "pipeline_version": "v6",
+    "current_phase": "phase0",
+    "current_iteration_id": 0,
+    "iteration_budget": 5,
+    "started_at": "<ISO from TS>",
+    "finished_at": null,
+    "engineer_input": "<verbatim description>",
+    "db_tables": ["UE_3gpp_signaling_log", "UE_Trace_log"],
+    "duckdb_path": "<resolved path>",
+    "tool_dir": "<resolved path>"
+  },
+  "user_decisions": [],
+  "fta_iterations": [],
+  "keyword_provenance_audit": []
+}
+```
+
+4. Write `<STATE>` path to `<workspace>/.rca/current_state_path.txt`
+   (create `.rca/` directory if missing)
+5. Verify Python tool scripts exist:
+   - `<tool_dir>/spec_query.py`
+   - `<tool_dir>/code_search.py`
+   - `<tool_dir>/log_query.py`
+   - If any missing → HALT with "Tool dependency missing: <name>"
+6. Update `meta.current_phase = "phase1"`
+7. Return state file path to the caller (the `/rca` workflow)
+
+### What this mode does NOT do
+
+- ❌ No retrieval calls (spec / code / log)
+- ❌ No scope determination (that's `3gpp-scoping`)
+- ❌ No timeline extraction (that's `3gpp-event-timeline`)
+- ❌ No top event confirmation (that's `3gpp-top-event-confirmation`)
+- ❌ No FTA iteration (that's the FTA skills)
+- ❌ No root cause logic of any kind
+
+---
+
+## Mode 2: Finalize (Phase 4)
+
+### Preconditions
+
+- `<workspace>/.rca/current_state_path.txt` exists with valid state file path
+- `meta.current_phase == "phase4_finalizing"` (set by iteration controller after user accepted terminal)
+- State file contains at minimum:
+  - `meta` (Phase 0)
+  - `phase1_scope_filter` (Phase 1)
+  - `phase2_ecf` with `top_event_candidates[]` and `user_confirmation` (Phase 2 + Checkpoint A)
+  - `user_decisions[]` (at least Checkpoint A entry)
+  - `fta_iterations[]` (at least iteration 1)
+  - `phase3_root_cause_chain` (set by iteration controller)
+
+If any precondition missing → HALT with "Pipeline incomplete: <missing section>"
+
+### Steps
+
+1. Read full state file (single read — orchestrator's only full-file load,
+   only happens at finalize).
+
+2. Run keyword provenance validation (v6: iteration-scoped):
+   - For every keyword referenced in `phase3_root_cause_chain.causal_chain[*]`,
+     `phase3_root_cause_chain.final_root_cause.evidence_chain[*]`, and each
+     `fta_iterations[i].iteration_root_cause.evidence_chain[*]`:
+     - Verify there is a matching entry in `keyword_provenance_audit`
+     - Verify the `iteration_id` on the audit entry matches the iteration
+       where the keyword was used (or is `null` for pre-FTA phases, or is
+       explicitly carried across boundary for top event derivation)
+     - If any keyword lacks valid provenance → HALT with which keyword failed
+       and which iteration
+
+3. Run termination-boundary validation:
+   - Scan all string values across the state file for forbidden patterns
+     (case-insensitive): `"fix:"`, `"recommendation:"`, `"patch:"`,
+     `"remediation:"`, `"action item:"`, `"next step:"`, `"should be changed"`,
+     `"should be modified"`, `"to fix this"`, `"the fix is"`
+   - If found → HALT with v6 policy violation
+
+4. Run completeness validation:
+   - `phase3_root_cause_chain.final_root_cause.root_cause_class` is one of:
+     VALUE_DISCREPANCY, ABSENCE, TIMER_EXPIRY, MULTI_CAUSE, OPEN, ALL_REJECTED
+   - If VALUE_DISCREPANCY, the terminal iteration's
+     `cross_reference_findings` has at least one entry with matching
+     `commanded_value` and `actual_value`
+   - `phase3_root_cause_chain.causal_chain` has at least 1 entry
+   - For each iteration, `user_decision` is populated (no orphan iterations)
+
+5. Compute report-level statistics:
+   - `iteration_count = len(fta_iterations)`
+   - `user_override_count = sum(d.overrode_recommendation for d in user_decisions)`
+   - `high_disagreement_run = user_override_count >= len(user_decisions) * 0.5`
+   - Write these into `phase3_root_cause_chain.high_disagreement_run` and
+     `phase3_root_cause_chain.user_override_count`
+
+6. Assemble the final RCA report:
+   - Read template at `.cline/skills/_shared/rca-report-template.md`
+   - Fill all placeholders from state file sections:
+     - Section 1 (Problem Scope) from `phase1_scope_filter`
+     - Section 2 (Top Event) from `phase2_ecf` including `top_event_candidates[]`
+       and `user_confirmation`
+     - Section 3 (FTA Iterations) — one subsection per `fta_iterations[i]`,
+       including hybrid tree, pruned branches, base events, cross-reference,
+       iteration root cause, and agent_recommendation vs user_decision
+     - Section 4 (Causal Chain) from `phase3_root_cause_chain`
+     - Section 5 (Keyword Provenance Audit) from `keyword_provenance_audit`,
+       grouped by `iteration_id`
+     - Section 6 (User Decision Audit) from `user_decisions[]`
+     - Section 7 (Pipeline Metadata)
+     - Section 8 (Termination Notice)
+   - Write to `<workspace>/.rca/report_${TS_from_state}.md`
+
+7. Update state file:
+```json
+"phase4_rca_report": {
+  "finalized_at": "<ISO now>",
+  "iteration_count": <count>,
+  "report_path": "<report path>",
+  "termination_reason": <copy from phase3_root_cause_chain.termination_reason>
+}
+```
+
+8. Set `meta.finished_at` to current ISO timestamp.
+9. Set `meta.current_phase = "complete"`.
+10. Display report path to user.
+11. **TERMINATE.** Do not continue. If the user asks for fixes after this:
+
+   > The v6 RCA pipeline terminates at verified root cause per the
+   > architecture termination policy. Fix design is a separate engineering
+   > activity owned by downstream processes. The root cause and causal
+   > chain in the report provide the inputs needed for that separate work.
+
+### What this mode does NOT do
+
+- ❌ No tool calls (all retrieval already done by prior iterations)
+- ❌ No new synthesis (`phase3_root_cause_chain` already exists from controller)
+- ❌ No reinterpretation of iteration root causes
+- ❌ No fix design, code patches, or remediation suggestions
+- ❌ No selection of base events (that was the user's role at checkpoints)
+
+---
+
+## Anti-Hallucination
+
+This skill performs NO retrieval. Every value it writes to the final report
+must originate from a state file section already populated by another skill.
+
+If you find yourself wanting to write a "fact" not in the state file, STOP —
+that's hallucination. Halt and report the missing section instead.
+
+The high-disagreement flag and override count are mathematical computations
+over `user_decisions[]` — these are derived facts, not invented ones.
+
+See `references/orchestrator-init-checklist.md` for the full Phase 0 checklist
+and `references/orchestrator-finalize-checklist.md` for the full Phase 4 checklist.
