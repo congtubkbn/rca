@@ -29,8 +29,22 @@ import sys
 from datetime import datetime, timezone
 
 
+EXTRACTOR_VERSION = "1.1"
+
+
 def _sha12(text: str, salt: str) -> str:
     return hashlib.sha256((salt + ":" + text).encode()).hexdigest()[:12]
+
+
+def _file_sha256(path):
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except OSError:
+        return None
 
 
 def _parse_iso(ts):
@@ -55,7 +69,8 @@ def _norm_path(p):
     return str(p).replace("\\", "/").lower()
 
 
-def extract(state: dict, salt: str, golden: dict | None) -> dict:
+def extract(state: dict, salt: str, golden: dict | None,
+            state_path: str | None = None) -> dict:
     meta = state.get("meta", {})
     now = datetime.now(timezone.utc).isoformat()
 
@@ -172,6 +187,14 @@ def extract(state: dict, salt: str, golden: dict | None) -> dict:
             ),
         }
 
+    # --- Integrity (spec IN-2): tamper-evidence hashes ---
+    report_path = (state.get("phase4_rca_report") or {}).get("report_path")
+    integrity = {
+        "extractor_version": EXTRACTOR_VERSION,
+        "state_sha256": _file_sha256(state_path) if state_path else None,
+        "report_sha256": _file_sha256(report_path) if report_path else None,
+    }
+
     return {
         "record_version": 1,
         "run_id": run_id,
@@ -192,7 +215,8 @@ def extract(state: dict, salt: str, golden: dict | None) -> dict:
         "provenance": provenance,
         "golden": golden_block,
         "amendments": {"rca_confirmed_by_fix": None, "reopened": None},
-        "report_path": (state.get("phase4_rca_report") or {}).get("report_path"),
+        "integrity": integrity,
+        "report_path": report_path,
     }
 
 
@@ -217,7 +241,7 @@ def main():
         with open(args.golden, encoding="utf-8") as f:
             golden = json.load(f)
 
-    record = extract(state, args.salt, golden)
+    record = extract(state, args.salt, golden, state_path=args.state_file)
 
     if args.stdout:
         json.dump(record, sys.stdout, indent=2, ensure_ascii=False)

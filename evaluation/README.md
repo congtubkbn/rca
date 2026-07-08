@@ -1,7 +1,11 @@
 # RCA Quality Evaluation System
 
-Lớp đánh giá chất lượng read-only cho pipeline RCA v6. Thiết kế đầy đủ ở
-[`rca-evaluation-framework.md`](rca-evaluation-framework.md).
+Lớp đánh giá chất lượng read-only cho pipeline RCA v6.
+
+- **Spec (yêu cầu bắt buộc + tiêu chí nghiệm thu, có ID trace):**
+  [`rca-evaluation-spec.md`](rca-evaluation-spec.md)
+- **Thiết kế nền (lý do, kiến trúc, KPI):**
+  [`rca-evaluation-framework.md`](rca-evaluation-framework.md)
 
 ## Luồng sử dụng nhanh
 
@@ -33,6 +37,7 @@ point tương tự `/rca`, gọi skill `3gpp-rca-evaluator`.
 
 | Đường dẫn | Vai trò |
 |---|---|
+| `rca-evaluation-spec.md` | Spec chính thức: FR/IN/AC/AU requirements, trust model, test plan, traceability |
 | `rca-evaluation-framework.md` | Thiết kế đầy đủ: phase nào đo gì, so với manual, đo phân tán, tự động cập nhật, ngưỡng gate |
 | `schemas/eval_record.schema.json` | Schema eval record (JSON Schema 2020-12) |
 | `scripts/eval_extract.py` | State file → eval record (stdlib-only, chạy mọi máy) |

@@ -111,6 +111,7 @@ def store_scores(db, run_id, judge_model, scores):
             PRIMARY KEY (run_id, dimension, judge_model))
     """)
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+    stored = 0
     for s in scores:
         dim = s["dimension"]
         if dim not in DIMENSIONS:
@@ -126,7 +127,9 @@ def store_scores(db, run_id, judge_model, scores):
         con.execute(
             "INSERT INTO eval_judge_scores VALUES (?,?,?,?,?,?)",
             [run_id, dim, score, s.get("rationale", ""), judge_model, now])
+        stored += 1
     con.close()
+    return stored
 
 
 def main():
@@ -143,10 +146,10 @@ def main():
     if args.load_scores:
         with open(args.load_scores, encoding="utf-8") as f:
             payload = json.load(f)
-        store_scores(args.db, payload["run_id"],
-                     payload.get("judge_model", "human"), payload["scores"])
-        print(f"Stored {len(payload['scores'])} score(s) for run {payload['run_id']}")
-        return 0
+        n = store_scores(args.db, payload["run_id"],
+                         payload.get("judge_model", "human"), payload["scores"])
+        print(f"Stored {n} of {len(payload['scores'])} score(s) for run {payload['run_id']}")
+        return 0 if n == len(payload["scores"]) else 2
 
     if not (args.report and args.record):
         print("ERROR: need --report and --record (or --load-scores)", file=sys.stderr)
