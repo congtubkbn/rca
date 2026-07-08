@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rca-eval-record-v1",
+  "title": "RCA v6 Evaluation Record",
+  "description": "Compact, anonymized per-run evaluation record extracted from a completed rca_state_*.json. This is the only artifact that leaves the engineer's machine.",
+  "type": "object",
+  "required": ["record_version", "run_id", "pipeline_version", "outcome", "extracted_at"],
+  "properties": {
+    "record_version": { "const": 1 },
+    "run_id": { "type": "string", "description": "Stable id: state file timestamp + short hash of engineer_input" },
+    "pipeline_version": { "type": "string" },
+    "machine_id": { "type": "string", "description": "sha256(hostname+salt)[:12]" },
+    "user_id": { "type": "string", "description": "sha256(username+salt)[:12]" },
+    "extracted_at": { "type": "string", "format": "date-time" },
+
+    "started_at": { "type": ["string", "null"] },
+    "finished_at": { "type": ["string", "null"] },
+    "duration_s": { "type": ["number", "null"], "description": "Wall-clock end-to-end. Includes user wait at checkpoints." },
+    "active_duration_s": { "type": ["number", "null"], "description": "Sum of phase/iteration working durations, excluding checkpoint wait where derivable." },
+
+    "outcome": { "enum": ["complete", "aborted", "incomplete"] },
+    "termination_reason": { "type": ["string", "null"] },
+
+    "checkpoint_a": {
+      "type": "object",
+      "properties": {
+        "candidates_count": { "type": "integer" },
+        "selected_rank": { "type": ["integer", "null"] },
+        "rank1_accepted": { "type": ["boolean", "null"] },
+        "overrode_recommendation": { "type": ["boolean", "null"] }
+      }
+    },
+
+    "decisions": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "integer" },
+        "overrides": { "type": "integer" },
+        "agreement_rate": { "type": ["number", "null"] },
+        "high_disagreement_run": { "type": ["boolean", "null"] },
+        "log": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "checkpoint": { "type": "string" },
+              "action": { "type": "string" },
+              "agent_recommendation": { "type": ["string", "null"] },
+              "overrode_recommendation": { "type": "boolean" },
+              "decided_at": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+
+    "iterations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "iteration_id": { "type": "integer" },
+          "duration_s": { "type": ["number", "null"] },
+          "spec_anchored": { "type": ["boolean", "null"] },
+          "spec_skeleton_returned_empty": { "type": ["boolean", "null"] },
+          "fallback_used": { "type": ["string", "null"] },
+          "branches_count": { "type": ["integer", "null"] },
+          "base_events_count": { "type": "integer" },
+          "rejected_count": { "type": "integer" },
+          "open_items_count": { "type": "integer" },
+          "root_cause_class": { "type": ["string", "null"] },
+          "termination_signals": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+
+    "final_root_cause": {
+      "type": "object",
+      "properties": {
+        "root_cause_class": { "type": ["string", "null"] },
+        "implementation_location": { "type": ["string", "null"] },
+        "iterations_traversed": { "type": "integer" }
+      }
+    },
+
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "total_keywords": { "type": "integer" },
+        "verified_keywords": { "type": "integer" },
+        "pass_rate": { "type": ["number", "null"] }
+      }
+    },
+
+    "golden": {
+      "type": ["object", "null"],
+      "description": "Present only for benchmark runs against a golden case.",
+      "properties": {
+        "case_id": { "type": "string" },
+        "class_match": { "type": ["boolean", "null"] },
+        "file_match": { "type": ["boolean", "null"] },
+        "function_match": { "type": ["boolean", "null"] },
+        "top_event_in_candidates": { "type": ["boolean", "null"] }
+      }
+    },
+
+    "amendments": {
+      "type": "object",
+      "description": "Retrospective fields set later via eval_ingest.py --amend.",
+      "properties": {
+        "rca_confirmed_by_fix": { "type": ["boolean", "null"] },
+        "reopened": { "type": ["boolean", "null"] }
+      }
+    },
+
+    "report_path": { "type": ["string", "null"] }
+  }
+}

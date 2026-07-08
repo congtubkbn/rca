@@ -1,0 +1,25 @@
+{
+  "case_id": "GC-001",
+  "created_at": "2026-01-01T00:00:00Z",
+  "source_ticket": "BUG-12345",
+  "rat": "5G NR",
+  "procedure": "Handover Execution",
+  "engineer_description": "UE fails 5G handover to n78 target cell intermittently (~30%). Call drops after RRCReconfiguration. Field logs attached, window 14:02:10-14:02:15.",
+  "duckdb_path": "logs.duckdb",
+  "top_event": "5G_HO_Execution_Failure",
+  "root_cause": {
+    "root_cause_class": "ABSENCE",
+    "implementation_location": "dsp/rach/dsp_calc_preamble_tx_power.c:dsp_calc_preamble_tx_power",
+    "function": "dsp_calc_preamble_tx_power",
+    "spec_violation": "TS 38.213 §7.4 preamble power ramping bound"
+  },
+  "causal_chain_summary": "HO execution failure <- RACH timeout on target cell <- preamble TX power exceeds cap <- missing bounds check in dsp_calc_preamble_tx_power",
+  "manual_baseline": {
+    "dev_id": null,
+    "time_minutes": null,
+    "l1_class_correct": null,
+    "l2_file_correct": null,
+    "l3_function_correct": null,
+    "graded_by": null
+  }
+}
