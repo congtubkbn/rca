@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS eval_runs (
     rca_confirmed_by_fix BOOLEAN,
     reopened BOOLEAN,
     report_path TEXT,
+    state_sha256 TEXT,
+    report_sha256 TEXT,
     ingested_at TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS eval_iterations (
@@ -95,7 +97,27 @@ CREATE TABLE IF NOT EXISTS eval_judge_scores (
     scored_at TIMESTAMP,
     PRIMARY KEY (run_id, dimension, judge_model)
 );
+CREATE TABLE IF NOT EXISTS eval_amendments (
+    run_id TEXT,
+    field TEXT,
+    old_value TEXT,
+    new_value TEXT,
+    amended_at TIMESTAMP
+);
 """
+
+REQUIRED_FIELDS = ["run_id", "pipeline_version", "outcome", "extracted_at"]
+
+
+def validate_record(rec):
+    """Spec FR-3: reject records that are not well-formed v1 eval records."""
+    if rec.get("record_version") != 1:
+        raise ValueError(f"unsupported record_version: {rec.get('record_version')!r}")
+    missing = [k for k in REQUIRED_FIELDS if not rec.get(k)]
+    if missing:
+        raise ValueError(f"missing required field(s): {missing}")
+    if rec.get("outcome") not in ("complete", "aborted", "incomplete"):
+        raise ValueError(f"invalid outcome: {rec.get('outcome')!r}")
 
 
 def _ts(v):
@@ -108,6 +130,7 @@ def _ts(v):
 
 
 def ingest_record(con, rec):
+    validate_record(rec)
     run_id = rec["run_id"]
     ca = rec.get("checkpoint_a") or {}
     dec = rec.get("decisions") or {}
@@ -115,13 +138,14 @@ def ingest_record(con, rec):
     prov = rec.get("provenance") or {}
     gold = rec.get("golden") or {}
     amend = rec.get("amendments") or {}
+    integ = rec.get("integrity") or {}
 
     con.execute("DELETE FROM eval_runs WHERE run_id = ?", [run_id])
     con.execute("DELETE FROM eval_iterations WHERE run_id = ?", [run_id])
     con.execute("DELETE FROM eval_decisions WHERE run_id = ?", [run_id])
 
     con.execute(
-        "INSERT INTO eval_runs VALUES (" + ",".join(["?"] * 32) + ")",
+        "INSERT INTO eval_runs VALUES (" + ",".join(["?"] * 34) + ")",
         [
             run_id,
             rec.get("pipeline_version"),
@@ -154,6 +178,8 @@ def ingest_record(con, rec):
             amend.get("rca_confirmed_by_fix"),
             amend.get("reopened"),
             rec.get("report_path"),
+            integ.get("state_sha256"),
+            integ.get("report_sha256"),
             datetime.now(timezone.utc).replace(tzinfo=None),
         ],
     )
@@ -201,17 +227,30 @@ def main():
         if not args.set:
             print("ERROR: --amend requires at least one --set KEY=VALUE", file=sys.stderr)
             return 1
+        n = con.execute("SELECT count(*) FROM eval_runs WHERE run_id = ?", [args.amend]).fetchone()[0]
+        if not n:
+            print(f"ERROR: run {args.amend} not found — nothing amended", file=sys.stderr)
+            con.close()
+            return 1
         for kv in args.set:
             key, _, val = kv.partition("=")
             if key not in AMENDABLE:
                 print(f"ERROR: not amendable: {key} (allowed: {sorted(AMENDABLE)})", file=sys.stderr)
                 return 1
+            old = con.execute(
+                f"SELECT {key} FROM eval_runs WHERE run_id = ?", [args.amend]
+            ).fetchone()[0]
             con.execute(
                 f"UPDATE eval_runs SET {key} = ? WHERE run_id = ?",
                 [val.lower() == "true", args.amend],
             )
-        n = con.execute("SELECT count(*) FROM eval_runs WHERE run_id = ?", [args.amend]).fetchone()[0]
-        print(f"Amended run {args.amend}" if n else f"WARNING: run {args.amend} not found")
+            # Spec IN-7: every amendment leaves an audit trail row.
+            con.execute(
+                "INSERT INTO eval_amendments VALUES (?,?,?,?,?)",
+                [args.amend, key, str(old), val.lower(),
+                 datetime.now(timezone.utc).replace(tzinfo=None)],
+            )
+        print(f"Amended run {args.amend} (audit trail written to eval_amendments)")
         con.close()
         return 0
 
@@ -230,7 +269,7 @@ def main():
             os.makedirs(archive, exist_ok=True)
             shutil.move(path, os.path.join(archive, os.path.basename(path)))
             ok += 1
-        except (OSError, json.JSONDecodeError, KeyError, duckdb.Error) as e:
+        except (OSError, json.JSONDecodeError, KeyError, ValueError, duckdb.Error) as e:
             print(f"SKIP {path}: {e}", file=sys.stderr)
             bad += 1
     con.close()

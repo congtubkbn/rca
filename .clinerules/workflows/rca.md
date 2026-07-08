@@ -145,6 +145,15 @@ Report path: <phase4_rca_report.report_path>
 Causal chain depth: <iterations_traversed>
 Termination reason: <termination_reason>
 ```
+
+Then run the evaluation extract step (spec FR-8/IN-1 — automatic, runs for
+aborted runs too, so quality telemetry has total coverage):
+```
+<execute_command>python evaluation/scripts/eval_extract.py <state_file_path></execute_command>
+```
+If `evaluation/scripts/` is absent on this machine, note it and continue —
+extraction failure never blocks or alters the RCA result.
+
 Do NOT continue. Do NOT offer fixes.
 
 If the user asks for fixes after this, respond:

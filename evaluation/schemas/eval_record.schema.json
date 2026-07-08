@@ -113,6 +113,16 @@
       }
     },
 
+    "integrity": {
+      "type": "object",
+      "description": "Tamper-evidence (spec IN-2): hashes of the source artifacts at extraction time. Re-extraction from the original state file must reproduce state_sha256.",
+      "properties": {
+        "extractor_version": { "type": "string" },
+        "state_sha256": { "type": ["string", "null"] },
+        "report_sha256": { "type": ["string", "null"] }
+      }
+    },
+
     "report_path": { "type": ["string", "null"] }
   }
 }
