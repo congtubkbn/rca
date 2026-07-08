@@ -53,6 +53,9 @@ Nguy cơ phải chống (threat model):
 | FR-6 | Amend chỉ được sửa 2 trường hồi tố (`rca_confirmed_by_fix`, `reopened`) và PHẢI để lại audit trail | `eval_ingest.py --amend` + bảng `eval_amendments` |
 | FR-7 | Golden benchmark so khớp 3 tầng: class (L1), file (L2), function (L3), + top-event recall | `eval_extract.py --golden` |
 | FR-8 | Khi `/rca` đạt `complete`, workflow tự chạy extract — không chờ engineer nhớ | bước auto-extract trong `.clinerules/workflows/rca.md` |
+| FR-9 | **Coverage sweep tự động hoá IN-1:** một lệnh idempotent quét mọi `rca_state_*.json` trên máy (kể cả `%TEMP%` Windows), extract record còn thiếu (kể cả run bỏ dở > 24h), sinh báo cáo coverage per-machine, và (tuỳ chọn) sync outbox. Gắn được vào ≥ 3 điểm tự động: workflow, hook ClineSR, VS Code folderOpen task, Task Scheduler | `eval_sweep.py`, `hooks/rca_eval_hook.py`, `.vscode/tasks.json`, `clinesr-windows-setup.md` |
+| FR-10 | **Judge chạy được không cần Claude API:** hỗ trợ endpoint OpenAI-compatible (Gauss gateway, env `RCA_JUDGE_API_URL`) và chế độ agent-as-judge (prompt file tự đóng gói → phiên ClineSR/Gauss MỚI chấm → `--load-scores`); điểm luôn được ghi thành file `scores_<run_id>.json` (không phụ thuộc duckdb) | `eval_judge.py`, `/rca-eval judge-pending` |
+| FR-11 | **Dashboard tự chứa + payload upload:** sinh `dashboard.html` (stdlib-only, không CDN/network, chạy từ file record trực tiếp) và `dashboard_data.json` máy-đọc-được; hiển thị đủ KPI theo catalog tiêu chí (M-xx/J-x), điểm tổng hợp RQS per-run (tiêu chí §4), gate §5, trend, per-machine, hàng chờ review; `--gate` exit ≠ 0 khi gate fail | `eval_dashboard.py`, `eval_score.py`, `criteria/rca-agent-scoring-criteria.md` |
 
 ## 3. Yêu cầu trung thực / integrity (IN)
 
@@ -117,6 +120,11 @@ Nguy cơ phải chống (threat model):
 | V9 | `eval_report.py --gate` với dữ liệu dưới ngưỡng | exit 3, nêu tên gate fail |
 | V10 | Re-extract từ cùng state file | các trường metric giống hệt record cũ; `state_sha256` khớp |
 | V11 | Run abort | vẫn sinh record, vào hàng đợi human review |
+| V12 | Sweep trên máy có 1 state terminal chưa extract + 1 state đang chạy | terminal được extract, run đang chạy (< stale-hours) bị bỏ qua với status `in_progress`, coverage report được ghi |
+| V13 | Sweep chạy lại lần 2 | mọi run terminal ra `already_extracted`, không nhân đôi record |
+| V14 | `eval_score.py` với record provenance < 1.0 | RQS ≤ 49, grade F, `caps_applied` ghi rõ |
+| V15 | `eval_dashboard.py --gate` với KPI dưới ngưỡng | sinh đủ dashboard.html + dashboard_data.json, exit 3, nêu tên gate fail |
+| V16 | `eval_judge.py` không API, phiên mới chấm rồi `--load-scores` | file `scores_<run_id>.json` xuất hiện trong scores dir; điểm sai dimension/thang bị loại |
 
 ## 8. Traceability
 
@@ -127,6 +135,9 @@ Nguy cơ phải chống (threat model):
 | FR-4, IN-4 | `evaluation/scripts/eval_judge.py`, `.cline/skills/3gpp-rca-evaluator/references/evaluation-rubric.md` |
 | FR-5, IN-8/9 | `evaluation/scripts/eval_report.py` |
 | FR-8, IN-1 | `.clinerules/workflows/rca.md` (bước auto-extract), `.clinerules/workflows/rca-eval.md` |
+| FR-9, IN-1 | `evaluation/scripts/eval_sweep.py`, `evaluation/hooks/rca_eval_hook.py`, `.vscode/tasks.json`, `evaluation/clinesr-windows-setup.md` |
+| FR-10, IN-4 | `evaluation/scripts/eval_judge.py`, `.clinerules/workflows/rca-eval.md` (judge-pending) |
+| FR-11, IN-8 | `evaluation/scripts/eval_dashboard.py`, `evaluation/scripts/eval_score.py`, `evaluation/criteria/rca-agent-scoring-criteria.md` |
 | IN-3 | `.cline/skills/3gpp-rca-evaluator/SKILL.md` (HARD constraints) |
 | IN-6, AC-1 | `evaluation/golden/README.md` |
 | Quy trình 6.x | mục 6 spec này (vận hành, không code) |

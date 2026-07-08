@@ -24,3 +24,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# RCA runtime data (state pointers, eval outbox/scores/coverage, dashboards)
+.rca/

@@ -1,0 +1,45 @@
+{
+  // Auto-runs the RCA evaluation sweep whenever this workspace is opened in
+  // VS Code (Windows/ClineSR user machines). Guarantees that every finished
+  // RCA run — even one whose ClineSR task was closed mid-way — gets its eval
+  // record extracted, judge prompts queued, and the outbox synced
+  // (criteria M-70, spec IN-1). Safe to run repeatedly: idempotent.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "RCA eval sweep (auto on folder open)",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/evaluation/scripts/eval_sweep.py",
+        "--make-prompts",
+        "--quiet"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "runOptions": { "runOn": "folderOpen" },
+      "presentation": {
+        "reveal": "never",
+        "echo": false,
+        "focus": false,
+        "panel": "dedicated",
+        "close": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "RCA eval: build local dashboard",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "${workspaceFolder}/evaluation/scripts/eval_dashboard.py",
+        "--records", "${workspaceFolder}/.rca/eval/outbox",
+        "--scores", "${workspaceFolder}/.rca/eval/scores",
+        "--coverage", "${workspaceFolder}/.rca/eval/coverage",
+        "--out", "${workspaceFolder}/.rca/eval/dashboard.html",
+        "--json", "${workspaceFolder}/.rca/eval/dashboard_data.json"
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

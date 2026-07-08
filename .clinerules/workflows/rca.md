@@ -146,13 +146,19 @@ Causal chain depth: <iterations_traversed>
 Termination reason: <termination_reason>
 ```
 
-Then run the evaluation extract step (spec FR-8/IN-1 — automatic, runs for
-aborted runs too, so quality telemetry has total coverage):
+Then run the evaluation extract + sweep steps (spec FR-8/FR-9/IN-1 —
+automatic, runs for aborted runs too, so quality telemetry has total
+coverage and the outbox is always upload-ready):
 ```
 <execute_command>python evaluation/scripts/eval_extract.py <state_file_path></execute_command>
+<execute_command>python evaluation/scripts/eval_sweep.py --make-prompts --quiet</execute_command>
 ```
-If `evaluation/scripts/` is absent on this machine, note it and continue —
-extraction failure never blocks or alters the RCA result.
+The sweep also catches any OLDER runs on this machine that were never
+extracted, queues judge prompts for unscored runs, and syncs the outbox to
+$RCA_EVAL_SYNC_DIR when configured. If `evaluation/scripts/` is absent on
+this machine, note it and continue — evaluation failure never blocks or
+alters the RCA result. Do NOT judge this run in this session (spec IN-4);
+judging happens in a fresh session via `/rca-eval judge-pending`.
 
 Do NOT continue. Do NOT offer fixes.
 
