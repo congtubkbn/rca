@@ -1,4 +1,5 @@
 """notebooklm-deep-dive: mechanical core for the 10-round NotebookLM loop."""
+import argparse
 import json
 import re
 import subprocess
@@ -150,3 +151,67 @@ def call_notebooklm(question, notebook_url, run_py=NOTEBOOKLM_RUN_PY,
     ]
     proc = runner(cmd, capture_output=True, text=True, timeout=timeout)
     return extract_answer(proc.stdout)
+
+
+def _cmd_init(a):
+    d = init_task(a.goal, a.seed, a.notebook_id, a.output_root,
+                  timestamp=a.timestamp, max_rounds=a.max_rounds, language=a.language)
+    print(str(d))
+    return 0
+
+
+def _cmd_ask(a):
+    cfg = json.loads((Path(a.task_dir) / "config.json").read_text(encoding="utf-8"))
+    query = render_query(cfg["goal"], a.round, cfg["max_rounds"],
+                         a.question, already_asked_from_trace(a.task_dir))
+    nn = f"{a.round:02d}"
+    (Path(a.task_dir) / f"round-{nn}_query.md").write_text(query, encoding="utf-8")
+    raw = call_notebooklm(a.question, cfg["notebook_url"])
+    parsed = parse_output(raw)
+    write_round_files(a.task_dir, a.round, query, raw, parsed)
+    out = dict(parsed)
+    out["round"] = a.round
+    print(json.dumps(out, ensure_ascii=False))
+    return 0
+
+
+def _cmd_trace(a):
+    append_trace(a.task_dir, a.round, a.query, a.coverage, a.next_query, a.source)
+    return 0
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(prog="loop.py")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    pi = sub.add_parser("init")
+    pi.add_argument("--goal", required=True)
+    pi.add_argument("--seed", required=True)
+    pi.add_argument("--notebook-id", required=True)
+    pi.add_argument("--output-root", default="output-notebooklm")
+    pi.add_argument("--timestamp", default=None)
+    pi.add_argument("--max-rounds", type=int, default=10)
+    pi.add_argument("--language", default="en")
+    pi.set_defaults(func=_cmd_init)
+
+    pa = sub.add_parser("ask")
+    pa.add_argument("--task-dir", required=True)
+    pa.add_argument("--round", type=int, required=True)
+    pa.add_argument("--question", required=True)
+    pa.set_defaults(func=_cmd_ask)
+
+    pt = sub.add_parser("trace")
+    pt.add_argument("--task-dir", required=True)
+    pt.add_argument("--round", type=int, required=True)
+    pt.add_argument("--query", required=True)
+    pt.add_argument("--coverage", required=True)
+    pt.add_argument("--next-query", required=True)
+    pt.add_argument("--source", required=True)
+    pt.set_defaults(func=_cmd_trace)
+
+    args = p.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

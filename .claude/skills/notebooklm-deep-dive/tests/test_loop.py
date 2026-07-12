@@ -155,3 +155,44 @@ def test_call_notebooklm_uses_runner_and_extracts(monkeypatch):
     assert "--question" in captured["cmd"]
     assert "q?" in captured["cmd"]
     assert "https://notebooklm.google.com/notebook/abc123" in captured["cmd"]
+
+
+def test_cli_init_prints_dir(tmp_path, capsys):
+    rc = loop.main([
+        "init", "--goal", "Map RCA v6", "--seed", "What is Phase 0?",
+        "--notebook-id", "abc123", "--output-root", str(tmp_path),
+        "--timestamp", "20260712-101500",
+    ])
+    assert rc == 0
+    printed = capsys.readouterr().out.strip()
+    assert printed.endswith("20260712-101500_what-is-phase-0")
+    assert (pathlib.Path(printed) / "config.json").exists()
+
+
+def test_cli_trace_appends(tmp_path):
+    loop.main([
+        "trace", "--task-dir", str(tmp_path), "--round", "1",
+        "--query", "q1", "--coverage", "FULL",
+        "--next-query", "q2", "--source", "notebooklm",
+    ])
+    assert loop.already_asked_from_trace(str(tmp_path)) == ["q1"]
+
+
+def test_cli_ask_writes_files_and_prints_json(tmp_path, monkeypatch, capsys):
+    d = loop.init_task("Map RCA v6", "What is Phase 0?", "abc123",
+                       str(tmp_path), timestamp="20260712-101500")
+    monkeypatch.setattr(
+        loop, "call_notebooklm",
+        lambda *a, **k: "ANSWER: Phase 0 scopes.\nCOVERAGE: PARTIAL\nBEST_NEXT_QUERY: next?\n",
+    )
+    rc = loop.main([
+        "ask", "--task-dir", str(d), "--round", "1",
+        "--question", "What is Phase 0?",
+    ])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert out["round"] == 1
+    assert out["coverage"] == "PARTIAL"
+    assert out["next_query"] == "next?"
+    assert (d / "round-01_query.md").exists()
+    assert (d / "round-01_response.md").exists()
