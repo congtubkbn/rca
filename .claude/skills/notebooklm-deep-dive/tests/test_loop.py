@@ -1,6 +1,7 @@
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "scripts"))
 import loop
+import json
 
 
 def test_slugify_basic():
@@ -85,3 +86,22 @@ def test_extract_answer_from_stdout():
     assert "Phase 0 scopes the issue." in ans
     assert "COVERAGE: PARTIAL" in ans
     assert "Progress" not in ans
+
+
+def test_notebook_url_from_id():
+    assert loop.notebook_url_from_id("abc123") == "https://notebooklm.google.com/notebook/abc123"
+
+
+def test_init_task_creates_folder_and_config(tmp_path):
+    d = loop.init_task(
+        goal="Map RCA v6", seed="What is Phase 0?",
+        notebook_id="abc123", output_root=str(tmp_path),
+        timestamp="20260712-101500", max_rounds=10, language="en",
+    )
+    assert d.name == "20260712-101500_what-is-phase-0"
+    cfg = json.loads((d / "config.json").read_text(encoding="utf-8"))
+    assert cfg["notebook_url"] == "https://notebooklm.google.com/notebook/abc123"
+    assert cfg["max_rounds"] == 10
+    assert cfg["goal"] == "Map RCA v6"
+    assert (d / "00-task.md").exists()
+    assert "Map RCA v6" in (d / "00-task.md").read_text(encoding="utf-8")

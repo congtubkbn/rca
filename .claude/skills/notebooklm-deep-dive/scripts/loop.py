@@ -1,5 +1,8 @@
 """notebooklm-deep-dive: mechanical core for the 10-round NotebookLM loop."""
+import json
 import re
+from datetime import datetime
+from pathlib import Path
 
 FIELDS = ["ANSWER", "KEY_FACTS", "SOURCES", "COVERAGE", "GAPS", "BEST_NEXT_QUERY"]
 _KEY_MAP = {
@@ -65,3 +68,32 @@ def extract_answer(stdout):
         if p.strip().startswith("Question:") and i + 1 < len(parts):
             return strip_reminder(parts[i + 1].strip())
     return strip_reminder(parts[-1].strip())
+
+
+def notebook_url_from_id(notebook_id):
+    return f"https://notebooklm.google.com/notebook/{notebook_id}"
+
+
+def init_task(goal, seed, notebook_id, output_root,
+              timestamp=None, max_rounds=10, language="en"):
+    if timestamp is None:
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    task_dir = Path(output_root) / f"{timestamp}_{slugify(seed)}"
+    task_dir.mkdir(parents=True, exist_ok=True)
+    config = {
+        "goal": goal, "seed": seed, "notebook_id": notebook_id,
+        "notebook_url": notebook_url_from_id(notebook_id),
+        "max_rounds": max_rounds, "language": language, "created": timestamp,
+    }
+    (task_dir / "config.json").write_text(json.dumps(config, indent=2), encoding="utf-8")
+    (task_dir / "00-task.md").write_text(
+        f"# Deep-dive task\n\n"
+        f"- **Goal:** {goal}\n"
+        f"- **Seed:** {seed}\n"
+        f"- **Notebook:** {config['notebook_url']}\n"
+        f"- **Max rounds:** {max_rounds}\n"
+        f"- **Language:** {language}\n"
+        f"- **Created:** {timestamp}\n",
+        encoding="utf-8",
+    )
+    return task_dir
