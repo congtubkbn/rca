@@ -105,3 +105,29 @@ def test_init_task_creates_folder_and_config(tmp_path):
     assert cfg["goal"] == "Map RCA v6"
     assert (d / "00-task.md").exists()
     assert "Map RCA v6" in (d / "00-task.md").read_text(encoding="utf-8")
+
+
+def test_write_round_files(tmp_path):
+    parsed = {"answer": "a", "key_facts": "kf", "sources": "s",
+              "coverage": "FULL", "gaps": "g", "next_query": "nq"}
+    loop.write_round_files(str(tmp_path), 3, "QUERY-TEXT", "RAW-RESPONSE", parsed)
+    assert (tmp_path / "round-03_query.md").read_text(encoding="utf-8") == "QUERY-TEXT"
+    body = (tmp_path / "round-03_response.md").read_text(encoding="utf-8")
+    assert "RAW-RESPONSE" in body
+    assert "FULL" in body
+
+
+def test_append_and_read_trace(tmp_path):
+    loop.append_trace(str(tmp_path), 1, "q1", "PARTIAL", "q2", "notebooklm", ts="T1")
+    loop.append_trace(str(tmp_path), 2, "q2", "FULL", "q3", "claude-dedup", ts="T2")
+    lines = (tmp_path / "trace.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 2
+    import json as _j
+    first = _j.loads(lines[0])
+    assert first == {"round": 1, "query": "q1", "coverage": "PARTIAL",
+                     "next_query": "q2", "next_query_source": "notebooklm", "ts": "T1"}
+    assert loop.already_asked_from_trace(str(tmp_path)) == ["q1", "q2"]
+
+
+def test_already_asked_empty_when_no_trace(tmp_path):
+    assert loop.already_asked_from_trace(str(tmp_path)) == []

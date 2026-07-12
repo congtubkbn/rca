@@ -97,3 +97,41 @@ def init_task(goal, seed, notebook_id, output_root,
         encoding="utf-8",
     )
     return task_dir
+
+
+def _render_response_md(round_num, response_raw, parsed):
+    return (
+        f"# Round {round_num} response\n\n"
+        f"## Parsed fields\n"
+        f"- **COVERAGE:** {parsed.get('coverage', '')}\n"
+        f"- **BEST_NEXT_QUERY:** {parsed.get('next_query', '')}\n\n"
+        f"## Raw response\n\n{response_raw}\n"
+    )
+
+
+def write_round_files(task_dir, round_num, query, response_raw, parsed):
+    d = Path(task_dir)
+    nn = f"{round_num:02d}"
+    (d / f"round-{nn}_query.md").write_text(query, encoding="utf-8")
+    (d / f"round-{nn}_response.md").write_text(
+        _render_response_md(round_num, response_raw, parsed), encoding="utf-8"
+    )
+
+
+def append_trace(task_dir, round_num, query, coverage, next_query,
+                 next_query_source, ts=None):
+    if ts is None:
+        ts = datetime.now().isoformat()
+    line = {
+        "round": round_num, "query": query, "coverage": coverage,
+        "next_query": next_query, "next_query_source": next_query_source, "ts": ts,
+    }
+    with open(Path(task_dir) / "trace.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+
+
+def already_asked_from_trace(task_dir):
+    p = Path(task_dir) / "trace.jsonl"
+    if not p.exists():
+        return []
+    return [json.loads(ln)["query"] for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
