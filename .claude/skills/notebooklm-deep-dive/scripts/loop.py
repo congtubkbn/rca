@@ -1,6 +1,7 @@
 """notebooklm-deep-dive: mechanical core for the 10-round NotebookLM loop."""
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -153,7 +154,11 @@ def call_notebooklm(question, notebook_url, run_py=NOTEBOOKLM_RUN_PY,
         python_exe or sys.executable, run_py, "ask_question.py",
         "--question", question, "--notebook-url", notebook_url,
     ]
-    proc = runner(cmd, capture_output=True, text=True, timeout=timeout)
+    # Force UTF-8 in the child: ask_question.py prints emoji, and on Windows a
+    # piped subprocess defaults to cp1252, which crashes on those characters.
+    env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
+    proc = runner(cmd, capture_output=True, text=True, timeout=timeout,
+                  env=env, encoding="utf-8", errors="replace")
     stdout = proc.stdout or ""
     if (proc.returncode != 0
             or "Failed to get answer" in stdout
