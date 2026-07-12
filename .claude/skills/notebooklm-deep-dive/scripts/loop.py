@@ -29,3 +29,39 @@ def parse_output(raw: str) -> dict:
             value = value.upper()
         result[_KEY_MAP[field]] = value
     return result
+
+
+REMINDER_SENTINEL = "EXTREMELY IMPORTANT: Is that ALL you need to know?"
+
+_OUTPUT_TEMPLATE = """Answer ONLY from notebook sources. Cite every claim. Then fill this exact template, every field present:
+
+ANSWER:
+KEY_FACTS:
+SOURCES:
+COVERAGE: (FULL | PARTIAL | NOT_FOUND)
+GAPS:
+BEST_NEXT_QUERY: (ONE single most valuable follow-up toward TASK GOAL)"""
+
+
+def render_query(goal, round_num, max_rounds, question, already_asked):
+    asked = "\n".join(f"- {q}" for q in already_asked) if already_asked else "(none)"
+    return (
+        f"[TASK GOAL]     {goal}\n"
+        f"[ROUND]         {round_num}/{max_rounds}\n"
+        f"[QUESTION]      {question}\n"
+        f"[ALREADY ASKED]\n{asked}\n\n"
+        f"{_OUTPUT_TEMPLATE}\n"
+    )
+
+
+def strip_reminder(text):
+    idx = text.find(REMINDER_SENTINEL)
+    return text[:idx].rstrip() if idx != -1 else text
+
+
+def extract_answer(stdout):
+    parts = re.split(r"^={10,}\s*$", stdout, flags=re.MULTILINE)
+    for i, p in enumerate(parts):
+        if p.strip().startswith("Question:") and i + 1 < len(parts):
+            return strip_reminder(parts[i + 1].strip())
+    return strip_reminder(parts[-1].strip())
