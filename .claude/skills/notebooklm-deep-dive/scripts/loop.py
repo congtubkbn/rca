@@ -7,6 +7,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+class NotebookLMError(RuntimeError):
+    pass
+
+
 FIELDS = ["ANSWER", "KEY_FACTS", "SOURCES", "COVERAGE", "GAPS", "BEST_NEXT_QUERY"]
 _KEY_MAP = {
     "ANSWER": "answer", "KEY_FACTS": "key_facts", "SOURCES": "sources",
@@ -150,7 +154,16 @@ def call_notebooklm(question, notebook_url, run_py=NOTEBOOKLM_RUN_PY,
         "--question", question, "--notebook-url", notebook_url,
     ]
     proc = runner(cmd, capture_output=True, text=True, timeout=timeout)
-    return extract_answer(proc.stdout)
+    stdout = proc.stdout or ""
+    if (proc.returncode != 0
+            or "Failed to get answer" in stdout
+            or "Not authenticated" in stdout):
+        stderr = (proc.stderr or "")[:500]
+        raise NotebookLMError(
+            f"call_notebooklm failed: returncode={proc.returncode}, "
+            f"stderr[:500]={stderr!r}, stdout_tail[-500:]={stdout[-500:]!r}"
+        )
+    return extract_answer(stdout)
 
 
 def _cmd_init(a):
@@ -164,8 +177,6 @@ def _cmd_ask(a):
     cfg = json.loads((Path(a.task_dir) / "config.json").read_text(encoding="utf-8"))
     query = render_query(cfg["goal"], a.round, cfg["max_rounds"],
                          a.question, already_asked_from_trace(a.task_dir))
-    nn = f"{a.round:02d}"
-    (Path(a.task_dir) / f"round-{nn}_query.md").write_text(query, encoding="utf-8")
     raw = call_notebooklm(a.question, cfg["notebook_url"])
     parsed = parse_output(raw)
     write_round_files(a.task_dir, a.round, query, raw, parsed)

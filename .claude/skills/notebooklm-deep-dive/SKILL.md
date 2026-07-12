@@ -29,6 +29,15 @@ Let `SCRIPTS = .claude/skills/notebooklm-deep-dive/scripts/loop.py`.
 3. **For round N = 1..10:**
    a. `python "SCRIPTS" ask --task-dir "TASK_DIR" --round N --question "<question>"`
       → read the JSON printed on stdout (fields: `answer, key_facts, sources, coverage, gaps, next_query, round`).
+      - **Call failure:** if this command exits non-zero (NotebookLMError — e.g. auth dropped or timed out),
+        STOP the whole run immediately. Do not run further rounds. Report to the user which round failed
+        and why (the error message names the returncode and stdout/stderr tail).
+      - **Template not honored:** if the printed JSON has BOTH `coverage` and `next_query` empty (NotebookLM
+        ignored the output template), re-run this SAME round's `ask` ONCE, suffixing the question with a short
+        format reminder: `" — Please answer using the exact template with all 6 fields: ANSWER, KEY_FACTS,
+        SOURCES, COVERAGE, GAPS, BEST_NEXT_QUERY."` If the retry is still empty on both fields, record
+        `coverage = NOT_FOUND` for the quality verdict and proceed to step b with whatever `next_query` you
+        have (empty is fine — the light-guard in step b will derive a fallback).
    b. **Light-guard `next_query`** → produce `final_next` + `source`:
       - `next_query` empty → derive a query from `gaps` toward the goal; `source = claude-fallback`.
       - `next_query` duplicates any earlier round's question → rephrase to an unasked angle; `source = claude-dedup`.

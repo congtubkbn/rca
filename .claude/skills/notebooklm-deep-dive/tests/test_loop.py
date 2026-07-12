@@ -157,6 +157,42 @@ def test_call_notebooklm_uses_runner_and_extracts(monkeypatch):
     assert "https://notebooklm.google.com/notebook/abc123" in captured["cmd"]
 
 
+def test_call_notebooklm_raises_on_failure_sentinel(monkeypatch):
+    import pytest
+
+    class FakeProc:
+        stdout = "Failed to get answer\n"
+        stderr = "boom"
+        returncode = 1
+
+    def fake_runner(cmd, **kwargs):
+        return FakeProc()
+
+    with pytest.raises(loop.NotebookLMError):
+        loop.call_notebooklm(
+            "q?", "https://notebooklm.google.com/notebook/abc123",
+            runner=fake_runner,
+        )
+
+
+def test_call_notebooklm_raises_on_not_authenticated(monkeypatch):
+    import pytest
+
+    class FakeProc:
+        stdout = "Not authenticated\n"
+        stderr = ""
+        returncode = 1
+
+    def fake_runner(cmd, **kwargs):
+        return FakeProc()
+
+    with pytest.raises(loop.NotebookLMError):
+        loop.call_notebooklm(
+            "q?", "https://notebooklm.google.com/notebook/abc123",
+            runner=fake_runner,
+        )
+
+
 def test_cli_init_prints_dir(tmp_path, capsys):
     rc = loop.main([
         "init", "--goal", "Map RCA v6", "--seed", "What is Phase 0?",
