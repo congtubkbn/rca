@@ -217,10 +217,13 @@ def test_cli_trace_appends(tmp_path):
 def test_cli_ask_writes_files_and_prints_json(tmp_path, monkeypatch, capsys):
     d = loop.init_task("Map RCA v6", "What is Phase 0?", "abc123",
                        str(tmp_path), timestamp="20260712-101500")
-    monkeypatch.setattr(
-        loop, "call_notebooklm",
-        lambda *a, **k: "ANSWER: Phase 0 scopes.\nCOVERAGE: PARTIAL\nBEST_NEXT_QUERY: next?\n",
-    )
+    sent = {}
+
+    def fake_call(question, notebook_url, *a, **k):
+        sent["question"] = question
+        return "ANSWER: Phase 0 scopes.\nCOVERAGE: PARTIAL\nBEST_NEXT_QUERY: next?\n"
+
+    monkeypatch.setattr(loop, "call_notebooklm", fake_call)
     rc = loop.main([
         "ask", "--task-dir", str(d), "--round", "1",
         "--question", "What is Phase 0?",
@@ -232,3 +235,6 @@ def test_cli_ask_writes_files_and_prints_json(tmp_path, monkeypatch, capsys):
     assert out["next_query"] == "next?"
     assert (d / "round-01_query.md").exists()
     assert (d / "round-01_response.md").exists()
+    # The RENDERED template (not the bare question) must be sent to NotebookLM.
+    assert "[TASK GOAL]" in sent["question"]
+    assert "BEST_NEXT_QUERY:" in sent["question"]

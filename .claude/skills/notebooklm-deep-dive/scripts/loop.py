@@ -182,7 +182,7 @@ def _cmd_ask(a):
     cfg = json.loads((Path(a.task_dir) / "config.json").read_text(encoding="utf-8"))
     query = render_query(cfg["goal"], a.round, cfg["max_rounds"],
                          a.question, already_asked_from_trace(a.task_dir))
-    raw = call_notebooklm(a.question, cfg["notebook_url"])
+    raw = call_notebooklm(query, cfg["notebook_url"])
     parsed = parse_output(raw)
     write_round_files(a.task_dir, a.round, query, raw, parsed)
     out = dict(parsed)
