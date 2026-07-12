@@ -1,6 +1,8 @@
 """notebooklm-deep-dive: mechanical core for the 10-round NotebookLM loop."""
 import json
 import re
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -135,3 +137,16 @@ def already_asked_from_trace(task_dir):
     if not p.exists():
         return []
     return [json.loads(ln)["query"] for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
+
+
+NOTEBOOKLM_RUN_PY = "C:/Users/Win 11/.claude/skills/notebooklm/scripts/run.py"
+
+
+def call_notebooklm(question, notebook_url, run_py=NOTEBOOKLM_RUN_PY,
+                    timeout=180, runner=subprocess.run, python_exe=None):
+    cmd = [
+        python_exe or sys.executable, run_py, "ask_question.py",
+        "--question", question, "--notebook-url", notebook_url,
+    ]
+    proc = runner(cmd, capture_output=True, text=True, timeout=timeout)
+    return extract_answer(proc.stdout)

@@ -131,3 +131,27 @@ def test_append_and_read_trace(tmp_path):
 
 def test_already_asked_empty_when_no_trace(tmp_path):
     assert loop.already_asked_from_trace(str(tmp_path)) == []
+
+
+def test_call_notebooklm_uses_runner_and_extracts(monkeypatch):
+    bar = "=" * 60
+    captured = {}
+
+    class FakeProc:
+        stdout = f"progress\n{bar}\nQuestion: q?\n{bar}\n\nThe answer body.\n\n{bar}\n"
+        stderr = ""
+        returncode = 0
+
+    def fake_runner(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return FakeProc()
+
+    ans = loop.call_notebooklm(
+        "q?", "https://notebooklm.google.com/notebook/abc123",
+        runner=fake_runner,
+    )
+    assert ans == "The answer body."
+    assert "ask_question.py" in captured["cmd"]
+    assert "--question" in captured["cmd"]
+    assert "q?" in captured["cmd"]
+    assert "https://notebooklm.google.com/notebook/abc123" in captured["cmd"]
