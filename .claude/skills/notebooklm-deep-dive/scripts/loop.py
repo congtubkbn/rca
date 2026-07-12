@@ -12,11 +12,7 @@ class NotebookLMError(RuntimeError):
     pass
 
 
-FIELDS = ["ANSWER", "KEY_FACTS", "SOURCES", "COVERAGE", "GAPS", "BEST_NEXT_QUERY"]
-_KEY_MAP = {
-    "ANSWER": "answer", "KEY_FACTS": "key_facts", "SOURCES": "sources",
-    "COVERAGE": "coverage", "GAPS": "gaps", "BEST_NEXT_QUERY": "next_query",
-}
+REMINDER_SENTINEL = "EXTREMELY IMPORTANT: Is that ALL you need to know?"
 
 
 def slugify(text: str) -> str:
@@ -24,44 +20,17 @@ def slugify(text: str) -> str:
     return s[:40].rstrip("-")
 
 
-def parse_output(raw: str) -> dict:
-    result = {v: "" for v in _KEY_MAP.values()}
-    pattern = re.compile(
-        r"^\s*(" + "|".join(FIELDS) + r")\s*:[ \t]*",
-        re.IGNORECASE | re.MULTILINE,
-    )
-    matches = list(pattern.finditer(raw))
-    for i, m in enumerate(matches):
-        field = m.group(1).upper()
-        start = m.end()
-        end = matches[i + 1].start() if i + 1 < len(matches) else len(raw)
-        value = raw[start:end].strip()
-        if field == "COVERAGE":
-            value = value.upper()
-        result[_KEY_MAP[field]] = value
-    return result
-
-
-REMINDER_SENTINEL = "EXTREMELY IMPORTANT: Is that ALL you need to know?"
-
-_OUTPUT_TEMPLATE = """Answer ONLY from notebook sources. Cite every claim. Then fill this exact template, every field present:
-
-ANSWER:
-KEY_FACTS:
-SOURCES:
-COVERAGE: (FULL | PARTIAL | NOT_FOUND)
-GAPS:
-BEST_NEXT_QUERY: (ONE single most valuable follow-up toward TASK GOAL)"""
-
-
 def render_query(goal, round_num, max_rounds, question, already_asked):
+    # NotebookLM (cold automated session) returns grounded prose and does NOT
+    # reliably self-format; structuring + steering are done by Claude afterward,
+    # so the prompt only carries context + the plain question, no output template.
     asked = "\n".join(f"- {q}" for q in already_asked) if already_asked else "(none)"
     return (
         f"[TASK GOAL]     {goal}\n"
         f"[ROUND]         {round_num}/{max_rounds}\n"
         f"[QUESTION]      {question}\n"
         f"[ALREADY ASKED]\n{asked}\n\n"
-        f"{_OUTPUT_TEMPLATE}\n"
+        f"Answer the QUESTION using ONLY notebook sources, and cite every claim.\n"
     )
 
 
@@ -107,22 +76,12 @@ def init_task(goal, seed, notebook_id, output_root,
     return task_dir
 
 
-def _render_response_md(round_num, response_raw, parsed):
-    return (
-        f"# Round {round_num} response\n\n"
-        f"## Parsed fields\n"
-        f"- **COVERAGE:** {parsed.get('coverage', '')}\n"
-        f"- **BEST_NEXT_QUERY:** {parsed.get('next_query', '')}\n\n"
-        f"## Raw response\n\n{response_raw}\n"
-    )
-
-
-def write_round_files(task_dir, round_num, query, response_raw, parsed):
+def write_round_files(task_dir, round_num, query, response_raw):
     d = Path(task_dir)
     nn = f"{round_num:02d}"
     (d / f"round-{nn}_query.md").write_text(query, encoding="utf-8")
     (d / f"round-{nn}_response.md").write_text(
-        _render_response_md(round_num, response_raw, parsed), encoding="utf-8"
+        f"# Round {round_num} response\n\n{response_raw}\n", encoding="utf-8"
     )
 
 
@@ -183,11 +142,8 @@ def _cmd_ask(a):
     query = render_query(cfg["goal"], a.round, cfg["max_rounds"],
                          a.question, already_asked_from_trace(a.task_dir))
     raw = call_notebooklm(query, cfg["notebook_url"])
-    parsed = parse_output(raw)
-    write_round_files(a.task_dir, a.round, query, raw, parsed)
-    out = dict(parsed)
-    out["round"] = a.round
-    print(json.dumps(out, ensure_ascii=False))
+    write_round_files(a.task_dir, a.round, query, raw)
+    print(json.dumps({"round": a.round, "answer": raw}, ensure_ascii=False))
     return 0
 
 

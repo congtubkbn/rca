@@ -13,37 +13,6 @@ def test_slugify_caps_length():
     assert len(out) <= 40
 
 
-def test_parse_output_wellformed():
-    raw = (
-        "ANSWER: Phase 0 scopes the issue.\n"
-        "KEY_FACTS:\n- input: UE log\n- output: scope file\n"
-        "SOURCES: design-v6.pdf\n"
-        "COVERAGE: PARTIAL\n"
-        "GAPS: no timing details\n"
-        "BEST_NEXT_QUERY: What fields are in the scope file?\n"
-    )
-    p = loop.parse_output(raw)
-    assert p["answer"] == "Phase 0 scopes the issue."
-    assert "UE log" in p["key_facts"]
-    assert p["coverage"] == "PARTIAL"
-    assert p["next_query"] == "What fields are in the scope file?"
-
-
-def test_parse_output_missing_field_is_empty():
-    raw = "ANSWER: hi\nCOVERAGE: full\n"
-    p = loop.parse_output(raw)
-    assert p["answer"] == "hi"
-    assert p["coverage"] == "FULL"
-    assert p["next_query"] == ""
-
-
-def test_parse_output_case_insensitive_labels():
-    raw = "answer: yo\nbest_next_query: dig deeper\n"
-    p = loop.parse_output(raw)
-    assert p["answer"] == "yo"
-    assert p["next_query"] == "dig deeper"
-
-
 def test_render_query_contains_all_parts():
     q = loop.render_query(
         goal="Map RCA v6", round_num=2, max_rounds=10,
@@ -54,8 +23,16 @@ def test_render_query_contains_all_parts():
     assert "2/10" in q
     assert "What fields are in the scope file?" in q
     assert "What is Phase 0?" in q
-    for label in ["ANSWER", "COVERAGE", "BEST_NEXT_QUERY"]:
-        assert label in q
+    assert "[TASK GOAL]" in q
+    assert "ONLY notebook sources" in q
+
+
+def test_render_query_no_output_template():
+    # Claude structures the answer; the prompt must NOT ask NotebookLM to
+    # self-fill a labeled template (it ignores it in cold sessions).
+    q = loop.render_query("g", 1, 10, "seed?", [])
+    assert "BEST_NEXT_QUERY" not in q
+    assert "COVERAGE" not in q
 
 
 def test_render_query_round1_no_prior():
@@ -108,13 +85,10 @@ def test_init_task_creates_folder_and_config(tmp_path):
 
 
 def test_write_round_files(tmp_path):
-    parsed = {"answer": "a", "key_facts": "kf", "sources": "s",
-              "coverage": "FULL", "gaps": "g", "next_query": "nq"}
-    loop.write_round_files(str(tmp_path), 3, "QUERY-TEXT", "RAW-RESPONSE", parsed)
+    loop.write_round_files(str(tmp_path), 3, "QUERY-TEXT", "RAW-RESPONSE")
     assert (tmp_path / "round-03_query.md").read_text(encoding="utf-8") == "QUERY-TEXT"
     body = (tmp_path / "round-03_response.md").read_text(encoding="utf-8")
     assert "RAW-RESPONSE" in body
-    assert "FULL" in body
 
 
 def test_append_and_read_trace(tmp_path):
@@ -221,7 +195,7 @@ def test_cli_ask_writes_files_and_prints_json(tmp_path, monkeypatch, capsys):
 
     def fake_call(question, notebook_url, *a, **k):
         sent["question"] = question
-        return "ANSWER: Phase 0 scopes.\nCOVERAGE: PARTIAL\nBEST_NEXT_QUERY: next?\n"
+        return "Phase 0 is the initialization phase. It creates a state file."
 
     monkeypatch.setattr(loop, "call_notebooklm", fake_call)
     rc = loop.main([
@@ -231,10 +205,9 @@ def test_cli_ask_writes_files_and_prints_json(tmp_path, monkeypatch, capsys):
     assert rc == 0
     out = json.loads(capsys.readouterr().out)
     assert out["round"] == 1
-    assert out["coverage"] == "PARTIAL"
-    assert out["next_query"] == "next?"
+    assert out["answer"] == "Phase 0 is the initialization phase. It creates a state file."
     assert (d / "round-01_query.md").exists()
-    assert (d / "round-01_response.md").exists()
-    # The RENDERED template (not the bare question) must be sent to NotebookLM.
+    assert "Phase 0 is the initialization phase." in (d / "round-01_response.md").read_text(encoding="utf-8")
+    # The RENDERED context prompt (not the bare question) must be sent to NotebookLM.
     assert "[TASK GOAL]" in sent["question"]
-    assert "BEST_NEXT_QUERY:" in sent["question"]
+    assert "ONLY notebook sources" in sent["question"]
