@@ -6,15 +6,22 @@ The judge reads ONLY the final report + the eval record. It must not re-run
 retrieval — it grades reasoning rigor and internal consistency, it does not
 redo the RCA.
 
-Modes:
-  1. With ANTHROPIC_API_KEY set: calls the Claude API directly and writes
+Modes (checked in this order):
+  1. Local / self-hosted LLM: with RCA_JUDGE_BASE_URL set (or --base-url),
+     calls any OpenAI-compatible chat endpoint — Ollama (http://localhost:11434/v1),
+     vLLM, LM Studio, llama.cpp server… — and writes scores into DuckDB.
+     Model comes from --model or RCA_JUDGE_MODEL; API key (only if the server
+     requires one) from RCA_JUDGE_API_KEY.
+  2. With ANTHROPIC_API_KEY set: calls the Claude API directly and writes
      scores into the DuckDB store.
-  2. Without a key: writes the fully-assembled judge prompt to a file so a
+  3. Without either: writes the fully-assembled judge prompt to a file so a
      human or an interactive agent session can produce the scores, then
      scores can be loaded with --load-scores.
 
 Usage:
     python eval_judge.py --db rca_eval.duckdb --report REPORT.md --record EVAL_RECORD.json
+    python eval_judge.py --db rca_eval.duckdb --report R.md --record E.json \
+        --base-url http://localhost:11434/v1 --model qwen2.5:32b
     python eval_judge.py --db rca_eval.duckdb --load-scores SCORES.json
     (SCORES.json: {"run_id": "...", "judge_model": "human", "scores":
                    [{"dimension": "...", "score": 4, "rationale": "..."}]})
@@ -80,6 +87,36 @@ def build_prompt(report_text, record):
     )
 
 
+def _extract_json(text):
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        raise ValueError(f"No JSON object in judge output: {text[:200]!r}")
+    return json.loads(text[start:end + 1])
+
+
+def call_openai_compatible(prompt, model, base_url, api_key=None):
+    """Score via any OpenAI-compatible /chat/completions endpoint (Ollama,
+    vLLM, LM Studio, llama.cpp server, …). Keeps the whole eval loop local —
+    no report content leaves the machine."""
+    headers = {"content-type": "application/json"}
+    if api_key:
+        headers["authorization"] = f"Bearer {api_key}"
+    req = urllib.request.Request(
+        base_url.rstrip("/") + "/chat/completions",
+        data=json.dumps({
+            "model": model,
+            "temperature": 0,
+            "max_tokens": 2000,
+            "messages": [{"role": "user", "content": prompt}],
+        }).encode(),
+        headers=headers,
+    )
+    with urllib.request.urlopen(req, timeout=600) as resp:
+        body = json.load(resp)
+    text = body["choices"][0]["message"]["content"] or ""
+    return _extract_json(text)
+
+
 def call_claude(prompt, model):
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
@@ -97,8 +134,7 @@ def call_claude(prompt, model):
     with urllib.request.urlopen(req, timeout=120) as resp:
         body = json.load(resp)
     text = "".join(b.get("text", "") for b in body.get("content", []))
-    start, end = text.find("{"), text.rfind("}")
-    return json.loads(text[start:end + 1])
+    return _extract_json(text)
 
 
 def store_scores(db, run_id, judge_model, scores):
@@ -137,7 +173,14 @@ def main():
     ap.add_argument("--db", required=True)
     ap.add_argument("--report")
     ap.add_argument("--record")
-    ap.add_argument("--model", default="claude-sonnet-5")
+    ap.add_argument("--model", default=None,
+                    help="Judge model. Default: RCA_JUDGE_MODEL when a local "
+                         "endpoint is used, else claude-sonnet-5")
+    ap.add_argument("--base-url",
+                    default=os.environ.get("RCA_JUDGE_BASE_URL"),
+                    help="OpenAI-compatible endpoint for a local/self-hosted "
+                         "judge (e.g. http://localhost:11434/v1 for Ollama). "
+                         "Also settable via RCA_JUDGE_BASE_URL.")
     ap.add_argument("--load-scores", metavar="SCORES.json")
     ap.add_argument("--prompt-out", help="Where to write the prompt in no-API mode "
                                          "(default: judge_prompt_<run_id>.md next to record)")
@@ -162,11 +205,24 @@ def main():
     run_id = record["run_id"]
     prompt = build_prompt(report_text, record)
 
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        result = call_claude(prompt, args.model)
-        store_scores(args.db, run_id, args.model, result["scores"])
+    result = judge_model = None
+    if args.base_url:
+        judge_model = args.model or os.environ.get("RCA_JUDGE_MODEL")
+        if not judge_model:
+            print("ERROR: local judge needs --model or RCA_JUDGE_MODEL "
+                  "(the endpoint can host several models)", file=sys.stderr)
+            return 1
+        result = call_openai_compatible(
+            prompt, judge_model, args.base_url,
+            api_key=os.environ.get("RCA_JUDGE_API_KEY"))
+    elif os.environ.get("ANTHROPIC_API_KEY"):
+        judge_model = args.model or "claude-sonnet-5"
+        result = call_claude(prompt, judge_model)
+
+    if result is not None:
+        store_scores(args.db, run_id, judge_model, result["scores"])
         avg = sum(int(s["score"]) for s in result["scores"]) / len(result["scores"])
-        print(f"Judge scored run {run_id}: overall {avg:.2f}")
+        print(f"Judge ({judge_model}) scored run {run_id}: overall {avg:.2f}")
         for s in result["scores"]:
             print(f"  {s['dimension']}: {s['score']}")
         return 0
@@ -175,7 +231,7 @@ def main():
         os.path.dirname(os.path.abspath(args.record)), f"judge_prompt_{run_id}.md")
     with open(out, "w", encoding="utf-8") as f:
         f.write(prompt)
-    print(f"No ANTHROPIC_API_KEY — judge prompt written to {out}\n"
+    print(f"No RCA_JUDGE_BASE_URL / ANTHROPIC_API_KEY — judge prompt written to {out}\n"
           f"Have a human or agent produce the scores JSON, then run:\n"
           f"  python eval_judge.py --db {args.db} --load-scores SCORES.json")
     return 0
