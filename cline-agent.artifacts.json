@@ -1,0 +1,14 @@
+{
+  "$comment": "Manifest cho Cline Agent Loop Analyzer (tab Artifacts). Khai báo các nhóm file output của pipeline RCA v6 để dashboard hiển thị. Analyzer chỉ cần đăng ký root của repo này trong artifacts.config.json; các nhóm dưới đây tự được nạp. dir tương đối so với gốc repo, hoặc tuyệt đối (state file nằm ở /tmp theo thiết kế v6).",
+  "name": "3GPP UE RCA v6",
+  "description": "Pipeline Root Cause Analysis cho lỗi UE 3GPP — báo cáo RCA, state file, eval records và dashboard chất lượng.",
+  "outputs": [
+    { "label": "RCA reports", "dir": ".rca", "include": ["report_*.md"] },
+    { "label": "State pointer", "dir": ".rca", "include": ["current_state_path.txt"] },
+    { "label": "State files", "dir": "/tmp", "include": ["rca_state_*.json"] },
+    { "label": "Eval records (outbox)", "dir": ".rca/eval/outbox", "include": ["eval_*.json", "judge_prompt_*.md"] },
+    { "label": "Eval dashboard", "dir": ".rca/eval", "include": ["*.md"] },
+    { "label": "Evaluation framework docs", "dir": "evaluation", "include": ["*.md"] },
+    { "label": "Design docs (v6)", "dir": "documents/design-v6", "include": ["*.html", "*.pdf"] }
+  ]
+}

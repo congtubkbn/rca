@@ -27,3 +27,5 @@ Thumbs.db
 
 # notebooklm-deep-dive runtime artifacts
 output-notebooklm/
+# RCA pipeline runtime outputs (browsable via cline-agent Artifacts tab)
+.rca/
