@@ -117,9 +117,13 @@ further changes anywhere.
       "assertion": "<verbatim top event description>",
       "overrides": null
     }
-  ]
+  ],
+  "user_decisions": [],
+  "keyword_provenance_audit": []
 }
 ```
+
+`user_decisions: []` and `keyword_provenance_audit: []` are scaffolded empty (mirroring `3gpp-rca-orchestrator`'s normal Phase 0 init template) so downstream skills that append to them don't need to check for existence first.
 
 `phase1_scope_filter` and `phase2_ecf` are absent — not written, not
 faked. Downstream FTA skills (`3gpp-fta-build-tree` and later) do not read
@@ -152,14 +156,14 @@ about its own history.
 |---|---|---|
 | `.clinerules/workflows/rca.md` | Add one new Step 1B dispatch case, `phase2_confirmed_via_seed`, placed immediately before the existing `phase2_confirmed` case; body identical to that case's skill chain | Without it, `/rca` cannot resume a seeded state — the feature does not work end to end |
 | `.cline/skills/_shared/keyword-provenance-rules.md` | Add one carve-out rule: when `fta_iterations[1].input_top_event.source == "ENGINEER_PROVIDED"`, the keyword in that `event` field is exempt from trace-to-tool-call. No other keyword (Gate A/B, iteration >= 2) is exempt. | `3gpp-log-queries/SKILL.md` reads this file at runtime (line 193-196) when Gate A/B construct log queries; without the carve-out the agent will self-block on the seeded keyword as a provenance violation |
+| `.cline/skills/3gpp-rca-orchestrator/SKILL.md` | In Mode 2 (Finalize) Preconditions (lines 90-102): add a conditional — when `meta.mode == "seed_and_run"`, do not require `phase1_scope_filter`, `phase2_ecf.top_event_candidates[]`/`user_confirmation`, or a Checkpoint-A entry in `user_decisions[]` | **Correction from initial draft of this doc.** Finalize's existing preconditions hard-list these sections and HALT with "Pipeline incomplete: `<missing section>`" if absent (verified by reading `3gpp-rca-orchestrator/SKILL.md:90-102`). A seeded run never populates them — without this fix, every seeded run would build the full FTA tree, pass all iterations and Checkpoint B, then dead-end at Phase 4 finalize. This is a functional blocker, not the optional "reduced validation" labeling originally proposed under trade-off #2 below. |
 
 ### Explicitly not touched (verified not required at runtime)
 
 - `_shared/state-file-schema.md` — no skill reads this file during execution (grep confirmed only `keyword-provenance-rules.md` is referenced at runtime, via `3gpp-log-queries`); it is a contract for humans editing skills, not consumed by the running pipeline.
-- `3gpp-rca-orchestrator/SKILL.md` (Phase 4 `validation_scope` labeling) — Phase 4 finalize completes without it; omitting it only means the final report won't automatically flag the iteration-1 top event as an unverified premise.
-- `_shared/rca-report-template.md` — depends on the above; skipped together.
+- `_shared/rca-report-template.md` — `validation_scope` labeling (trade-off #2 below) is still an explicit scope cut; the template needs no change until that labeling is added.
 - `CLAUDE.md` — guidance for Claude Code sessions on this repo, not read by the Cline pipeline runtime.
-- `3gpp-fta-build-tree`, `evaluate-branches`, `cross-reference`, `root-cause`, `iteration-controller` — already run correctly from a seeded state; no preconditions on `phase1_scope_filter`/`phase2_ecf` were found.
+- `3gpp-fta-build-tree`, `evaluate-branches`, `cross-reference`, `root-cause`, `iteration-controller` — verified via grep across all four remaining skills for `phase1_scope_filter`/`phase2_ecf` references. Two soft, non-precondition references found (evaluate-branches uses `phase2_ecf.observable_symptoms.missing_events` only as an iteration-1 branch-priority heuristic; root-cause cites `phase1_scope_filter.discriminator` as one optional evidence-chain entry) — neither is a hard precondition, both degrade gracefully to absent. Explicit `## Preconditions` sections in all four skills confirmed to require only their own iteration slice + correct `current_phase`.
 
 ## Known trade-offs (accepted, not hidden)
 
@@ -171,14 +175,15 @@ about its own history.
    determined yet"). Risk: a mis-phrased engineer request might not match
    and require rephrasing.
 2. **No automatic "reduced validation" labeling in the final report.**
-   Since Phase 4 finalize is untouched, a report produced from a seeded run
-   looks identical to one produced from a fully-scoped run. A reader must
-   separately know the run started via `3gpp-fta-seed-init` to know the
-   iteration-1 top event was an unverified engineer premise, not
-   pipeline-confirmed. Accepted as an explicit scope cut for this
-   iteration; can be added later as a small additive change to
-   `3gpp-rca-orchestrator`'s finalize mode without touching anything in
-   this design.
+   Finalize is touched only enough to not hard-block on the missing
+   Phase 1/2 sections (see file table above) — it does NOT add any
+   `validation_scope` note or otherwise flag the iteration-1 top event as
+   an unverified premise. A report produced from a seeded run reads
+   identically to one from a fully-scoped run. A reader must separately
+   know the run started via `3gpp-fta-seed-init` to know the iteration-1
+   top event was `ENGINEER_PROVIDED`, not pipeline-confirmed. Accepted as
+   an explicit scope cut for this iteration; can be added later as a
+   small additive change to the same finalize mode block.
 3. **Skill-chain duplication in `rca.md`.** The five-skill iteration-1
    chain now exists twice in `rca.md` (once under `phase2_confirmed`, once
    under `phase2_confirmed_via_seed`), byte-for-byte identical. If the
