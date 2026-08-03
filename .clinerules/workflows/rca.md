@@ -88,6 +88,27 @@ The user is responding to Checkpoint A. Parse `/rca <response>`:
 | `abort` / `stop` | Mark `meta.current_phase = "complete"` with rejection; STOP. |
 | (unparseable) | Ask user to repeat with a clearer option keyword. |
 
+#### Case: `phase2_confirmed_via_seed`
+Top event was provided directly by the engineer via `3gpp-fta-seed-init`
+(`meta.mode == "seed_and_run"`), bypassing Phase 1/2/Checkpoint A. Start
+iteration 1 — identical handling to Case `phase2_confirmed` below, except
+`fta_iterations[1].input_top_event.source == "ENGINEER_PROVIDED"` instead
+of derived from `phase2_ecf.top_event`:
+```
+meta.current_iteration_id = 1
+meta.current_phase = "iteration_1_running"
+Use the 3gpp-fta-build-tree skill with iteration_id=1.
+   State file path is at .rca/current_state_path.txt.
+```
+Then in sequence — same chain as Case `phase2_confirmed` (keep both in
+sync if this chain ever changes):
+- `3gpp-fta-evaluate-branches` with iteration_id=1
+- `3gpp-fta-cross-reference` with iteration_id=1
+- `3gpp-fta-root-cause` with iteration_id=1
+- `3gpp-fta-iteration-controller` with iteration_id=1 → HALTS at Checkpoint B-1
+
+STOP. User will type `/rca <response>`.
+
 #### Case: `phase2_confirmed`
 Top event is locked in. Start iteration 1:
 ```
@@ -96,7 +117,8 @@ meta.current_phase = "iteration_1_running"
 Use the 3gpp-fta-build-tree skill with iteration_id=1.
    State file path is at .rca/current_state_path.txt.
 ```
-Then in sequence:
+Then in sequence — same chain as Case `phase2_confirmed_via_seed` (keep
+both in sync if this chain ever changes):
 - `3gpp-fta-evaluate-branches` with iteration_id=1
 - `3gpp-fta-cross-reference` with iteration_id=1
 - `3gpp-fta-root-cause` with iteration_id=1
