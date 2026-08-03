@@ -93,11 +93,17 @@ two dedicated checkpoint skills.
 - `meta.current_phase == "phase4_finalizing"` (set by iteration controller after user accepted terminal)
 - State file contains at minimum:
   - `meta` (Phase 0)
-  - `phase1_scope_filter` (Phase 1)
-  - `phase2_ecf` with `top_event_candidates[]` and `user_confirmation` (Phase 2 + Checkpoint A)
-  - `user_decisions[]` (at least Checkpoint A entry)
   - `fta_iterations[]` (at least iteration 1)
   - `phase3_root_cause_chain` (set by iteration controller)
+  - If `meta.mode != "seed_and_run"` (normal `full_workflow` run), additionally:
+    - `phase1_scope_filter` (Phase 1)
+    - `phase2_ecf` with `top_event_candidates[]` and `user_confirmation` (Phase 2 + Checkpoint A)
+    - `user_decisions[]` with at least one Checkpoint A entry
+  - If `meta.mode == "seed_and_run"` (seeded via `3gpp-fta-seed-init`):
+    - `phase1_scope_filter` and `phase2_ecf` are expected to be absent — do
+      NOT treat their absence as a missing-section failure
+    - `user_decisions[]` is expected to have no Checkpoint A entry — only
+      Checkpoint B entries are required
 
 If any precondition missing → HALT with "Pipeline incomplete: <missing section>"
 
@@ -143,9 +149,19 @@ If any precondition missing → HALT with "Pipeline incomplete: <missing section
 6. Assemble the final RCA report:
    - Read template at `.cline/skills/_shared/rca-report-template.md`
    - Fill all placeholders from state file sections:
-     - Section 1 (Problem Scope) from `phase1_scope_filter`
+     - Section 1 (Problem Scope) from `phase1_scope_filter`. If
+       `meta.mode == "seed_and_run"`, this section is absent — replace
+       Section 1's body with: "Not applicable — run seeded directly from
+       an engineer-provided top event via 3gpp-fta-seed-init; Phase 1
+       scoping did not run. See Section 2." Do NOT invent scope_filter
+       values to fill the placeholders.
      - Section 2 (Top Event) from `phase2_ecf` including `top_event_candidates[]`
-       and `user_confirmation`
+       and `user_confirmation`. If `meta.mode == "seed_and_run"`, this
+       section is absent — replace Section 2's body with the verbatim
+       `fta_iterations[0].input_top_event.event` and note "source:
+       ENGINEER_PROVIDED — asserted by engineer, not derived from
+       Phase 2 candidate ranking." Do NOT invent candidates or a
+       confidence ranking that were never produced.
      - Section 3 (FTA Iterations) — one subsection per `fta_iterations[i]`,
        including hybrid tree, pruned branches, base events, cross-reference,
        iteration root cause, and agent_recommendation vs user_decision
