@@ -233,3 +233,34 @@ Before writing the final report, the orchestrator verifies:
 
 If any check fails → halt and write the failure reason to
 `phase4_rca_report.termination_reason`.
+
+---
+
+## `ENGINEER_PROVIDED` Carve-Out (v6 NEW — seed_and_run mode only)
+
+When a run is seeded via `3gpp-fta-seed-init` (`meta.mode ==
+"seed_and_run"`), `fta_iterations[1].input_top_event` has `source:
+"ENGINEER_PROVIDED"` instead of being derived from
+`phase2_ecf.top_event`.
+
+**The carve-out applies to exactly one keyword: the `event` string in
+that one field.** It is exempt from the trace-to-tool-call requirement
+because it was asserted directly by the engineer, not derived by any
+pipeline phase.
+
+**The carve-out does NOT extend to anything else:**
+- Every keyword `3gpp-fta-build-tree`, `3gpp-fta-evaluate-branches`, and
+  `3gpp-fta-cross-reference` derive FROM that top event (spec skeleton
+  matches, code module bindings, Gate A/B log keywords, commanded/actual
+  values) MUST still trace to a tool invocation in the same iteration, per
+  the rules above. The top event being engineer-provided does not make its
+  downstream consequences engineer-provided.
+- Iteration 2 and beyond are entirely unaffected — if the engineer's
+  seeded iteration 1 leads to `dig_deeper`, iteration 2's top event is
+  derived from iteration 1's `base_events[]` exactly as in a normal run,
+  and is audited exactly as in a normal run (no `ENGINEER_PROVIDED` tag).
+- The Phase 4 validation checklist's rule "every keyword in the causal
+  chain traces to `keyword_provenance_audit`" is unchanged EXCEPT that a
+  lookup for the iteration-1 top event keyword may instead match an
+  `engineer_inputs[]` entry (`input_id`, `assertion`, `at`) in place of a
+  `keyword_provenance_audit` entry, and only for that one field.
