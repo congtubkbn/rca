@@ -39,6 +39,7 @@ repo** and must not be hunted for locally:
   3gpp-fta-cross-reference/    # Phase 3.4 (per iteration) — commanded-vs-actual value comparison
   3gpp-fta-root-cause/         # Phase 3.5 (per iteration) — synthesize iteration root cause
   3gpp-fta-iteration-controller/ # Checkpoint B — recommendation + user dig/accept/abort gate
+  3gpp-fta-seed-init/          # engineer-provided top event → seed state directly into FTA iteration 1, bypassing Phase 1/2/Checkpoint A
   3gpp-spec-retrieval/         # shared: wraps spec_query.py, invoked by phase skills only
   3gpp-code-retrieval/         # shared: wraps code_search.py, invoked by phase skills only
   3gpp-log-queries/            # shared: wraps log_query.py, invoked by phase skills only
@@ -139,15 +140,29 @@ tool unavailable / policy violation / empty result) that calling skills must
 branch on — see `_shared/tool-invocation-templates.md` for the full contract
 per operation.
 
-### `v6-coworker-interaction-model.md` is a design doc, not implemented behavior
+### `v6-coworker-interaction-model.md` is a design doc, mostly not implemented behavior
 
 This file at the repo root describes a proposed "engineer as co-worker"
 inversion (standalone skill invocation, state seeding, resume-with-injection)
-that is **not yet built** into the skills — it explicitly says so in its own
-"NOTE ON BASELINE ALIGNMENT" section. Skills as they exist today assume the
-`full_workflow` orchestrator-driven mode described in `.clinerules/`. Don't
-assume `contract:` blocks, `seed_and_run`, or `ENGINEER_PROVIDED` evidence
-tiers exist in the current skills unless you're implementing this design.
+that is **mostly not built** into the skills — it explicitly says so in its
+own "NOTE ON BASELINE ALIGNMENT" section. Skills as they exist today assume
+the `full_workflow` orchestrator-driven mode described in `.clinerules/`.
+Don't assume generic `contract:` blocks, `resume <skill>`, or `standalone
+<skill>` invocation modes exist in the current skills unless you're
+implementing more of this design.
+
+**Exception — one narrow slice IS implemented:** that doc's §5 ("Direct top
+event → start FTA") exists today as `3gpp-fta-seed-init`
+(`.cline/skills/3gpp-fta-seed-init/SKILL.md`, see also
+`docs/superpowers/specs/2026-08-04-rca-fta-seed-design.md`). An engineer who
+already has a confirmed top event can seed a state directly and skip Phase
+1/2/Checkpoint A; `/rca` resumes it via a dedicated dispatch case
+(`phase2_confirmed_via_seed` in `rca.md`). This is the ONLY part of the
+co-worker model implemented — `meta.mode: "seed_and_run"` and the
+`ENGINEER_PROVIDED` evidence tier exist and are real, but scoped
+specifically to this one entry point. Generic `contract:` blocks,
+`resume <skill>` injection/supersession, and `standalone <skill>` mode
+(§3-4, §6 of that doc) are still design-only.
 
 ## Working in this repo
 
