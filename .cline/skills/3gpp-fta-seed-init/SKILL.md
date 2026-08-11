@@ -41,8 +41,10 @@ skill does NOT itself invoke any FTA skill.
   following RAR at 14:02:12.50"
 - `scope_window` (required) — a time bound as `{start_ms, end_ms}` or an
   equivalent timestamp range the engineer states in the request
+- `procedure` (required) — 3GPP procedure name, e.g., "LTE RRC Connection Re-establishment"
+- `rat` (required) — Radio Access Technology, e.g., "LTE"
 
-If either is missing, do not proceed — see Step 1 below.
+If any is missing, do not proceed — see Step 1 below.
 
 ## Execution
 
@@ -52,6 +54,7 @@ If either is missing, do not proceed — see Step 1 below.
   description to seed FTA. What is the top event?"
 - If `scope_window` is missing → HALT: "Need a time window (start/end) to
   bound Gate A log queries. What is the scope window?"
+- If `procedure` or `rat` is missing → HALT: "Need procedure and rat to remain spec-anchored."
 
 ### Step 2 — Check for an in-progress run
 
@@ -64,13 +67,11 @@ If either is missing, do not proceed — see Step 1 below.
    continuing.
 4. If no file exists, or the existing one is `complete` → proceed.
 
-### Step 3 — Write the seed state file
+### Step 3 — Generate Draft State File
 
 1. Compute UTC timestamp: `TS=$(date -u +%Y%m%dT%H%M%SZ)`
-2. State file path: `/tmp/rca_state_${TS}.json` (or
-   `%TEMP%\rca_state_${TS}.json` on Windows) — same convention as
-   `3gpp-rca-orchestrator` Phase 0 init.
-3. Write:
+2. Draft State file path: `<workspace>/.rca/draft_state_${TS}.json` (create `.rca/` directory if missing).
+3. Write the draft state:
 
 ```json
 {
@@ -87,6 +88,11 @@ If either is missing, do not proceed — see Step 1 below.
     "duckdb_path": "<resolved path>",
     "tool_dir": "<resolved path, default <workspace>/3gpp-tools/>"
   },
+  "phase1_scope_filter": {
+    "procedure": "<verbatim procedure>",
+    "rat": "<verbatim rat>",
+    "time_window": { "start_ms": <from scope_window>, "end_ms": <from scope_window> }
+  },
   "fta_iterations": [
     {
       "iteration_id": 1,
@@ -96,7 +102,7 @@ If either is missing, do not proceed — see Step 1 below.
       "input_top_event": {
         "event": "<verbatim top_event_description>",
         "source": "ENGINEER_PROVIDED",
-        "spec_anchored": false,
+        "spec_anchored": true,
         "scope_window": { "start_ms": <from scope_window>, "end_ms": <from scope_window> }
       }
     }
@@ -114,22 +120,32 @@ If either is missing, do not proceed — see Step 1 below.
 }
 ```
 
-Note: `phase1_scope_filter` and `phase2_ecf` are NOT written — absent, not
-faked.
+Note: `phase2_ecf` is NOT written — absent, not faked. `phase1_scope_filter` IS written so downstream FTA skills remain spec-anchored.
 
+### Step 4 — User Review & Edit
+
+1. Print the generated JSON of the draft state to the chat.
+2. Provide the absolute path to the draft state file to the engineer:
+   > Draft state seeded at: `<draft_state_path>`. 
+   > Please open this file in your IDE to review and edit it if necessary. 
+   > Once you are done, reply "OK" or "Done" to finalize the state.
+3. HALT and wait for the engineer's confirmation.
+
+### Step 5 — Commit State & Hand off
+
+1. After the engineer confirms, READ the draft state file back into memory.
+2. Validate that it is a valid JSON file. If it fails parsing, tell the engineer:
+   > Invalid JSON format. Please fix the syntax errors in the file and reply "OK" again. (HALT)
+3. Ensure `spec_anchored` is still `true`. If not, warn the engineer but proceed if they insist.
 4. Verify Python tool scripts exist (same check as orchestrator Phase 0):
    - `<tool_dir>/spec_query.py`
    - `<tool_dir>/code_search.py`
    - `<tool_dir>/log_query.py`
    - If any missing → HALT with "Tool dependency missing: `<name>`"
-5. Write `<STATE>` path to `<workspace>/.rca/current_state_path.txt`
-   (create `.rca/` directory if missing). Atomic write (`.tmp` → move).
+5. Write the validated draft state path to `<workspace>/.rca/current_state_path.txt`.
+6. Tell the engineer:
 
-### Step 4 — Hand off
-
-Tell the engineer:
-
-> State seeded (`<STATE path>`). Run `/rca` to continue into FTA
+> State finalized and locked (`<draft_state_path>`). Run `/rca` to continue into FTA
 > iteration 1.
 
 STOP. Do not invoke `3gpp-fta-build-tree` or any other FTA skill directly
