@@ -1,0 +1,81 @@
+{
+  "skill_name": "3gpp-etsi-spec-downloader",
+  "evals": [
+    {
+      "id": 1,
+      "eval_name": "single-ts-download",
+      "prompt": "Download the latest version of TS 38.331 (Physical layer procedures for NR) from ETSI using the 3gpp-etsi-spec-downloader skill. Verify it's saved to 3gpp-spec-document/38/38_331/ with a manifest.json file.",
+      "expected_output": "PDF file downloaded to 3gpp-spec-document/38/38_331/ts_38331_v*.pdf with manifest.json containing version, download date, ETSI URL, and MD5 checksum",
+      "files": [],
+      "assertions": [
+        {
+          "name": "file-exists",
+          "description": "PDF file exists in correct folder structure"
+        },
+        {
+          "name": "manifest-valid",
+          "description": "manifest.json exists with required fields (ts_number, version, etsi_url, md5_checksum, status)"
+        },
+        {
+          "name": "version-parsed-correctly",
+          "description": "Version extracted correctly from ETSI (e.g., 17.3.0 format)"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "eval_name": "batch-download",
+      "prompt": "Create a batch download file with 3 TS specs (38.331, 24.229, 26.114) and use the skill to download all of them in one operation. Verify all files are downloaded with correct folder structure and manifests.",
+      "expected_output": "Three TSs downloaded to correct series folders (38/38_331/, 24/24_229/, 26/26_114/) each with their own manifest.json",
+      "files": [],
+      "assertions": [
+        {
+          "name": "batch-complete",
+          "description": "All 3 TSs downloaded successfully"
+        },
+        {
+          "name": "folder-structure-correct",
+          "description": "Each TS in correct {series}/{series}_{number}/ folder"
+        },
+        {
+          "name": "manifests-created",
+          "description": "All 3 manifest.json files created with proper metadata"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "eval_name": "spec-info-lookup",
+      "prompt": "Use the skill to check spec info for TS 24.229 (SIP procedures) without downloading. Retrieve title, version, release, and ETSI URL information.",
+      "expected_output": "Spec metadata (title, version, release, ETSI URL) displayed without downloading the PDF file",
+      "files": [],
+      "assertions": [
+        {
+          "name": "info-retrieved",
+          "description": "Spec info returned with version and title"
+        },
+        {
+          "name": "no-file-created",
+          "description": "No PDF downloaded, folder structure not created"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "eval_name": "list-downloaded",
+      "prompt": "After downloading TS 38.331, use the skill to list all downloaded specs. Verify it shows TS number, version, release, and download date.",
+      "expected_output": "List showing at least TS 38.331 with version, release (REL-17), and download timestamp",
+      "files": [],
+      "assertions": [
+        {
+          "name": "list-works",
+          "description": "List command returns JSON with specs array"
+        },
+        {
+          "name": "fields-present",
+          "description": "Each spec entry has ts, version, release, downloaded timestamp"
+        }
+      ]
+    }
+  ]
+}

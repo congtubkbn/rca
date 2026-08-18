@@ -1,0 +1,766 @@
+<!doctype html>
+<title>FTA Phase Evaluation Suite</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f5f5f5;
+    --paper-2: #ececec;
+    --ink: #2d3142;
+    --muted: #4f5d75;
+    --soft: #7a8399;
+    --rule: rgba(45,49,66,0.12);
+    --rule-solid: #bfc0c0;
+    --accent: #eb6c36;
+    --accent-tint: rgba(235,108,54,0.08);
+    --link: #2e5aa8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #2d3142;
+      --paper-2: #393e53;
+      --ink: #f5f5f5;
+      --muted: #bfc0c0;
+      --soft: #8e98ac;
+      --rule: rgba(245,245,245,0.12);
+      --rule-solid: rgba(191,192,192,0.25);
+      --accent: #f08a59;
+      --accent-tint: rgba(240,138,89,0.10);
+      --link: #6a95d8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #2d3142;
+    --paper-2: #393e53;
+    --ink: #f5f5f5;
+    --muted: #bfc0c0;
+    --soft: #8e98ac;
+    --rule: rgba(245,245,245,0.12);
+    --rule-solid: rgba(191,192,192,0.25);
+    --accent: #f08a59;
+    --accent-tint: rgba(240,138,89,0.10);
+    --link: #6a95d8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Geist', system-ui, sans-serif;
+    line-height: 1.55;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { margin-bottom: 2rem; }
+  .eyebrow {
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin: 0 0 0.6rem;
+  }
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: 2.4rem;
+    margin: 0 0 0.5rem;
+  }
+  .subtitle { color: var(--muted); font-size: 1.02rem; max-width: 62ch; margin: 0; }
+
+  .diagram-container {
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding: 1.5rem 0;
+    margin: 2rem 0;
+    overflow-x: auto;
+  }
+  .diagram-container svg { width: 100%; height: auto; display: block; margin: 0 auto; }
+  .diagram-caption { text-align: center; font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--soft); margin-top: 0.75rem; letter-spacing: 0.02em; }
+
+  .cards { display: grid; grid-template-columns: 1.15fr 1fr 0.9fr; gap: 1rem; margin: 2rem 0; }
+  @media (max-width: 800px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: #ffffff10;
+    background: color-mix(in srgb, var(--paper) 40%, white 60%);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.15rem 1.25rem;
+  }
+  :root[data-theme="dark"] .card, @media (prefers-color-scheme: dark) { }
+  .card .eyebrow { margin-bottom: 0.5rem; }
+  .card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .card-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .card-dot.coral { background: var(--accent); }
+  .card-dot.ink { background: var(--ink); }
+  .card-dot.muted { background: var(--muted); }
+  .card h3 { margin: 0; font-size: 0.98rem; font-family: 'Geist', sans-serif; font-weight: 600; }
+  .card ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .card li { margin-bottom: 0.35rem; font-size: 0.88rem; color: var(--muted); }
+
+  section.block { margin: 2.75rem 0; }
+  h2 {
+    font-family: 'Instrument Serif', serif;
+    font-weight: 400;
+    font-size: 1.55rem;
+    margin: 0 0 0.35rem;
+  }
+  .section-note { color: var(--soft); font-size: 0.85rem; margin: 0 0 1.25rem; max-width: 70ch; }
+
+  .phase-card {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 1rem;
+  }
+  .phase-card.focal { border-color: var(--accent); background: var(--accent-tint); }
+  .phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.6rem; margin-bottom: 0.2rem; }
+  .phase-num {
+    font-family: 'Geist Mono', monospace; font-size: 0.7rem; color: var(--soft);
+    border: 1px solid var(--rule-solid); border-radius: 10px; padding: 0.1rem 0.55rem;
+  }
+  .phase-head h3 { font-family: 'Geist', sans-serif; font-size: 1.08rem; font-weight: 600; margin: 0; }
+  .phase-skill { font-family: 'Geist Mono', monospace; font-size: 0.76rem; color: var(--link); }
+  .phase-meta { font-family: 'Geist Mono', monospace; font-size: 0.74rem; color: var(--soft); margin: 0.3rem 0 0.9rem; }
+  .phase-meta b { color: var(--muted); font-weight: 500; }
+  .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 700px) { .check-grid { grid-template-columns: 1fr; } }
+  .check-col .col-label {
+    font-family: 'Geist Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--soft); margin-bottom: 0.5rem; display: block;
+  }
+  .check-col.mechanical .col-label::before { content: "⚙ "; }
+  .check-col.judgment .col-label::before { content: "◆ "; color: var(--accent); }
+  .check-col ul { margin: 0; padding-left: 1.05rem; }
+  .check-col li { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+  .check-col li b { color: var(--ink); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  th, td { border: 1px solid var(--rule); padding: 0.6rem 0.8rem; text-align: left; vertical-align: top; }
+  th { font-family: 'Geist Mono', monospace; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--soft); background: transparent; font-weight: 500; }
+  td.sev-blocking { color: var(--accent); font-weight: 600; font-family: 'Geist Mono', monospace; font-size: 0.78rem; }
+  td.sev-warning { color: var(--muted); font-weight: 600; font-family: 'Geist Mono', monospace; font-size: 0.78rem; }
+  td.sev-info { color: var(--soft); font-weight: 600; font-family: 'Geist Mono', monospace; font-size: 0.78rem; }
+
+  pre {
+    background: color-mix(in srgb, var(--ink) 4%, transparent);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+  pre .k { color: var(--link); }
+  pre .s { color: var(--accent); }
+
+  .not-scope { border-left: 3px solid var(--soft); padding: 0.9rem 1.1rem; background: color-mix(in srgb, var(--soft) 6%, transparent); border-radius: 0 6px 6px 0; }
+  .not-scope p { margin: 0 0 0.4rem; font-size: 0.86rem; color: var(--muted); }
+  .not-scope ul { margin: 0; padding-left: 1.2rem; }
+  .not-scope li { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+
+  footer {
+    margin-top: 3.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-family: 'Geist Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--soft);
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">3GPP RCA v6 · Design Proposal</p>
+    <h1>FTA Phase Evaluation Suite</h1>
+    <p class="subtitle">A shadow eval-skill track that checks each FTA phase's output against expected FTA design intent — right after Top Event confirmation, Phase 3.1, Gate A, Gate B, and Phase 3.4 — without touching pipeline state or blocking the run.</p>
+  </header>
+
+  <div class="diagram-container">
+    <svg viewBox="0 0 728 276" role="img" aria-labelledby="fta-eval-title fta-eval-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="fta-eval-title">FTA pipeline with a parallel phase-evaluation track</title>
+      <desc id="fta-eval-desc">Data-flow diagram showing the five FTA pipeline stages — Top Event, Build Tree, Gate A, Gate B, Cross-Reference — each handing off to the next, with a shadow Eval Suite skill triggered underneath every stage; the Gate A Eval node is flagged focal because pivot-pruning there is the highest-risk, hardest-to-reverse decision in the pipeline.</desc>
+      <defs>
+        <pattern id="fta-eval-dots" width="22" height="22" patternUnits="userSpaceOnUse">
+          <circle cx="11" cy="11" r="0.8" fill="var(--ink)" opacity="0.10"/>
+        </pattern>
+        <marker id="fta-eval-arr-muted" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="var(--muted)"/>
+        </marker>
+        <marker id="fta-eval-arr-accent" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0,0 L6,3 L0,6 Z" fill="var(--accent)"/>
+        </marker>
+      </defs>
+
+      <!-- background -->
+      <rect width="728" height="276" fill="var(--paper)"/>
+      <rect width="728" height="276" fill="url(#fta-eval-dots)" opacity="0.55"/>
+      <!-- lane tint: FTA pipeline lane -->
+      <rect x="140" y="36" width="588" height="80" fill="var(--ink)" opacity="0.018"/>
+      <!-- lane dividers -->
+      <line x1="0" y1="36" x2="728" y2="36" stroke="var(--rule)" stroke-width="0.8"/>
+      <line x1="0" y1="116" x2="728" y2="116" stroke="var(--rule)" stroke-width="0.8"/>
+      <line x1="0" y1="196" x2="728" y2="196" stroke="var(--rule)" stroke-width="0.8"/>
+      <line x1="140" y1="36" x2="140" y2="196" stroke="var(--ink)" stroke-opacity="0.20" stroke-width="1"/>
+
+      <!-- lane labels -->
+      <text x="70" y="72" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.08em" fill="var(--soft)">FTA</text>
+      <text x="70" y="84" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.08em" fill="var(--soft)">PIPELINE</text>
+      <text x="70" y="152" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.08em" fill="var(--soft)">EVAL</text>
+      <text x="70" y="164" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.08em" fill="var(--soft)">SUITE</text>
+
+      <!-- step header chips -->
+      <!-- step 1 -->
+      <rect x="180" y="6" width="32" height="16" rx="8" fill="var(--ink)" opacity="0.12"/>
+      <text x="196" y="17" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" fill="var(--ink)">01</text>
+      <text x="196" y="30" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" letter-spacing="0.08em" fill="var(--muted)">TOP EVENT</text>
+      <!-- step 2 -->
+      <rect x="292" y="6" width="32" height="16" rx="8" fill="var(--ink)" opacity="0.12"/>
+      <text x="308" y="17" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" fill="var(--ink)">02</text>
+      <text x="308" y="30" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" letter-spacing="0.08em" fill="var(--muted)">BUILD TREE</text>
+      <!-- step 3 (focal) -->
+      <rect x="404" y="6" width="32" height="16" rx="8" fill="var(--accent)" opacity="0.20"/>
+      <text x="420" y="17" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" fill="var(--accent)">03</text>
+      <text x="420" y="30" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" letter-spacing="0.08em" fill="var(--accent)">GATE A</text>
+      <!-- step 4 -->
+      <rect x="516" y="6" width="32" height="16" rx="8" fill="var(--ink)" opacity="0.12"/>
+      <text x="532" y="17" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" fill="var(--ink)">04</text>
+      <text x="532" y="30" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" letter-spacing="0.08em" fill="var(--muted)">GATE B</text>
+      <!-- step 5 -->
+      <rect x="628" y="6" width="32" height="16" rx="8" fill="var(--ink)" opacity="0.12"/>
+      <text x="644" y="17" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" fill="var(--ink)">05</text>
+      <text x="644" y="30" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" letter-spacing="0.08em" fill="var(--muted)">CROSS-REF</text>
+
+      <!-- ============ ARROWS (before node rects) ============ -->
+      <!-- pipeline handoffs, FTA lane, muted solid -->
+      <line x1="246" y1="76" x2="258" y2="76" stroke="var(--muted)" stroke-width="1" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="358" y1="76" x2="370" y2="76" stroke="var(--muted)" stroke-width="1" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="470" y1="76" x2="482" y2="76" stroke="var(--muted)" stroke-width="1" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="582" y1="76" x2="594" y2="76" stroke="var(--muted)" stroke-width="1" marker-end="url(#fta-eval-arr-muted)"/>
+
+      <!-- eval triggers, same-step vertical, dashed -->
+      <line x1="196" y1="108" x2="196" y2="121" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="308" y1="108" x2="308" y2="121" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="532" y1="108" x2="532" y2="121" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fta-eval-arr-muted)"/>
+      <line x1="644" y1="108" x2="644" y2="121" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fta-eval-arr-muted)"/>
+
+      <!-- focal trigger: Gate A -> Gate A Eval, solid accent, labeled -->
+      <line x1="420" y1="108" x2="420" y2="121" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#fta-eval-arr-accent)"/>
+      <rect x="428" y="106" width="64" height="12" rx="2" fill="var(--paper)"/>
+      <text x="430" y="115" font-family="'Geist Mono',monospace" font-size="8" letter-spacing="0.04em" fill="var(--accent)">PRUNE RISK</text>
+
+      <!-- ============ NODES ============ -->
+      <!-- Step1 / FTA -->
+      <rect x="146" y="44" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="146" y="44" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="150" y="48" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="159" y="55.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">FTA</text>
+      <text x="196" y="67" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Confirm Event</text>
+      <text x="196" y="79" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">cands → event</text>
+      <text x="196" y="91" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">timeline + CP-A</text>
+      <rect x="150" y="98" width="16" height="8" rx="3" fill="#4a7c59"/>
+      <text x="158" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">LS</text>
+
+      <!-- Step1 / EVL -->
+      <rect x="146" y="124" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="146" y="124" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="150" y="128" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="159" y="135.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">EVL</text>
+      <text x="196" y="147" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Top-Event Eval</text>
+      <text x="196" y="159" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">spec-anchor chk</text>
+      <text x="196" y="171" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">rule + judge</text>
+
+      <!-- Step2 / FTA -->
+      <rect x="258" y="44" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="258" y="44" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="262" y="48" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="271" y="55.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">FTA</text>
+      <text x="308" y="67" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Build Hybrid Tree</text>
+      <text x="308" y="79" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">event → skeleton</text>
+      <text x="308" y="91" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">spec + code_search</text>
+      <rect x="262" y="98" width="16" height="8" rx="3" fill="#4a7c59"/>
+      <text x="270" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">LS</text>
+      <rect x="338" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="346" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+
+      <!-- Step2 / EVL -->
+      <rect x="258" y="124" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="258" y="124" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="262" y="128" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="271" y="135.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">EVL</text>
+      <text x="308" y="147" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">3.1 Tree Eval</text>
+      <text x="308" y="159" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">skeleton fidelity</text>
+      <text x="308" y="171" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">rule + judge</text>
+
+      <!-- Step3 / FTA -->
+      <rect x="370" y="44" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="370" y="44" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="374" y="48" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="383" y="55.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">FTA</text>
+      <text x="420" y="67" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Gate A Signaling</text>
+      <text x="420" y="79" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">tree → pruned/fail</text>
+      <text x="420" y="91" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">log_query.py</text>
+      <rect x="374" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="382" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+      <rect x="450" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="458" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+
+      <!-- Step3 / EVL — FOCAL NODE -->
+      <rect x="370" y="124" width="100" height="64" rx="6" fill="var(--accent-tint)"/>
+      <rect x="370" y="124" width="100" height="64" rx="6" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
+      <rect x="374" y="128" width="18" height="10" rx="3" fill="var(--accent)" opacity="0.20"/>
+      <text x="383" y="135.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--accent)">EVL</text>
+      <text x="420" y="147" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Gate A Eval</text>
+      <text x="420" y="159" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">pivot-prune audit</text>
+      <text x="420" y="171" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">rule + judge</text>
+
+      <!-- Step4 / FTA -->
+      <rect x="482" y="44" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="482" y="44" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="486" y="48" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="495" y="55.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">FTA</text>
+      <text x="532" y="67" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Expand + Gate B</text>
+      <text x="532" y="79" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">branch → base_evt</text>
+      <text x="532" y="91" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">code + log_query</text>
+      <rect x="486" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="494" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+      <rect x="562" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="570" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+
+      <!-- Step4 / EVL -->
+      <rect x="482" y="124" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="482" y="124" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="486" y="128" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="495" y="135.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">EVL</text>
+      <text x="532" y="147" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Gate B Eval</text>
+      <text x="532" y="159" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">expansion coverage</text>
+      <text x="532" y="171" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">rule + judge</text>
+
+      <!-- Step5 / FTA -->
+      <rect x="594" y="44" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="594" y="44" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="598" y="48" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="607" y="55.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">FTA</text>
+      <text x="644" y="67" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">Cross-Reference</text>
+      <text x="644" y="79" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">base_evt → finding</text>
+      <text x="644" y="91" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">spec+code+log</text>
+      <rect x="598" y="98" width="16" height="8" rx="3" fill="#5e7a9b"/>
+      <text x="606" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">DB</text>
+      <rect x="674" y="98" width="16" height="8" rx="3" fill="#9c6b50"/>
+      <text x="682" y="103.6" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="5" font-weight="700" fill="#fff">FL</text>
+
+      <!-- Step5 / EVL -->
+      <rect x="594" y="124" width="100" height="64" rx="6" fill="var(--paper)"/>
+      <rect x="594" y="124" width="100" height="64" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.25" stroke-width="1"/>
+      <rect x="598" y="128" width="18" height="10" rx="3" fill="var(--ink)" opacity="0.10"/>
+      <text x="607" y="135.5" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6" font-weight="600" fill="var(--ink)">EVL</text>
+      <text x="644" y="147" text-anchor="middle" font-family="'Geist',sans-serif" font-size="9" font-weight="600" fill="var(--ink)">3.4 XRef Eval</text>
+      <text x="644" y="159" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">delta + threshold</text>
+      <text x="644" y="171" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">rule + judge</text>
+
+      <!-- ============ LEGEND ============ -->
+      <text x="144" y="208" font-family="'Geist Mono',monospace" font-size="7" letter-spacing="0.1em" fill="var(--soft)">STEPS</text>
+      <text x="200" y="212" font-family="'Geist Mono',monospace" font-size="7" fill="var(--muted)">01 Top Event · 02 Build Tree ·</text>
+      <text x="200" y="222" font-family="'Geist Mono',monospace" font-size="7" fill="var(--accent)">03 Gate A (focal) </text>
+      <text x="330" y="222" font-family="'Geist Mono',monospace" font-size="7" fill="var(--muted)">· 04 Gate B · 05 Cross-Ref</text>
+
+      <text x="144" y="230" font-family="'Geist Mono',monospace" font-size="7" letter-spacing="0.1em" fill="var(--soft)">DATA</text>
+      <rect x="200" y="226" width="12" height="7" rx="2" fill="#4a7c59"/>
+      <text x="216" y="231.5" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">LS event</text>
+      <rect x="272" y="226" width="12" height="7" rx="2" fill="#5e7a9b"/>
+      <text x="288" y="231.5" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">DB tree/records</text>
+      <rect x="390" y="226" width="12" height="7" rx="2" fill="#9c6b50"/>
+      <text x="406" y="231.5" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">FL finding</text>
+      <text x="480" y="231.5" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--soft)">left = in · right = out</text>
+
+      <text x="144" y="253" font-family="'Geist Mono',monospace" font-size="7" letter-spacing="0.1em" fill="var(--soft)">FLOW</text>
+      <line x1="200" y1="250" x2="222" y2="250" stroke="var(--muted)" stroke-width="1" marker-end="url(#fta-eval-arr-muted)"/>
+      <text x="228" y="253" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">pipeline handoff</text>
+      <line x1="340" y1="250" x2="362" y2="250" stroke="var(--muted)" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#fta-eval-arr-muted)"/>
+      <text x="368" y="253" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--muted)">eval trigger</text>
+      <line x1="470" y1="250" x2="492" y2="250" stroke="var(--accent)" stroke-width="1.2" marker-end="url(#fta-eval-arr-accent)"/>
+      <text x="498" y="253" font-family="'Geist Mono',monospace" font-size="6.5" fill="var(--accent)">highest-risk trigger</text>
+    </svg>
+  </div>
+  <p class="diagram-caption">Every phase skill keeps running exactly as today — the eval track only observes and appends. Gate A Eval is focal: pivot-pruning discards evidence permanently, so a false "clean passage" verdict there is the costliest mistake in the whole pipeline.</p>
+
+  <section class="block">
+    <h2>Architecture</h2>
+    <p class="section-note">Five new skills, one per evaluated phase, run alongside the five existing FTA phase skills without modifying any of them.</p>
+    <div class="cards">
+      <div class="card">
+        <p class="eyebrow">Ownership</p>
+        <div class="card-header"><span class="card-dot coral"></span><h3>Audit-only write target</h3></div>
+        <ul>
+          <li>Each eval skill appends exactly one entry to a new array, <code>fta_iterations[N].phase_eval_log[]</code> — same pattern as the existing <code>keyword_provenance_audit[]</code>.</li>
+          <li>Never writes <code>hybrid_tree</code>, <code>base_events</code>, <code>status</code>, or any field a phase skill owns.</li>
+          <li>Never touches <code>meta.current_phase</code> — cannot block, gate, or redirect the run.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Trigger</p>
+        <div class="card-header"><span class="card-dot ink"></span><h3>Auto-activates per phase</h3></div>
+        <ul>
+          <li>Same Cline description-trigger convention as the pipeline skills — fires right after its paired phase skill's output lands in context.</li>
+          <li>Read-only: state file slice in, verdict out. No spec/code/log tool calls of its own.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <p class="eyebrow">Mechanism</p>
+        <div class="card-header"><span class="card-dot muted"></span><h3>Rule + judge hybrid</h3></div>
+        <ul>
+          <li><b style="color:var(--ink)">Mechanical</b> — deterministic checks against schema, invariants, table isolation, keyword provenance.</li>
+          <li><b style="color:var(--ink)">Judgment</b> — FTA-expert rubric on methodology calls a rule can't decide (was this prune actually justified?).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Per-phase rubric</h2>
+    <p class="section-note">Every rubric below is derived directly from that phase's own SKILL.md contract and hard constraints — the eval only flags where the actual output diverges from what that phase's own design promises.</p>
+
+    <div class="phase-card">
+      <div class="phase-head">
+        <span class="phase-num">STAGE 01</span>
+        <h3>Top Event Eval</h3>
+        <span class="phase-skill">3gpp-fta-eval-top-event</span>
+      </div>
+      <p class="phase-meta"><b>Reads:</b> phase2_ecf.top_event_candidates[], observable_symptoms, user_decisions[] (Checkpoint A), keyword_provenance_audit[] (iteration_id=null) · engineer_inputs[] when seed_and_run</p>
+      <div class="check-grid">
+        <div class="check-col mechanical">
+          <span class="col-label">Mechanical</span>
+          <ul>
+            <li>Every candidate <b>event</b> traces to a provenance audit entry with <code>iteration_id: null</code>.</li>
+            <li>Confirmed top event is a member of <code>top_event_candidates[]</code>, or carries <code>source: ENGINEER_PROVIDED</code> under <code>meta.mode == "seed_and_run"</code>.</li>
+            <li>Checkpoint A entry exists in <code>user_decisions[]</code> with a populated <code>decided_at</code>.</li>
+            <li>No <code>UE_Trace_log</code> keyword appears anywhere in Phase 1/2 audit entries (table isolation).</li>
+          </ul>
+        </div>
+        <div class="check-col judgment">
+          <span class="col-label">FTA judgment</span>
+          <ul>
+            <li>Is the confirmed event a genuine <b>top event</b> (an undesired system-level outcome) — not a symptom description, and not a cause guessed ahead of the tree?</li>
+            <li>Is its abstraction level consistent with <code>phase1_scope_filter.procedure</code> — not a sub-step, not the whole call?</li>
+            <li>Does the rationale actually cite <code>missing_events</code> / <code>observable_symptoms</code> to justify picking THIS candidate over the others?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-head">
+        <span class="phase-num">STAGE 02</span>
+        <h3>Phase 3.1 — Build Tree Eval</h3>
+        <span class="phase-skill">3gpp-fta-eval-build-tree</span>
+      </div>
+      <p class="phase-meta"><b>Reads:</b> fta_iterations[N].hybrid_tree, input_top_event · keyword_provenance_audit[] (iteration_id=N, tagged skeleton / generate_hypotheses / bind_module)</p>
+      <div class="check-grid">
+        <div class="check-col mechanical">
+          <span class="col-label">Mechanical</span>
+          <ul>
+            <li><code>branches[]</code> non-empty; if empty, <code>fallback_used</code> must be set (Step 3 fallback fired).</li>
+            <li>Every branch starts <code>status: "unevaluated"</code>, <code>gate_a_result: null</code>, <code>children: []</code> — the mandated initial state.</li>
+            <li>On the non-fallback path, every branch carries a non-null <code>spec_ref</code>.</li>
+            <li>Zero <code>UE_3gpp_signaling_log</code> / <code>UE_Trace_log</code> entries tagged to this phase — 3.1 never queries logs.</li>
+            <li>Every <code>modules[].file</code> traces to a <code>bind_module</code> output — no invented paths.</li>
+          </ul>
+        </div>
+        <div class="check-col judgment">
+          <span class="col-label">FTA judgment</span>
+          <ul>
+            <li>Is the branch set a plausible MECE decomposition of the procedure's standardized phases — or is a phase the spec would mandate conspicuously missing?</li>
+            <li>When <code>fallback_used</code> fired: are the hypothesis branches one causal level below the top event — not restating it, not skipping two levels?</li>
+            <li>For branches with <code>modules: []</code>: defensible (pure protocol-timing, no code module) or a code-search miss worth retrying?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card focal">
+      <div class="phase-head">
+        <span class="phase-num">STAGE 03 · FOCAL</span>
+        <h3>Phase 3.2 — Gate A Eval</h3>
+        <span class="phase-skill">3gpp-fta-eval-gate-a</span>
+      </div>
+      <p class="phase-meta"><b>Reads:</b> hybrid_tree.branches[*].gate_a_result / status, pruned_branches[], open_items[]</p>
+      <div class="check-grid">
+        <div class="check-col mechanical">
+          <span class="col-label">Mechanical</span>
+          <ul>
+            <li>Every branch's final <code>status</code> is one of the five valid values — no free-text drift.</li>
+            <li>Every <code>pruned_branches[]</code> entry carries non-null <code>evidence</code>.</li>
+            <li><code>pruned_normal</code> branches have <b>zero</b> children — Step 3 must have been skipped, not just unfinished.</li>
+            <li><code>open</code> branches appear in <code>open_items[]</code> and nowhere else — bucket membership is exclusive.</li>
+            <li>All-<code>pruned_normal</code> case: the <code>all_phases_normal_failure_not_in_skeleton</code> signal is recorded.</li>
+          </ul>
+        </div>
+        <div class="check-col judgment">
+          <span class="col-label">FTA judgment — highest stakes in the suite</span>
+          <ul>
+            <li>For every <code>pruned_normal</code> verdict: does the signaling evidence show a genuinely clean, complete exchange — or is the match thin/ambiguous and being over-confidently called "normal" when it should be <code>open</code>? A false prune destroys evidence <b>permanently</b>.</li>
+            <li>Is <code>failure_here</code> vs <code>absent</code> actually justified by the rows returned (explicit error/reject IE vs. zero matching rows) — not a non-error message variant misread as a failure?</li>
+            <li>Were branches matching <code>observable_symptoms.missing_events</code> evaluated first, per the skill's own priority rule?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-head">
+        <span class="phase-num">STAGE 04</span>
+        <h3>Phase 3.3 — Gate B Eval</h3>
+        <span class="phase-skill">3gpp-fta-eval-gate-b</span>
+      </div>
+      <p class="phase-meta"><b>Reads:</b> hybrid_tree.branches[*].children[*], gate_b_result, base_events[], rejected[]</p>
+      <div class="check-grid">
+        <div class="check-col mechanical">
+          <span class="col-label">Mechanical</span>
+          <ul>
+            <li>Anti-laziness: every child of an expanded branch has a non-null <code>gate_b_result</code> — none silently left <code>unevaluated</code>.</li>
+            <li>Child IDs follow <code>&lt;branch.id&gt;.&lt;n&gt;</code> with no gaps or duplicates.</li>
+            <li>Every Gate B keyword traces to <code>expand_failure_modes</code> output or the documented 3-level fallback chain — never a 4th, invented source.</li>
+            <li><code>base_events[]</code>, <code>rejected[]</code>, <code>open_items[]</code> partition the children set exactly.</li>
+          </ul>
+        </div>
+        <div class="check-col judgment">
+          <span class="col-label">FTA judgment</span>
+          <ul>
+            <li>When <code>expand_sub_causes</code> fallback fired: were the resulting children still evaluable at Gate B, or rubber-stamped <code>rejected</code> with no real trace evidence behind it?</li>
+            <li>For <code>base_event_confirmed</code> verdicts: does the matched trace line correspond causally to the claimed mechanism — not just any log line touching the same function?</li>
+            <li>Given the module's actual log macros, does the failure-mode list look complete, or is an obvious error path missing from the children?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="phase-card">
+      <div class="phase-head">
+        <span class="phase-num">STAGE 05</span>
+        <h3>Phase 3.4 — Cross-Reference Eval</h3>
+        <span class="phase-skill">3gpp-fta-eval-cross-reference</span>
+      </div>
+      <p class="phase-meta"><b>Reads:</b> fta_iterations[N].cross_reference_findings[]</p>
+      <div class="check-grid">
+        <div class="check-col mechanical">
+          <span class="col-label">Mechanical</span>
+          <ul>
+            <li>Every finding has both <code>commanded_value</code> and <code>actual_value</code> populated when marked <code>VALUE_DISCREPANCY</code>, or a documented reason for the null — never a silent gap.</li>
+            <li><code>VALUE_DISCREPANCY</code> is set only if <code>delta</code> crosses the documented threshold (dBm &gt;3, timer &gt;10%, boolean/enum any) — flag both false positives and unmarked real discrepancies.</li>
+            <li><code>implementation_location</code> traces to a <code>find_implementation</code> output, never inferred.</li>
+            <li>Exactly one finding per confirmed base event — no missing, no duplicate.</li>
+          </ul>
+        </div>
+        <div class="check-col judgment">
+          <span class="col-label">FTA judgment</span>
+          <ul>
+            <li>Is the significance threshold applied the right one for this IE's actual data type — not the generic 3dB rule mis-applied to a boolean/enum?</li>
+            <li>Does the commanded→actual direction of the delta make protocol sense given the symptom — or does it look like a units/scale mismatch producing a spurious discrepancy?</li>
+            <li>For empty <code>commanded_value_ies</code> (expected more at iteration ≥2): genuinely no governing commanded value, or was <code>find_commanded_values</code> under-queried?</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Worked example — VoLTE call drop</h2>
+    <p class="section-note">Same run walked stage by stage. Engineer reports a mid-call VoLTE drop; scoping narrows it to LTE RRC re-establishment after radio link failure. Iteration 1's tree, as actually written by the pipeline skills, with what each eval skill would have caught.</p>
+
+    <div class="diagram-container" style="border-top:none;">
+      <svg viewBox="0 0 900 330" role="img" aria-labelledby="volte-tree-title volte-tree-desc" xmlns="http://www.w3.org/2000/svg">
+        <title id="volte-tree-title">Iteration 1 fault tree for a VoLTE call-drop RCA</title>
+        <desc id="volte-tree-desc">Tree diagram: top event RRC Reestablishment Failure branches into five spec phases; the Reestablishment Response branch, which came back absent, expands into two failure modes — a confirmed T311 timer-expiry base event and a rejected context-not-found hypothesis; two branches carry an eval-flag badge for methodology concerns caught by the shadow eval skills.</desc>
+        <rect width="900" height="330" fill="var(--paper)"/>
+
+        <!-- connectors (before nodes) -->
+        <line x1="450" y1="88" x2="450" y2="114" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="140" y1="114" x2="760" y2="114" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="140" y1="114" x2="140" y2="140" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="295" y1="114" x2="295" y2="140" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="450" y1="114" x2="450" y2="140" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="605" y1="114" x2="605" y2="140" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="760" y1="114" x2="760" y2="140" stroke="var(--muted)" stroke-width="1"/>
+
+        <line x1="450" y1="188" x2="450" y2="214" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="365" y1="214" x2="535" y2="214" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="365" y1="214" x2="365" y2="240" stroke="var(--muted)" stroke-width="1"/>
+        <line x1="535" y1="214" x2="535" y2="240" stroke="var(--muted)" stroke-width="1"/>
+
+        <!-- root -->
+        <rect x="355" y="40" width="190" height="48" rx="6" fill="var(--paper)" stroke="var(--ink)" stroke-opacity="0.35" stroke-width="1.2"/>
+        <text x="450" y="53" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7" letter-spacing="0.08em" fill="var(--soft)">TOP EVENT · ITER 1</text>
+        <text x="450" y="69" text-anchor="middle" font-family="'Geist',sans-serif" font-size="11" font-weight="600" fill="var(--ink)">RRC Reestab Failure</text>
+        <text x="450" y="82" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="var(--muted)">after Radio Link Failure</text>
+
+        <!-- level 1: P1..P5 -->
+        <!-- P1 open -->
+        <rect x="75" y="140" width="130" height="48" rx="6" fill="var(--ink)" opacity="0.02"/>
+        <rect x="75" y="140" width="130" height="48" rx="6" fill="none" stroke="var(--ink)" stroke-opacity="0.20" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="140" y="160" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">P1 Cell Selection</text>
+        <text x="140" y="173" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">open · no msgs</text>
+
+        <!-- P2 pruned, flagged -->
+        <rect x="230" y="140" width="130" height="48" rx="6" fill="var(--ink)" opacity="0.05"/>
+        <rect x="230" y="140" width="130" height="48" rx="6" fill="none" stroke="var(--muted)" stroke-width="1"/>
+        <text x="295" y="160" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">P2 Reestab Req.</text>
+        <text x="295" y="173" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">pruned · 1 row</text>
+        <circle cx="352" cy="148" r="6" fill="#b8860b" opacity="0.20" stroke="#b8860b" stroke-width="1"/>
+        <text x="352" y="151" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" font-weight="700" fill="#b8860b">!</text>
+
+        <!-- P3 absent, expands -->
+        <rect x="385" y="140" width="130" height="48" rx="6" fill="var(--paper)"/>
+        <rect x="385" y="140" width="130" height="48" rx="6" fill="none" stroke="var(--ink)" stroke-opacity="0.32" stroke-width="1.2"/>
+        <text x="450" y="160" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">P3 Reestab Resp.</text>
+        <text x="450" y="173" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">absent → expand</text>
+
+        <!-- P4 pruned clean -->
+        <rect x="540" y="140" width="130" height="48" rx="6" fill="var(--ink)" opacity="0.05"/>
+        <rect x="540" y="140" width="130" height="48" rx="6" fill="none" stroke="var(--muted)" stroke-width="1"/>
+        <text x="605" y="160" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">P4 Security Resume</text>
+        <text x="605" y="173" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">pruned · clean</text>
+
+        <!-- P5 absent, flagged -->
+        <rect x="695" y="140" width="130" height="48" rx="6" fill="var(--ink)" opacity="0.02"/>
+        <rect x="695" y="140" width="130" height="48" rx="6" fill="none" stroke="var(--ink)" stroke-opacity="0.20" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="760" y="160" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">P5 Reestab Compl.</text>
+        <text x="760" y="173" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">absent · re-check</text>
+        <circle cx="817" cy="148" r="6" fill="#b8860b" opacity="0.20" stroke="#b8860b" stroke-width="1"/>
+        <text x="817" y="151" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" font-weight="700" fill="#b8860b">!</text>
+
+        <!-- level 2: FM1, FM2 (children of P3) -->
+        <rect x="295" y="240" width="140" height="48" rx="6" fill="var(--accent-tint)"/>
+        <rect x="295" y="240" width="140" height="48" rx="6" fill="none" stroke="var(--accent)" stroke-width="1.2"/>
+        <text x="365" y="260" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--ink)">FM1 T311 Expired</text>
+        <text x="365" y="273" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--accent)">5000→1000ms · Δ80%</text>
+
+        <rect x="465" y="240" width="140" height="48" rx="6" fill="var(--ink)" opacity="0.015"/>
+        <rect x="465" y="240" width="140" height="48" rx="6" fill="none" stroke="var(--ink)" stroke-opacity="0.15" stroke-width="1"/>
+        <text x="535" y="260" text-anchor="middle" font-family="'Geist',sans-serif" font-size="10" font-weight="600" fill="var(--soft)">FM2 Context N/F</text>
+        <text x="535" y="273" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--soft)">rejected · no match</text>
+
+        <!-- legend -->
+        <line x1="30" y1="300" x2="870" y2="300" stroke="var(--rule)" stroke-width="0.8"/>
+        <rect x="30" y="310" width="14" height="10" rx="2" fill="none" stroke="var(--ink)" stroke-opacity="0.32" stroke-width="1.2"/>
+        <text x="50" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">investigated</text>
+        <rect x="150" y="310" width="14" height="10" rx="2" fill="none" stroke="var(--ink)" stroke-opacity="0.20" stroke-width="1" stroke-dasharray="4,3"/>
+        <text x="170" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">open / unclear</text>
+        <rect x="280" y="310" width="14" height="10" rx="2" fill="var(--ink)" opacity="0.05" stroke="var(--muted)" stroke-width="1"/>
+        <text x="300" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">pruned</text>
+        <rect x="390" y="310" width="14" height="10" rx="2" fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="1.2"/>
+        <text x="410" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">base event confirmed</text>
+        <rect x="560" y="310" width="14" height="10" rx="2" fill="var(--ink)" opacity="0.015" stroke="var(--ink)" stroke-opacity="0.15" stroke-width="1"/>
+        <text x="580" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">rejected</text>
+        <circle cx="700" cy="315" r="6" fill="#b8860b" opacity="0.20" stroke="#b8860b" stroke-width="1"/>
+        <text x="700" y="318" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" font-weight="700" fill="#b8860b">!</text>
+        <text x="712" y="318.5" font-family="'Geist Mono',monospace" font-size="7.5" fill="var(--muted)">eval-flagged — see table below</text>
+      </svg>
+    </div>
+
+    <table>
+      <thead>
+        <tr><th>Stage</th><th>Pipeline wrote</th><th>Eval verdict</th><th>Severity</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Top Event</td>
+          <td>Confirmed <code>RRC_Connection_Reestablishment_Failure</code> — <code>RRCConnectionReestablishmentComplete</code> never appeared in the timeline.</td>
+          <td>Provenance traces clean; event framing is a genuine top event, not a symptom or a pre-named cause; rationale correctly cites the missing-event evidence.</td>
+          <td class="sev-info">INFO</td>
+        </tr>
+        <tr>
+          <td>3.1 Build Tree</td>
+          <td>5 branches from TS 36.331 §5.3.7 skeleton (P1–P5), modules bound per phase.</td>
+          <td>Branch set is a reasonable MECE cut of the spec phases — <b style="color:var(--ink)">but</b> P1 (Cell Selection) carries no <code>mandatory_messages</code> despite iteration 1 being spec-anchored; should be marked explicitly not-applicable, not silently empty.</td>
+          <td class="sev-warning">WARNING</td>
+        </tr>
+        <tr>
+          <td>3.2 Gate A</td>
+          <td>P1 open · P2 <code>pruned_normal</code> · P3 <code>absent</code> → expand · P4 <code>pruned_normal</code> · P5 <code>absent</code>.</td>
+          <td>P2 pruned on a <b style="color:var(--ink)">single matched row</b> (request sent, nothing else) — thin evidence for "clean passage," this is exactly the highest-risk false-prune pattern the suite exists to catch. P5 evaluated independently while depending on P3's outcome — possibly mis-leveled in the tree.</td>
+          <td class="sev-warning">WARNING</td>
+        </tr>
+        <tr>
+          <td>3.3 Gate B</td>
+          <td>P3 expanded → FM1 <code>T311_Timer_Expired</code> confirmed, FM2 <code>Context_Not_Found</code> rejected.</td>
+          <td>Both children evaluated, no early exit on the FM1 confirm. FM1's matched trace line sits inside the failure symptom's time window — causally consistent, not a coincidental macro hit.</td>
+          <td class="sev-info">INFO</td>
+        </tr>
+        <tr>
+          <td>3.4 Cross-Ref</td>
+          <td>FM1: commanded T311 = 5000ms (SIB2 broadcast) vs actual = 1000ms (UE default fallback) → <code>VALUE_DISCREPANCY</code>, Δ80%.</td>
+          <td>Timer threshold (&gt;10%) correctly applied — not the dBm rule misapplied. Direction makes sense: UE gave up re-establishment early, consistent with the premature-drop symptom.</td>
+          <td class="sev-info">INFO</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="section-note" style="margin-top:0.9rem;">For contrast — what BLOCKING looks like: had FM2 been left with <code>gate_b_result: null</code> instead of an explicit <code>rejected</code>, 3.3 Eval would fail the anti-laziness mechanical check outright (a child silently skipped after the phase claimed completion) and surface immediately, not as a methodology note.</p>
+  </section>
+
+  <section class="block">
+    <h2>Verdict entry</h2>
+    <p class="section-note">One entry appended per invocation to <code>fta_iterations[N].phase_eval_log[]</code>. Never read by pipeline dispatch logic — audit trail only. This is the actual entry Gate A Eval would have written for the VoLTE example above.</p>
+    <pre>{
+  <span class="k">"phase"</span>: <span class="s">"3.2"</span>,
+  <span class="k">"iteration_id"</span>: 1,
+  <span class="k">"evaluated_at"</span>: <span class="s">"&lt;ISO&gt;"</span>,
+  <span class="k">"mechanical_checks"</span>: [
+    { <span class="k">"id"</span>: <span class="s">"status_enum_valid"</span>, <span class="k">"result"</span>: <span class="s">"pass"</span> },
+    { <span class="k">"id"</span>: <span class="s">"bucket_exclusivity"</span>, <span class="k">"result"</span>: <span class="s">"pass"</span> }
+  ],
+  <span class="k">"judgment_checks"</span>: [
+    { <span class="k">"id"</span>: <span class="s">"prune_evidence_strength"</span>, <span class="k">"verdict"</span>: <span class="s">"concern"</span>,
+      <span class="k">"rationale"</span>: <span class="s">"branch P2 (RRCConnectionReestablishmentRequest) pruned_normal on a single matched signaling row; no confirmation of the response step — borderline for clean passage"</span> },
+    { <span class="k">"id"</span>: <span class="s">"branch_level_consistency"</span>, <span class="k">"verdict"</span>: <span class="s">"concern"</span>,
+      <span class="k">"rationale"</span>: <span class="s">"branch P5 evaluated independently while its precondition branch P3 is also absent — possible mis-leveled sibling"</span> }
+  ],
+  <span class="k">"severity"</span>: <span class="s">"warning"</span>,
+  <span class="k">"summary"</span>: <span class="s">"0 mechanical violations, 2 methodology concerns flagged for review"</span>
+}</pre>
+  </section>
+
+  <section class="block">
+    <h2>Severity taxonomy</h2>
+    <table>
+      <thead>
+        <tr><th>Severity</th><th>Trigger</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="sev-blocking">BLOCKING</td>
+          <td>A mechanical check failed — provably wrong against schema or hard invariant, not a matter of interpretation.</td>
+          <td>Surfaced to the engineer immediately, inline in the same conversation turn.</td>
+        </tr>
+        <tr>
+          <td class="sev-warning">WARNING</td>
+          <td>A judgment check flagged a plausible FTA-methodology concern — not proven wrong, needs a human look.</td>
+          <td>Logged and briefly mentioned; engineer decides whether to dig in.</td>
+        </tr>
+        <tr>
+          <td class="sev-info">INFO</td>
+          <td>All checks passed, but something's worth recording — e.g. a fallback path fired.</td>
+          <td>Logged only, silent.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="block">
+    <div class="not-scope">
+      <p><b style="color:var(--ink)">Out of scope for this design</b></p>
+      <ul>
+        <li>Phase 3.5 (root cause synthesis) and Checkpoint B (iteration controller) — no tool calls in either, lower fabrication risk; deferred.</li>
+        <li>Blocking or auto-correcting the pipeline — the eval track is strictly observational.</li>
+        <li>Rolling <code>phase_eval_log[]</code> into the Phase 4 report — a possible future extension, not part of this design.</li>
+        <li>Golden-case regression harness — this design defines the rubric and the write contract; wiring it into a batch regression runner is separate follow-up work.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    docs/architecture/2026-08-17-fta-phase-eval-suite-design.html · companion to 2026-08-16-fta-v6-detailed-design.html · rendered with diagram-design
+  </footer>
+</div>

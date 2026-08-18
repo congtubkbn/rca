@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FTA v6 Architecture & Flow Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            /* Colors */
+            --bg-primary: #f8fafc;
+            --bg-secondary: #eef2f7;
+            --text-primary: #1a2f4a;
+            --text-secondary: #4a6b8a;
+            --accent-blue: #4f7ba8;
+            --accent-teal: #2d8b8b;
+            --accent-amber: #b8860b;
+            --accent-slate: #5a7a94;
+            --border-light: #d4dfe8;
+            --success: #2d7a4a;
+            --warning: #b8860b;
+            --error: #8b3a3a;
+
+            /* Typography */
+            --font-display: "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+            --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+            --font-mono: "SF Mono", Monaco, "Cascadia Code", monospace;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg-primary: #0f1419;
+                --bg-secondary: #1a1f2e;
+                --text-primary: #e8eef6;
+                --text-secondary: #a8b8cc;
+                --accent-blue: #7ab4e8;
+                --accent-teal: #4bb4b4;
+                --accent-amber: #daa520;
+                --accent-slate: #8aa4c0;
+                --border-light: #2a3a4a;
+            }
+        }
+
+        :root[data-theme="dark"] {
+            --bg-primary: #0f1419;
+            --bg-secondary: #1a1f2e;
+            --text-primary: #e8eef6;
+            --text-secondary: #a8b8cc;
+            --accent-blue: #7ab4e8;
+            --accent-teal: #4bb4b4;
+            --accent-amber: #daa520;
+            --accent-slate: #8aa4c0;
+            --border-light: #2a3a4a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            border-bottom: 3px solid var(--accent-blue);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        section {
+            margin-bottom: 4rem;
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        section:nth-child(odd) {
+            border-left-color: var(--accent-teal);
+        }
+
+        section:nth-child(3n) {
+            border-left-color: var(--accent-amber);
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-wrap: balance;
+        }
+
+        h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .diagram-container {
+            background: var(--bg-primary);
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin: 1.5rem 0;
+            border: 1px solid var(--border-light);
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+
+        p, li {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        .label {
+            display: inline-block;
+            background: var(--accent-blue);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin: 0.25rem;
+        }
+
+        .label.spec {
+            background: var(--accent-amber);
+        }
+
+        .label.code {
+            background: var(--accent-slate);
+        }
+
+        .label.log {
+            background: var(--accent-teal);
+        }
+
+        .label.output {
+            background: var(--success);
+        }
+
+        .box {
+            background: var(--bg-primary);
+            border: 2px solid var(--accent-blue);
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .box.spec {
+            border-color: var(--accent-amber);
+        }
+
+        .box.code {
+            border-color: var(--accent-slate);
+        }
+
+        .box.log {
+            border-color: var(--accent-teal);
+        }
+
+        .box-title {
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .box-content {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        code {
+            background: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            color: var(--accent-blue);
+        }
+
+        .flow-step {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.5rem;
+            height: 2.5rem;
+            background: var(--accent-blue);
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content p {
+            margin: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        th, td {
+            border: 1px solid var(--border-light);
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        th {
+            background: var(--accent-blue);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: var(--bg-primary);
+        }
+
+        .highlight {
+            background: rgba(255, 215, 0, 0.15);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .note {
+            background: rgba(79, 123, 168, 0.1);
+            border-left: 4px solid var(--accent-blue);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .note p {
+            margin: 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        @media (max-width: 900px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        .anchor-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .anchor-link:hover {
+            text-decoration: underline;
+        }
+
+        .toc {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .toc h3 {
+            margin-top: 0;
+        }
+
+        .toc ul {
+            margin-left: 1.5rem;
+        }
+
+        .toc li {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FTA v6 Architecture & Flow</h1>
+            <p class="subtitle">Detailed diagrams of Fault Tree Analysis per-iteration pipeline</p>
+        </header>
+
+        <div class="toc">
+            <h3>Document Map</h3>
+            <ul>
+                <li><a href="#overview" class="anchor-link">1. FTA Pipeline Overview</a></li>
+                <li><a href="#phase-31" class="anchor-link">2. Phase 3.1: Build Hybrid Tree</a></li>
+                <li><a href="#phase-32-33" class="anchor-link">3. Phase 3.2 + 3.3: Evaluate & Expand</a></li>
+                <li><a href="#gates" class="anchor-link">4. Gate A & Gate B Logic</a></li>
+                <li><a href="#expansion" class="anchor-link">5. Dynamic Expansion Flow</a></li>
+                <li><a href="#iteration" class="anchor-link">6. Iteration Chaining</a></li>
+                <li><a href="#state" class="anchor-link">7. State File Structure</a></li>
+                <li><a href="#data-sources" class="anchor-link">8. Data Sources & Tools</a></li>
+            </ul>
+        </div>
+
+        <!-- 1. Overview -->
+        <section id="overview">
+            <h2>1. FTA Pipeline Overview (per iteration)</h2>
+            <p>Fault Tree Analysis runs as iterative loops. Each iteration processes one top event and produces a root cause, then halts at Checkpoint B for user decision.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TD
+    Start["Iteration N Starts<br/>input_top_event from Phase 2 or base_event from prior iteration"] -->
+    P31["<b>Phase 3.1</b><br/>Build Hybrid Tree<br/>spec skeleton + code binding"]
+    P32["<b>Phase 3.2</b><br/>Gate A Evaluation<br/>Signaling log query<br/>Pivot-Prune normal branches"]
+    P33["<b>Phase 3.3</b><br/>Dynamic Expansion<br/>Expand failure modes<br/>Gate B trace evaluation"]
+    P34["<b>Phase 3.4</b><br/>Cross-Reference<br/>Commanded vs Actual values"]
+    P35["<b>Phase 3.5</b><br/>Root Cause Synthesis<br/>Aggregate evidence"]
+    CPB["<b>Checkpoint B</b><br/>User Decision Gate"]
+
+    End1["Accept Terminal<br/>→ Phase 4 (Finalize)"]
+    End2["Dig Deeper<br/>→ Iteration N+1"]
+    End3["Abort<br/>→ Phase 4 (Finalize)"]
+
+    Start --> P31 --> P32 --> P33 --> P34 --> P35 --> CPB
+    CPB -->|accept_terminal| End1
+    CPB -->|dig_deeper| End2
+    CPB -->|abort| End3
+
+    style P31 fill:#b8860b,stroke:#6b4d00,color:#fff
+    style P32 fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style P33 fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style P34 fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style P35 fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style CPB fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+                </div>
+            </div>
+
+            <div class="note">
+                <p><strong>Key point:</strong> Each iteration is self-contained. When user selects "dig_deeper", iteration N+1 begins with its own tree, base_event from iteration N as its input_top_event, and the same 5-phase sequence.</p>
+            </div>
+        </section>
+
+        <!-- 2. Phase 3.1 -->
+        <section id="phase-31">
+            <h2>2. Phase 3.1: Build Hybrid Fault Tree</h2>
+            <p>Construct initial tree skeleton. Tree contains ONLY top-level phases, no children yet — children added in Phase 3.3 when a branch survives Gate A.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    subgraph Input["INPUT"]
+        TE["top_event<br/>procedure<br/>RAT<br/>time_window"]
+    end
+
+    subgraph Tools["TOOL CALLS"]
+        T1["spec_query.py<br/>--operation skeleton"]
+        T2["code_search.py<br/>--operation bind_module<br/>per phase"]
+    end
+
+    subgraph Processing["PROCESSING"]
+        P1["Extract spec phases<br/>from procedure"]
+        P2["Bind UE code modules<br/>to each phase"]
+        P3["Check: empty skeleton?<br/>If yes → fallback<br/>generate_hypotheses"]
+    end
+
+    subgraph Output["OUTPUT"]
+        OT["hybrid_tree with<br/>- branches[]<br/>- status='unevaluated'<br/>- modules[] per branch<br/>- gate_a_result=null"]
+    end
+
+    Input --> Tools
+    Tools --> T1 & T2
+    T1 --> P1
+    P2 --> P3
+    T2 --> P2
+    P3 --> Output
+
+    style Input fill:#f0f0f0,stroke:#666
+    style Tools fill:#b8860b,stroke:#6b4d00,color:#fff
+    style T1 fill:#b8860b,stroke:#6b4d00,color:#fff
+    style T2 fill:#5a7a94,stroke:#2a3a4a,color:#fff
+    style Processing fill:#e0e0e0,stroke:#666
+    style Output fill:#c0e0c0,stroke:#2d7a4a,color:#1a2a1a
+                </div>
+            </div>
+
+            <h3>Execution Steps</h3>
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p><strong>Read input:</strong> Retrieve <code>input_top_event</code>, <code>procedure</code>, <code>rat</code> from state file iteration slice.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p><strong>Get spec skeleton:</strong> Call <code>spec_query.py --operation skeleton</code> to fetch standardized phases from 3GPP spec for the procedure.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p><strong>Empty check (expected for iter ≥ 2):</strong> If skeleton returns <code>phases: []</code>, invoke fallback: <code>spec_query.py --operation generate_hypotheses</code>. Treat outputs as top-level hypotheses.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p><strong>Bind modules:</strong> For each phase/hypothesis, call <code>code_search.py --operation bind_module</code> to find UE source files implementing that phase.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <p><strong>Assemble & write:</strong> Build <code>hybrid_tree.branches[]</code> with each phase/hypothesis as a top-level branch. All branches start <code>status="unevaluated"</code>, <code>gate_a_result=null</code>, <code>children=[]</code>.</p>
+                </div>
+            </div>
+
+            <div class="box spec">
+                <div class="box-title">Data: Spec Skeleton Structure</div>
+                <div class="box-content">
+{
+  "phases": [
+    {
+      "phase_id": "P1",
+      "name": "RRC Reconfiguration",
+      "spec_ref": "TS 36.331 §5.3.5",
+      "protocol_layer": "RRC",
+      "mandatory_messages": ["RRCReconfiguration", "RAR"]
+    },
+    ...
+  ]
+}
+                </div>
+            </div>
+
+            <div class="box code">
+                <div class="box-title">Data: Code Binding Result</div>
+                <div class="box-content">
+{
+  "phase_id": "P1",
+  "modules": [
+    {
+      "file": "src/rrc_handler.c",
+      "functions": ["rrc_reconfig_start", "rrc_send_req"]
+    }
+  ]
+}
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Phase 3.2 + 3.3 -->
+        <section id="phase-32-33">
+            <h2>3. Phase 3.2 + 3.3: Evaluate & Expand Branches</h2>
+            <p>Walk each top-level branch through two evaluation gates. Gate A (signaling) classifies; Gate B (trace) verifies failure modes.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TD
+    Start["For each branch in hybrid_tree<br/>status='unevaluated'"] -->
+    GateA["<b>GATE A</b> - Signaling Query<br/>UE_3gpp_signaling_log"]
+
+    GateA --> GA_Normal{Gate A Result}
+
+    GA_Normal -->|"normal_passage<br/>no errors"| Prune["status = 'pruned_normal'<br/>Add to pruned_branches[]<br/>SKIP Gate B"]
+
+    GA_Normal -->|"failure_here<br/>error/reject found"| Proceed["status = 'failure_here'<br/>Proceed to Gate B"]
+
+    GA_Normal -->|"absent<br/>messages missing"| Proceed2["status = 'absent'<br/>Proceed to Gate B<br/>Gate B may find evidence"]
+
+    GA_Normal -->|"unclear"| OpenItem["status = 'open'<br/>Add to open_items[]<br/>SKIP Gate B"]
+
+    Proceed --> Expand["<b>EXPAND</b><br/>call code_search.py<br/>expand_failure_modes<br/>Extract log keywords"]
+    Proceed2 --> Expand
+
+    Expand --> ExpandResult{Expansion Result}
+    ExpandResult -->|"has modes"| CreateChildren["Create children[] nodes<br/>per failure mode"]
+    ExpandResult -->|"empty"| FallbackExpand["Fallback:<br/>spec_query.py<br/>expand_sub_causes"]
+
+    CreateChildren --> GateB["<b>GATE B</b> - Trace Query<br/>UE_Trace_log<br/>Per failure_mode"]
+    FallbackExpand --> GateB
+
+    GateB --> GB_Result{Gate B Result}
+
+    GB_Result -->|"matched"| BaseEvent["status = 'base_event_confirmed'<br/>Add to base_events[]"]
+    GB_Result -->|"no match"| Rejected["status = 'rejected'<br/>Add to rejected[]"]
+    GB_Result -->|"unclear"| OpenItem2["status = 'open'<br/>Add to open_items[]"]
+
+    Prune --> Done["Iteration complete<br/>Move to Phase 3.4"]
+    BaseEvent --> Done
+    Rejected --> Done
+    OpenItem2 --> Done
+
+    style GateA fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style GateB fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style Expand fill:#5a7a94,stroke:#2a3a4a,color:#fff
+    style Prune fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+    style BaseEvent fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+    style Rejected fill:#8b3a3a,stroke:#5a1a1a,color:#fff
+                </div>
+            </div>
+
+            <div class="note">
+                <p><strong>Table isolation (hard rule):</strong> Gate A ONLY queries <code>UE_3gpp_signaling_log</code>. Gate B ONLY queries <code>UE_Trace_log</code>. Policy enforced at <code>log_query.py</code> layer.</p>
+            </div>
+
+            <h3>Phase 3.2: Gate A (Signaling Evaluation)</h3>
+            <p>Query signaling log for <code>mandatory_messages</code> defined on the branch. Interpret result:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Query Result</th>
+                        <th>Branch Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Messages clean, no errors</td>
+                        <td><code>pruned_normal</code></td>
+                        <td>Prune. Add to <code>pruned_branches[]</code>. Skip Gate B.</td>
+                    </tr>
+                    <tr>
+                        <td>Messages + failure indicators</td>
+                        <td><code>failure_here</code></td>
+                        <td>Confirm failure. Proceed to expansion.</td>
+                    </tr>
+                    <tr>
+                        <td>Messages absent</td>
+                        <td><code>absent</code></td>
+                        <td>Proceed to expansion. Gate B may find evidence.</td>
+                    </tr>
+                    <tr>
+                        <td>Unclear / partial match</td>
+                        <td><code>open</code></td>
+                        <td>Add to <code>open_items[]</code>. Skip Gate B.</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><em>Iteration ≥ 2, code-only fallback (no signaling defined)</em></td>
+                        <td><code>not_applicable</code>. Skip Gate A, go directly to expansion.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Phase 3.3: Dynamic Expansion & Gate B</h3>
+            <p>For branches that survived Gate A (failure_here, absent, or N/A):</p>
+
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p><strong>Expand failure modes:</strong> Call <code>code_search.py --operation expand_failure_modes</code>. Extract literal log keywords from code log macros.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p><strong>Create children:</strong> For each failure mode, create a child node under the branch. Assign IDs: <code>P1.1</code>, <code>P1.2</code>, etc.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p><strong>Gate B query:</strong> For each failure mode, query <code>UE_Trace_log</code> using its log keywords.</p>
+                </div>
+            </div>
+
+            <div class="flow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <p><strong>Interpret Gate B:</strong> Matched → <code>base_event_confirmed</code>. No match → <code>rejected</code>. Unclear → <code>open</code>.</p>
+                </div>
+            </div>
+
+            <div class="note">
+                <p><strong>Anti-laziness:</strong> Evaluate ALL failure modes in an expanded branch, even if one is confirmed. No early exit.</p>
+            </div>
+        </section>
+
+        <!-- 4. Gates Logic -->
+        <section id="gates">
+            <h2>4. Gate A & Gate B Decision Logic</h2>
+
+            <div class="grid-2">
+                <div>
+                    <h3>Gate A: Signaling-Only</h3>
+                    <div class="box log">
+                        <div class="box-title">Gate A Query</div>
+                        <div class="box-content">
+log_query.py --operation phase3_gate_a
+  --table UE_3gpp_signaling_log
+  --keywords [mandatory_messages]
+  --time_window [scope_window]
+  --phase_tag phase3_gate_a
+                        </div>
+                    </div>
+
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph TD
+    A["Query returns<br/>signaling events"]
+    B{Check for<br/>failure indicators}
+    C1["✓ Clean passage<br/>No errors/rejects"]
+    C2["✗ Error/Reject found"]
+    C3["✗ Absent messages"]
+    C4["? Unclear/Partial"]
+
+    A --> B
+    B -->|Normal| C1
+    B -->|Failure| C2
+    B -->|Missing| C3
+    B -->|Ambiguous| C4
+
+    C1 --> R1["→ PRUNE_NORMAL"]
+    C2 --> R2["→ FAILURE_HERE"]
+    C3 --> R3["→ ABSENT"]
+    C4 --> R4["→ OPEN"]
+
+    style C1 fill:#2d7a4a,color:#fff
+    style C2 fill:#8b3a3a,color:#fff
+    style C3 fill:#b8860b,color:#fff
+    style C4 fill:#4f7ba8,color:#fff
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>Gate B: Trace-Only</h3>
+                    <div class="box log">
+                        <div class="box-title">Gate B Query</div>
+                        <div class="box-content">
+log_query.py --operation phase3_gate_b
+  --table UE_Trace_log
+  --keywords [failure_mode.log_keywords]
+  --time_window [scope_window]
+  --hypothesis_id [P1.1]
+                        </div>
+                    </div>
+
+                    <div class="diagram-container">
+                        <div class="mermaid">
+graph TD
+    A["Query returns<br/>trace events"]
+    B{Match found?}
+    C1["✓ Events matched"]
+    C2["✗ No match"]
+    C3["? Unclear"]
+
+    A --> B
+    B -->|Yes| C1
+    B -->|No| C2
+    B -->|Ambiguous| C3
+
+    C1 --> R1["→ BASE_EVENT_CONFIRMED"]
+    C2 --> R2["→ REJECTED"]
+    C3 --> R3["→ OPEN"]
+
+    style C1 fill:#2d7a4a,color:#fff
+    style C2 fill:#8b3a3a,color:#fff
+    style C3 fill:#b8860b,color:#fff
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Early-Exit Condition</h3>
+            <div class="note">
+                <p><strong>If ALL branches pruned at Gate A:</strong> All top-level phases evaluated normally, no failure found. Iteration halts with signal <code>"all_phases_normal_failure_not_in_skeleton"</code>. Iteration controller recommends <code>abort</code> or <code>accept_terminal</code>.</p>
+            </div>
+        </section>
+
+        <!-- 5. Expansion Flow -->
+        <section id="expansion">
+            <h2>5. Dynamic Expansion Flow</h2>
+            <p>Once a branch survives Gate A, failure modes are extracted from source code and become children of that branch.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    Branch["Branch P1<br/>status='failure_here'<br/>modules=[rrc_handler.c]"]
+
+    Expand["code_search.py<br/>expand_failure_modes"]
+
+    Result["Returns:<br/>failure_modes[<br/>  {name: 'Timer_Expire',<br/>   log_keywords: [...]},<br/>  {name: 'Invalid_State',<br/>   log_keywords: [...]}<br/>]"]
+
+    Create["Create children<br/>P1.1 Timer_Expire<br/>P1.2 Invalid_State<br/>..."]
+
+    Query["Gate B: Query trace<br/>per child"]
+
+    Results["P1.1 → base_event_confirmed<br/>P1.2 → rejected<br/>..."]
+
+    Branch --> Expand
+    Expand --> Result
+    Result --> Create
+    Create --> Query
+    Query --> Results
+
+    style Expand fill:#5a7a94,stroke:#2a3a4a,color:#fff
+    style Create fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style Query fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style Results fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+                </div>
+            </div>
+
+            <h3>Expansion Fallback</h3>
+            <p>If <code>expand_failure_modes</code> returns empty (no log macros in code):</p>
+            <div class="flow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <p>Call fallback: <code>spec_query.py --operation expand_sub_causes</code></p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <p>Treat spec outputs as hypothetical sub-causes (names only, no log keywords)</p>
+                </div>
+            </div>
+            <div class="flow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <p>Proceed to Gate B with fallback-generated children</p>
+                </div>
+            </div>
+
+            <div class="box code">
+                <div class="box-title">Code Expansion Result</div>
+                <div class="box-content">
+{
+  "module": "src/rrc_handler.c",
+  "failure_modes": [
+    {
+      "mode_id": "FM1",
+      "name": "Timer_Expired",
+      "log_keywords": ["TIMER_EXPIRED", "timeout_rrc"],
+      "log_tags": ["RRC", "timing"],
+      "line_range": [234, 256]
+    }
+  ]
+}
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Iteration Chaining -->
+        <section id="iteration">
+            <h2>6. Iteration Chaining</h2>
+            <p>Iterations form a causal chain. Each iteration's base_events become the next iteration's top events.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TD
+    Start["Phase 2: Top Event<br/>5G_HO_Execution_Failure"]
+
+    Iter1["Iteration 1<br/>input_top_event: 5G_HO_Execution_Failure<br/>Phase 3.1→3.5"]
+
+    Base1["base_events[]<br/>P1.1 Preamble_Power_Error<br/>P2.2 RRC_Timer_Expire<br/>P3.1 Invalid_Cell_Select"]
+
+    CPB1["Checkpoint B-1<br/>User selects:<br/>Dig P2.2"]
+
+    Iter2["Iteration 2<br/>input_top_event: RRC_Timer_Expire<br/>parent_base_event_id: P2.2<br/>Phase 3.1→3.5"]
+
+    Base2["base_events[]<br/>P1.1 Timer_Config_Invalid<br/>P2.1 Expired_Before_Reset"]
+
+    CPB2["Checkpoint B-2<br/>User selects:<br/>Accept Terminal"]
+
+    P4["Phase 4: Finalize<br/>Synthesize causal chain<br/>Report"]
+
+    Start --> Iter1 --> Base1 --> CPB1
+    CPB1 -->|dig P2.2| Iter2 --> Base2 --> CPB2
+    CPB2 -->|accept_terminal| P4
+
+    style Iter1 fill:#b8860b,stroke:#6b4d00,color:#fff
+    style Base1 fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style CPB1 fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+    style Iter2 fill:#b8860b,stroke:#6b4d00,color:#fff
+    style Base2 fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style CPB2 fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+    style P4 fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+                </div>
+            </div>
+
+            <h3>State Structure per Iteration</h3>
+            <div class="box">
+                <div class="box-title">fta_iterations[N] Entry</div>
+                <div class="box-content">
+{
+  "iteration_id": 2,
+  "parent_iteration_id": 1,
+  "parent_base_event_id": "P2.2",
+
+  "input_top_event": {
+    "event": "RRC_Timer_Expire",
+    "source": "DERIVED_FROM_PRIOR_ITERATION",
+    "spec_anchored": true
+  },
+
+  "hybrid_tree": { ... },
+  "base_events": [ ... ],
+  "pruned_branches": [ ... ],
+  "rejected": [ ... ],
+
+  "cross_reference_findings": [ ... ],
+  "iteration_root_cause": { ... }
+}
+                </div>
+            </div>
+
+            <h3>Iteration Budget</h3>
+            <p>Default budget: 5 iterations. Tracked in <code>meta.iteration_budget</code>. When approaching budget:</p>
+            <ul>
+                <li>Iteration controller recommends <code>accept_terminal</code> when at/near limit</li>
+                <li>User may still override and dig deeper, but audit records both recommendation and override</li>
+            </ul>
+        </section>
+
+        <!-- 7. State File -->
+        <section id="state">
+            <h2>7. State File Structure (Per-Iteration View)</h2>
+            <p>The state file is the single source of truth. Skills read/write only their iteration slice.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph TD
+    Root["fta_state.json<br/>Single file per run"]
+
+    Meta["meta<br/>pipeline_version<br/>current_phase<br/>current_iteration_id<br/>iteration_budget<br/>..."]
+
+    P1["phase1_scope_filter<br/>procedure, rat<br/>time_window<br/>..."]
+
+    P2["phase2_ecf<br/>top_event_candidates[]<br/>user_confirmation<br/>..."]
+
+    Iter["fta_iterations[]"]
+
+    IterN["fta_iterations[N]<br/>iteration_id<br/>input_top_event<br/>hybrid_tree<br/>base_events<br/>pruned_branches<br/>cross_reference_findings<br/>iteration_root_cause"]
+
+    AuditU["user_decisions[]<br/>Checkpoint A/B audit"]
+
+    AuditK["keyword_provenance_audit[]<br/>All tool invocations"]
+
+    Root --> Meta
+    Root --> P1
+    Root --> P2
+    Root --> Iter
+    Root --> AuditU
+    Root --> AuditK
+
+    Iter --> IterN
+
+    style Meta fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style Iter fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style IterN fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style AuditU fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+    style AuditK fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+                </div>
+            </div>
+
+            <h3>Phase State Machine</h3>
+            <p>Tracks where in the pipeline we are. Skills read <code>current_phase</code>, do their work, write the next phase value.</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Phase Value</th>
+                        <th>Meaning</th>
+                        <th>Next Step</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>phase0</code></td>
+                        <td>Initializing</td>
+                        <td>→ orchestrator Phase 0</td>
+                    </tr>
+                    <tr>
+                        <td><code>phase1</code></td>
+                        <td>Scoping in progress</td>
+                        <td>→ 3gpp-scoping</td>
+                    </tr>
+                    <tr>
+                        <td><code>phase2_pending_confirmation</code></td>
+                        <td>Halted at Checkpoint A</td>
+                        <td>→ User confirms top event</td>
+                    </tr>
+                    <tr>
+                        <td><code>phase2_confirmed</code></td>
+                        <td>Ready for FTA iteration 1</td>
+                        <td>→ Phase 3.1 (Build Tree)</td>
+                    </tr>
+                    <tr>
+                        <td><code>phase2_confirmed_via_seed</code></td>
+                        <td>Seeded state (engineer-provided top event)</td>
+                        <td>→ Phase 3.1 (Build Tree)</td>
+                    </tr>
+                    <tr>
+                        <td><code>iteration_N_running</code></td>
+                        <td>FTA iteration N in progress</td>
+                        <td>→ Phases 3.2, 3.3, 3.4, 3.5</td>
+                    </tr>
+                    <tr>
+                        <td><code>iteration_N_pending_decision</code></td>
+                        <td>Halted at Checkpoint B</td>
+                        <td>→ User: dig/accept/abort</td>
+                    </tr>
+                    <tr>
+                        <td><code>phase4_finalizing</code></td>
+                        <td>Synthesizing final report</td>
+                        <td>→ orchestrator Phase 4</td>
+                    </tr>
+                    <tr>
+                        <td><code>complete</code></td>
+                        <td>Done</td>
+                        <td>—</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 8. Data Sources -->
+        <section id="data-sources">
+            <h2>8. Data Sources & Tool Invocation Pattern</h2>
+            <p>Skills never query data directly. They invoke Python tools under <code>3gpp-tools/</code> which write results to the state file and print a JSON summary to stdout.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+graph LR
+    Skill["Skill<br/>reads input<br/>from state file"]
+
+    Shell["Execute shell<br/>command"]
+
+    SpecTool["spec_query.py<br/>--operation skeleton<br/>--procedure ..."]
+
+    CodeTool["code_search.py<br/>--operation bind_module<br/>--module ..."]
+
+    LogTool["log_query.py<br/>--operation phase3_gate_a<br/>--table UE_3gpp_signaling_log"]
+
+    StateWrite["Tool writes<br/>structured output<br/>to state file<br/>fta_iterations[N].xxx"]
+
+    Stdout["Tool prints<br/>compressed JSON<br/>to stdout"]
+
+    SkillRead["Skill reads<br/>stdout JSON<br/>to verify"]
+
+    NextStep["Skill continues<br/>or halts"]
+
+    Skill --> Shell
+    Shell --> SpecTool & CodeTool & LogTool
+    SpecTool & CodeTool & LogTool --> StateWrite
+    SpecTool & CodeTool & LogTool --> Stdout
+    StateWrite --> SkillRead
+    Stdout --> SkillRead
+    SkillRead --> NextStep
+
+    style Skill fill:#4f7ba8,stroke:#2a3f5a,color:#fff
+    style SpecTool fill:#b8860b,stroke:#6b4d00,color:#fff
+    style CodeTool fill:#5a7a94,stroke:#2a3a4a,color:#fff
+    style LogTool fill:#2d8b8b,stroke:#1a4f4f,color:#fff
+    style StateWrite fill:#2d7a4a,stroke:#1a4a2a,color:#fff
+                </div>
+            </div>
+
+            <h3>The Three Python Tools</h3>
+
+            <div class="grid-2">
+                <div class="box spec">
+                    <div class="box-title">spec_query.py</div>
+                    <div class="box-content">
+Operations:
+• skeleton — Get phases
+• extract_ies — Get IE definitions
+• generate_hypotheses — Fallback
+• expand_sub_causes — Fallback
+• find_commanded_values — Phase 3.4
+
+Input: procedure, rat, top_event
+Output: phases, IE names, hypotheses
+                    </div>
+                </div>
+
+                <div class="box code">
+                    <div class="box-title">code_search.py</div>
+                    <div class="box-content">
+Operations:
+• bind_module — Find files/functions
+• expand_failure_modes — Extract logs
+• expand_sub_causes — Fallback
+• find_implementation — Phase 3.4
+
+Input: phase_name, file path
+Output: module bindings, log keywords
+                    </div>
+                </div>
+            </div>
+
+            <div class="box log">
+                <div class="box-title">log_query.py</div>
+                <div class="box-content">
+Operations:
+• phase3_gate_a — Signaling query
+• phase3_gate_b — Trace query
+• phase3_cross_ref — Commanded vs actual
+• phase1/phase2 — Scoping & timeline
+
+Input: table, keywords, time_window
+Output: matched events, timestamps, summaries
+Table isolation: enforced at tool entry (rejects mismatches)
+                </div>
+            </div>
+
+            <h3>Exit Code Semantics</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Exit Code</th>
+                        <th>Meaning</th>
+                        <th>Skill Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>0</code></td>
+                        <td>Success</td>
+                        <td>Continue normal flow</td>
+                    </tr>
+                    <tr>
+                        <td><code>1</code></td>
+                        <td>Bad arguments / missing input</td>
+                        <td>Halt, error message</td>
+                    </tr>
+                    <tr>
+                        <td><code>2</code></td>
+                        <td>Tool unavailable</td>
+                        <td>Halt, tool missing</td>
+                    </tr>
+                    <tr>
+                        <td><code>3</code></td>
+                        <td>Policy violation (e.g., table isolation)</td>
+                        <td>Halt, policy error</td>
+                    </tr>
+                    <tr>
+                        <td><code>4</code></td>
+                        <td>Empty result (no matches)</td>
+                        <td>Continue, interpret as empty</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="note">
+                <p><strong>Keyword provenance:</strong> Every keyword (message name, IE name, log string, function name) used in any query must originate from a prior tool invocation in the same iteration. This is enforced by <code>keyword_provenance_audit[]</code> and checked at runtime by <code>log_query.py</code>.</p>
+            </div>
+        </section>
+
+        <hr style="margin: 3rem 0; border: none; border-top: 2px solid var(--border-light);">
+
+        <section>
+            <h2>Summary: Key Architectural Principles</h2>
+            <ul>
+                <li><span class="highlight">Iteration-based:</span> FTA runs as a loop of iterations, not one flat tree. Each iteration has its own tree, base events, and root cause.</li>
+                <li><span class="highlight">User gates:</span> Checkpoint B after each iteration is mandatory. User chooses dig_deeper, accept_terminal, or abort.</li>
+                <li><span class="highlight">State file is truth:</span> All data flows through one JSON file at <code>/tmp/rca_state_*.json</code>. No skill holds state in memory.</li>
+                <li><span class="highlight">Tool-driven:</span> Skills invoke Python tools under <code>3gpp-tools/</code>, never query data directly.</li>
+                <li><span class="highlight">Table isolation:</span> Signaling log (Phase 3.2) vs. Trace log (Phase 3.3) are segregated by policy, enforced at tool layer.</li>
+                <li><span class="highlight">No hallucination:</span> Every keyword must trace back to tool output. Keyword provenance audit records all sources.</li>
+                <li><span class="highlight">No fix generation:</span> Pipeline produces root cause + evidence chain, never fixes or patches.</li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

@@ -50,10 +50,12 @@ Engineer triggers 3gpp-fta-seed-init skill directly (natural language,
 matched via the skill's description/triggers — no slash command), providing:
   - top event description
   - scope window (time bound)
+  - procedure (3GPP procedure name)
+  - rat (Radio Access Technology)
 
 3gpp-fta-seed-init:
   1. Validate inputs.
-     - Missing scope_window -> HALT, ask for it. Never infer a default.
+     - Missing scope_window, procedure, or rat -> HALT, ask for it. Never infer a default.
   2. Check .rca/current_state_path.txt.
      - Points to a state whose current_phase != "complete" -> HALT, ask
        the engineer to confirm overwrite / archive the old run / cancel.
@@ -96,6 +98,11 @@ further changes anywhere.
     "duckdb_path": "<path>",
     "tool_dir": "<path to 3gpp-tools/>"
   },
+  "phase1_scope_filter": {
+    "procedure": "<verbatim procedure>",
+    "rat": "<verbatim rat>",
+    "time_window": { "start_ms": 0, "end_ms": 0 }
+  },
   "fta_iterations": [
     {
       "iteration_id": 1,
@@ -105,7 +112,7 @@ further changes anywhere.
       "input_top_event": {
         "event": "<verbatim top event description>",
         "source": "ENGINEER_PROVIDED",
-        "spec_anchored": false,
+        "spec_anchored": true,
         "scope_window": { "start_ms": 0, "end_ms": 0 }
       }
     }
@@ -125,11 +132,7 @@ further changes anywhere.
 
 `user_decisions: []` and `keyword_provenance_audit: []` are scaffolded empty (mirroring `3gpp-rca-orchestrator`'s normal Phase 0 init template) so downstream skills that append to them don't need to check for existence first.
 
-`phase1_scope_filter` and `phase2_ecf` are absent — not written, not
-faked. Downstream FTA skills (`3gpp-fta-build-tree` and later) do not read
-those sections; verified against `3gpp-fta-build-tree/SKILL.md`
-preconditions (only requires `iteration_id`, `fta_iterations[iteration_id
--1].input_top_event`, and the correct `current_phase`).
+`phase2_ecf` is absent — not written, not faked. `phase1_scope_filter` IS written so that downstream FTA skills (specifically `3gpp-fta-build-tree`) can remain spec-anchored by reading `procedure` and `rat`.
 
 ### Why `current_phase: "phase2_confirmed_via_seed"` and not reusing
 `"phase2_confirmed"` verbatim
