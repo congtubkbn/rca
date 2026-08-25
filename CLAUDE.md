@@ -176,3 +176,17 @@ specifically to this one entry point. Generic `contract:` blocks,
   and when it must NOT (most skills list explicit anti-triggers).
 - `.clinerules/3gpp-rca-collaboration.md` is the only always-on rule; anything
   phase-specific belongs in the relevant `SKILL.md`, not there.
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked on GitHub (congtubkbn/rca), via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five canonical labels (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context — root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
