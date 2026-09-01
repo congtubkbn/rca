@@ -36,6 +36,7 @@ independent and this document does not describe that file.
         evidence/
           tools.jsonl       # append-only tool-call ledger (see tool-ledger-format.md)
         raw/                # raw tool output; never enters any skill's context
+        conclusion.json     # problem, root cause, causal chain, reproduction scenario — owned by rca-conclude
         CONCLUSION.md       # written by rca-conclude for THIS run only, once it reaches a conclusion
       run-02/
         ...
@@ -53,10 +54,14 @@ lines and `raw/` files for its own log-query, code-graph, and NotebookLM
 calls, and updates `manifest.json`'s `current_round`/
 `standing_recommendation`/`decisions[]` fields every round — plus, when a
 checkpoint's reply is `accept` or `abort`, `next_step`/`status` too (issue
-#9; see the "Per-Section Write Owners" table below). Everything else in
-the tree above (`conclusion.json`, `CONCLUSION.md`, `knowledge/`) is
-written by skills that do not exist yet and is shown here only so this
-file does not need to be restructured when they arrive.
+#9; see the "Per-Section Write Owners" table below). `rca-conclude` (issue
+#10) synthesizes `conclusion.json` and `CONCLUSION.md` from what
+`rca-scope`/`rca-analyze` already wrote — it runs no new query itself —
+and, only once an engineer explicitly confirms the draft, sets
+`issue.json.active_run` and advances `manifest.json.next_step` to
+`"rca-learn"`. `knowledge/` is written by `rca-learn`, which does not
+exist yet, and is shown here only so this file does not need to be
+restructured when it arrives.
 
 ## `issue.json`
 
@@ -359,6 +364,89 @@ above), leaving every round file exactly as fixed as it always was.
   still has `direction: null` and `engineer_redirect: null` — there is no
   prior checkpoint to have produced either.
 
+## `runs/run-NN/conclusion.json`
+
+Written by `rca-conclude` (issue #10), reached only once
+`manifest.json.next_step == "rca-conclude"` (set by `rca-analyze`'s
+`accept` handling — see above). One file per run, written once and then
+either confirmed in place or left as-is: **mutable only up to its first
+write, immutable from `confirmed: true` onward** — a confirmed conclusion
+is never rewritten; analyzing further means starting a new run via
+`rca-intake`.
+
+```json
+{
+  "drafted_at": "<ISO 8601, when this file was written>",
+  "confirmed": false,
+  "confirmed_at": null,
+  "problem": {
+    "located": true,
+    "statement": "<the observable failure point, protocol level>",
+    "tier": "VERIFIED_LOG | ENGINEER_PROVIDED | null",
+    "evidence_ref": "<ledger ref / raw pointer this was copied from verbatim, or null>"
+  },
+  "root_cause": {
+    "established": true,
+    "statement": "<synthesized root-cause statement>",
+    "tier": "<tier of the terminal causal_chain entry>",
+    "evidence_ref": "<ledger ref / raw pointer>"
+  },
+  "causal_chain": [
+    {"round": 1, "statement": "<link>", "tier": "<tier>", "evidence_ref": "<ledger ref / raw pointer>"}
+  ],
+  "reproduction_scenario": {
+    "preconditions": [
+      {"statement": "<protocol-level precondition>", "tier": "<tier>", "evidence_ref": "<... or null>"}
+    ],
+    "steps": [
+      {"step": 1, "statement": "<protocol-level action/event>", "tier": "<tier>", "evidence_ref": "<... or null>"}
+    ],
+    "expected_failure": {"statement": "<what a tester would observe if it reproduces>", "tier": "<tier>", "evidence_ref": "<... or null>"},
+    "tester_comparison": {
+      "tester_reported_text": "<verbatim, from input/plm-snapshot.json.tester_reproduction_steps.text>",
+      "matches": ["<scenario statement that aligns with the tester's account>"],
+      "divergences": [
+        {"tester_claim": "<what the tester's text said>", "scenario_says": "<what the scenario states instead>", "tier": "CONTRADICTED | <other tier>", "evidence_ref": "<... or null>"}
+      ]
+    }
+  },
+  "evidence_gaps": ["<every SPEC_INFERRED/ASSUMED/TESTER_REPORTED/CODE_UNAVAILABLE/CONTRADICTED item this conclusion rests on, restated plainly>"],
+  "rests_on_weak_evidence": true,
+  "weak_evidence_notice": "<explicit statement of which parts rest on ASSUMED or CODE_UNAVAILABLE links, stated prominently; null if none>"
+}
+```
+
+- `problem`, `root_cause`, and every `causal_chain` entry's `tier`/
+  `evidence_ref` are always copied verbatim from a round's
+  `failure_point`/`causal_chain_additions` (or, when no analysis round ever
+  ran, from `scope.json.failure_time`) — `rca-conclude` never runs a new
+  log/code/NotebookLM query itself and never invents a reference; it only
+  synthesizes across what `rca-scope`/`rca-analyze` already recorded. Per
+  `evidence-tiers.md`, copying forward never upgrades a tier.
+- `root_cause.established: false` and `causal_chain: []` are valid outcomes
+  (an accepted run that produced no causal-chain findings, including the
+  round-0 edge case) — stated plainly, never papered over with a fabricated
+  cause.
+- `reproduction_scenario.tester_comparison.divergences[].tier` is
+  `"CONTRADICTED"` specifically when a HARD (`VERIFIED_LOG`/`CODE_BOUND`)
+  finding positively disagrees with what the tester reported — not merely
+  when the scenario adds detail the tester didn't mention. `evidence-tiers.md`
+  names "the tester's own PLM account" as one of the sources `CONTRADICTED`
+  can apply to for exactly this case — see that file's tier table and
+  `rca-conclude`'s scope note.
+- `rests_on_weak_evidence`/`weak_evidence_notice` are computed from whether
+  `root_cause`, any `causal_chain` entry, or any `reproduction_scenario`
+  precondition/step/`expected_failure` carries tier `ASSUMED` or
+  `CODE_UNAVAILABLE` — this is what issue #10's "states this prominently
+  rather than presenting uniform confidence" requirement checks.
+- A forbidden-pattern scan (fixes, patches, configuration changes, test
+  cases, next-step suggestions — see `rca-conclude/SKILL.md`) runs over
+  every authored string in this file before it is written, with a named
+  exception for verbatim-quoted external text (`tester_reported_text`) —
+  the same "exception: matches inside verbatim input text are allowed"
+  carve-out the older v6 suite uses for the same reason (the tester may use
+  these words innocently in their own account).
+
 ## Run numbering
 
 Runs are numbered `run-01`, `run-02`, … in creation order, zero-padded to
@@ -375,17 +463,20 @@ append-only.
 | Section / file | Written by |
 |---|---|
 | `issue.json` (create + refresh) | `rca-intake` |
+| `issue.json.active_run` | `rca-conclude` — sole writer; set only when the engineer confirms a draft conclusion (never by `rca-intake`, never speculatively) |
 | `input/plm-snapshot.json` | `rca-intake` |
 | `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
 | `runs/run-NN/manifest.json.current_step`, `.updated_at` | Every pipeline skill updates these on entry/exit |
-| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply — never on any other verb, and never `status` back out of `"aborted"` |
+| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply; `rca-conclude` (issue #10) additionally sets `next_step: "rca-learn"` on its own `accept` reply and `status: "aborted"` / `next_step: null` on its own `abort` reply — never on any other verb, and never `status` back out of `"aborted"` |
 | `runs/run-NN/manifest.json.current_round`, `.standing_recommendation`, `.decisions` | `rca-analyze` — sole writer |
 | `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
 | `runs/run-NN/analysis/round-NN.json` (create; never overwritten once written) | `rca-analyze` — sole writer, one file per round |
+| `runs/run-NN/conclusion.json` (create once; `confirmed`/`confirmed_at` flipped in place on accept; otherwise immutable) | `rca-conclude` — sole writer |
+| `runs/run-NN/CONCLUSION.md` | `rca-conclude` — sole writer, for this run only |
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |
 | `runs/run-NN/raw/*` | Written by whichever skill makes the call; files are never overwritten, only added to (see `log-query-invocation.md`'s numbering rule) |
-| `conclusion.json`, `CONCLUSION.md`, `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-conclude`, `rca-learn` respectively, per issue #5's ownership table |
+| `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-learn`, per issue #5's ownership table |
 
 Two skills writing one section is a defect regardless of whether it
 currently misbehaves — the same rule the v6 suite states for its own

@@ -14,7 +14,7 @@ measured fact from an assumption without re-deriving it.
 | `TESTER_REPORTED` | Stated by the tester in the PLM issue; unverified. |
 | `ENGINEER_PROVIDED` | Asserted by the analysing engineer; authoritative as a premise, not pipeline-verified. |
 | `ASSUMED` | Assumed by the agent; no evidence. |
-| `CONTRADICTED` | A source (spec, vendor doc, or a prior case) claims it; the log shows otherwise. |
+| `CONTRADICTED` | A source (spec, vendor doc, a prior case, or the tester's own PLM account) claims it; a HARD finding (the log, or code) shows otherwise. |
 | `CODE_UNAVAILABLE` | Not verifiable against code because the module ships as a lib. |
 
 ## Rules
@@ -66,9 +66,23 @@ the checkpoint with no query ever attempted against it at all
 (`hypotheses[].untested_tier` in the same file) — a rare case, since
 Step 6 of `rca-analyze/SKILL.md` always tries to construct a testing
 query, but not always possible (no viable keyword, no applicable table).
-`rca-conclude` does not exist yet; this file documents the whole
-vocabulary regardless, because the tier an existing skill writes must stay
-meaningful once the rest of the suite is built.
+`rca-conclude` (issue #10) writes no tier from a new query of its own — it
+only copies `problem`/`root_cause`/`causal_chain`/
+`reproduction_scenario` tiers forward verbatim from what
+`rca-scope`/`rca-analyze` already recorded (per this file's "never
+improves with time" rule), with one use specific to synthesis:
+`CONTRADICTED` when the reproduction scenario it derives from the causal
+chain disagrees with `input/plm-snapshot.json`'s
+`tester_reproduction_steps` text on a point a HARD finding actually
+settles — the tester's account is checked against the log, not assumed
+correct, exactly as issue #5's "a mistaken account gets corrected here
+rather than carried into a report" states. This is why the table above
+names "the tester's own PLM account" alongside spec/vendor-doc/prior-case
+as a source `CONTRADICTED` can apply to — `rca-conclude` is the first
+skill to contradict that particular source. `rca-learn` does not exist
+yet; this file documents the whole vocabulary regardless, because the
+tier an existing skill writes must stay meaningful once the rest of the
+suite is built.
 
 The keyword-provenance ladder (HARD / SOFT / FORBIDDEN — which *sources*
 may support a conclusion) is a related but separate concept, owned by
