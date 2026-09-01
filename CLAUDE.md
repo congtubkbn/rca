@@ -181,11 +181,13 @@ It drives PLM-issue analysis end to end:
 `rca-intake → rca-scope → rca-analyze ⟲ → rca-conclude → rca-learn`, each
 owning one section of a per-run bundle on disk under `.rca/issues/`, each
 independently invocable, with no orchestrator — `/rca` only dispatches the
-single next step and halts. As of this writing only `rca-intake` (run
-bundle foundation, issue #6) and `rca-scope` (issue classification, time
-anchor, log window, issue #7) are built; the remaining three
-(`rca-analyze`, `rca-conclude`, `rca-learn`) are tracked as separate
-sub-issues of #5.
+single next step and halts. As of this writing `rca-intake` (run bundle
+foundation, issue #6), `rca-scope` (issue classification, time anchor, log
+window, issue #7), and `rca-analyze` (one round of hypothesis-driven
+analysis ending at a checkpoint, issue #8) are built; the multi-round loop
+around `rca-analyze` (`dig`/`redirect`/`abort`, round budget, autonomy —
+issue #9) and the remaining two skills (`rca-conclude`, `rca-learn`) are
+tracked as separate sub-issues of #5.
 
 `.claude/skills/_shared/` is this suite's contract — read it before
 touching any skill in it, the same discipline the v6 suite's own
@@ -195,8 +197,19 @@ touching any skill in it, the same discipline the v6 suite's own
 - `contract-block-format.md` — the `contract:` block every skill declares
 - `evidence-tiers.md` — the eight evidence tiers
 - `tool-ledger-format.md` — the `evidence/tools.jsonl` line format
-- `log-query-invocation.md` — how `rca-scope` (and later skills) call the
+- `log-query-invocation.md` — how `rca-scope` and `rca-analyze` call the
   DuckDB-backed log-query capability
+- `code-graph-invocation.md` — how `rca-analyze` calls the tree-sitter
+  code-graph capability
+- `notebooklm-invocation.md` — how `rca-analyze` calls NotebookLM, with
+  the citation requirement this suite adds on top of the general-purpose
+  `notebooklm` skill
+- `keyword-provenance.md` — the HARD/SOFT/FORBIDDEN source ranking and the
+  "guessing may ask, never answer" rule
+- `resolution-ladder.md` — the order `rca-analyze` tries to resolve an
+  open question (spec → log → code → vendor docs → engineer → prior cases)
+- `checkpoint-format.md` — the presentation `rca-analyze` ends every round
+  with
 
 ## Working in this repo
 

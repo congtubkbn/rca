@@ -29,6 +29,10 @@ independent and this document does not describe that file.
       run-01/
         manifest.json       # status, current/next step, autonomy, round budget — created by rca-intake
         scope.json          # issue classification, failure time, window/tables/layers — owned by rca-scope
+        analysis/
+          round-01.json      # one round's findings + checkpoint — owned by rca-analyze, one file per round, never overwritten
+          round-02.json
+          ...
         evidence/
           tools.jsonl       # append-only tool-call ledger (see tool-ledger-format.md)
         raw/                # raw tool output; never enters any skill's context
@@ -43,10 +47,13 @@ independent and this document does not describe that file.
 `rca-intake` creates `issue.json`, `input/`, and a run's `manifest.json`
 and `evidence/tools.jsonl`. `rca-scope` (issue #7) adds `scope.json` to an
 existing run and appends further ledger lines and `raw/` files for its own
-log queries. Everything else in the tree above (`analysis/round-N.json`,
-`conclusion.json`, `CONCLUSION.md`, `knowledge/`) is written by skills that
-do not exist yet and is shown here only so this file does not need to be
-restructured when they arrive.
+log queries. `rca-analyze` (issue #8) adds one `analysis/round-NN.json`
+per round it runs, appending further ledger lines and `raw/` files for its
+own log-query, code-graph, and NotebookLM calls, and updates
+`manifest.json`'s `current_round`/`standing_recommendation` fields.
+Everything else in the tree above (`conclusion.json`, `CONCLUSION.md`,
+`knowledge/`) is written by skills that do not exist yet and is shown here
+only so this file does not need to be restructured when they arrive.
 
 ## `issue.json`
 
@@ -154,8 +161,12 @@ Owners").
   for it or defaults to something inert like `"run <N>"`; it is never
   inferred from PLM content.
 - `autonomy` and `round_budget` are global run settings established at
-  creation time with the defaults above; `rca-analyze`'s checkpoint logic
-  (not built yet) is what actually acts on them.
+  creation time with the defaults above; `rca-analyze` (issue #8) updates
+  `current_round` and `standing_recommendation` as each round completes,
+  but does not yet act on `autonomy`/`round_budget` itself — every round
+  it runs halts at its checkpoint unconditionally. The loop that reads
+  these two fields to enforce the round budget and the four
+  never-bypassable gates is issue #9, not yet built.
 - `input_snapshot_fetched_at` pins *this run* to the PLM snapshot it was
   created from, even though `input/plm-snapshot.json` itself is refreshed
   by later intake re-runs on the same issue.
@@ -219,6 +230,77 @@ disk.
   (e.g. `RRC`, `NAS`, `IMS/SIP`, `PHY`) relevant to the classified (or
   generic) issue type.
 
+## `runs/run-NN/analysis/round-NN.json`
+
+Written by `rca-analyze` (issue #8), one file per round, zero-padded to
+two digits (`round-01.json`, `round-02.json`, …). **A round's file is
+never overwritten once written** — the same append-only discipline as
+`runs/run-NN` itself, and for the same reason: round N+1 must be provable
+against round N's actual recorded state, not a version silently rewritten
+after the fact.
+
+```json
+{
+  "round": 1,
+  "started_at": "<ISO 8601>",
+  "completed_at": "<ISO 8601>",
+  "direction": "<the candidate direction this round pursued, from the prior round's checkpoint — null for round 1>",
+  "failure_point": {
+    "located": true,
+    "event": {"timestamp": "<ISO 8601>", "table": "<table>", "layer": "<layer>", "message": "<message/summary>"},
+    "tier": "VERIFIED_LOG",
+    "evidence_ref": "<ledger line + raw/ file pointer>"
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "statement": "<the candidate explanation>",
+      "predicted_evidence": "<what a query would show if this were true>",
+      "testing_query": {"tool": "log-query | code-search | notebooklm", "target": "<table+keywords, or module/symbol>"},
+      "status": "surviving | eliminated",
+      "queries": [
+        {"ledger_ref": "<ledger line + raw/ pointer>", "outcome": "hit | miss", "tier": "<tier the hit was recorded at, when outcome is hit; null on a miss>"}
+      ],
+      "eliminated_by": "<the ledger ref of the contradicting HARD finding, when status is eliminated; null otherwise>"
+    }
+  ],
+  "causal_chain_additions": [
+    {"statement": "<a link this round established>", "tier": "<tier>", "evidence_ref": "<ledger line + raw/ pointer>"}
+  ],
+  "open_notes": ["<ladder rungs skipped and why, CONTRADICTED findings, anything unresolved>"],
+  "checkpoint": {
+    "causal_chain": ["<every link so far, this run, restated for direct display — see checkpoint-format.md>"],
+    "candidate_directions": [
+      {"hypothesis_id": "H1", "rank": 1, "testing_query_summary": "<one line>"}
+    ],
+    "recommendation": {"direction": "<hypothesis id, or null if nothing survived>", "reason": "<one line>"},
+    "evidence_gaps": ["<restated from open_notes plus anything from hypotheses' non-HARD or miss-only queries>"]
+  }
+}
+```
+
+- `failure_point.located: false` (with `event: null`, `tier: null`) is a
+  valid, expected outcome — see `rca-analyze/SKILL.md`'s Step 4. It is
+  never papered over with a fabricated event.
+- `hypotheses[].status` is only ever `"surviving"` or `"eliminated"` —
+  see `keyword-provenance.md`: a hypothesis is eliminated only by a
+  positive, contradicting HARD finding (`eliminated_by` set), never by a
+  guessed keyword's miss. `queries[]` records **every** testing query run
+  against a hypothesis, hit or miss alike — this is what lets the
+  checkpoint distinguish "surviving with supporting evidence" from
+  "surviving but untested" (a miss recorded here, per
+  `keyword-provenance.md`'s "guessing may ask, never answer", never
+  eliminates the hypothesis on its own). `queries[]` is empty only when no
+  test has been attempted yet.
+- `checkpoint` is the structured source `rca-analyze` renders into the
+  prose format `checkpoint-format.md` specifies when reporting to the
+  engineer — the file holds the data, that document holds the
+  presentation rules.
+- This ticket (issue #8) always writes exactly one round, halts, and
+  leaves `direction` for round 1 as `null`. Multi-round chaining — a later
+  invocation reading a prior round's `checkpoint.recommendation` to set
+  its own `direction` — is issue #9.
+
 ## Run numbering
 
 Runs are numbered `run-01`, `run-02`, … in creation order, zero-padded to
@@ -238,11 +320,14 @@ append-only.
 | `input/plm-snapshot.json` | `rca-intake` |
 | `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
-| `runs/run-NN/manifest.json.current_step`, `.next_step`, `.status`, `.updated_at` | Each pipeline skill updates these on entry/exit — `rca-intake` and `rca-scope` both exercise this now; `.current_round`/`.standing_recommendation` remain forward-declared for `rca-analyze`'s checkpoint logic, not yet built |
+| `runs/run-NN/manifest.json.current_step`, `.updated_at` | Every pipeline skill updates these on entry/exit |
+| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` — `rca-analyze` deliberately leaves both untouched; deciding the true next step from a checkpoint's outcome is issue #9's loop's job, not this skill's |
+| `runs/run-NN/manifest.json.current_round`, `.standing_recommendation` | `rca-analyze` — sole writer |
 | `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
+| `runs/run-NN/analysis/round-NN.json` (create; never overwritten once written) | `rca-analyze` — sole writer, one file per round |
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |
 | `runs/run-NN/raw/*` | Written by whichever skill makes the call; files are never overwritten, only added to (see `log-query-invocation.md`'s numbering rule) |
-| `analysis/round-N.json`, `conclusion.json`, `CONCLUSION.md`, `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-analyze`, `rca-conclude`, `rca-learn` respectively, per issue #5's ownership table |
+| `conclusion.json`, `CONCLUSION.md`, `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-conclude`, `rca-learn` respectively, per issue #5's ownership table |
 
 Two skills writing one section is a defect regardless of whether it
 currently misbehaves — the same rule the v6 suite states for its own

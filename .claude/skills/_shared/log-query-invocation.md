@@ -1,10 +1,10 @@
 # Log-Query Invocation Contract
 
-This documents only what `rca-scope` (GitHub issue #7) needs to call the
-log-query capability. It is extended, not rewritten, by whichever later
-ticket gives `rca-analyze` its own richer query needs (IE-value extraction,
-cross-table correlation, hypothesis-driven queries) — this file does not
-try to anticipate that.
+This documents what `rca-scope` (GitHub issue #7) and `rca-analyze`
+(GitHub issue #8) need to call the log-query capability. The contract
+itself (invocation shape, return shape, numbering/ledger discipline) is
+identical for both callers — only *why* a query is issued differs, and
+that lives in each skill's own `SKILL.md`, not here.
 
 ## What it is
 
@@ -90,6 +90,28 @@ full result never lingers in context beyond the single turn it arrived in:
    summary fields it actually needs — `matched_event_count`,
    `keywords_with_hits`, and the specific `events[]` entries that support a
    written claim, not the raw payload.
+
+## `rca-analyze`'s use of this contract
+
+`rca-analyze` issues two kinds of query beyond `rca-scope`'s single
+time-anchor query:
+
+- **Locate-the-failure-point queries** — narrower and more targeted than
+  `rca-scope`'s time-anchor query, often around `scope.json.failure_time`
+  when that is `VERIFIED_LOG`, or guided by a rung-1 NotebookLM answer's
+  suggested keywords when it is not (`resolution-ladder.md`).
+- **Hypothesis-testing queries** — one call per hypothesis's predicted
+  evidence, `keywords` drawn from wherever the hypothesis's prediction
+  came from (HARD, SOFT-with-citation, or a guess — see
+  `keyword-provenance.md`) and `table` narrowed to whichever of
+  `scope.json.tables_in_scope` the hypothesis actually concerns, not all
+  of them by default.
+
+Both kinds follow this file's contract exactly — same invocation shape,
+same `raw/`/ledger writes, same "a keyword's stated origin" requirement.
+`rca-analyze`'s `raw/` files share one numbering sequence across every
+tool it calls in a round (log-query, code-graph, NotebookLM alike) — see
+`code-graph-invocation.md` and `notebooklm-invocation.md`.
 
 ## When it is unavailable
 
