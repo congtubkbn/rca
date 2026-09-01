@@ -28,6 +28,7 @@ independent and this document does not describe that file.
     runs/
       run-01/
         manifest.json       # status, current/next step, autonomy, round budget — created by rca-intake
+        scope.json          # issue classification, failure time, window/tables/layers — owned by rca-scope
         evidence/
           tools.jsonl       # append-only tool-call ledger (see tool-ledger-format.md)
         raw/                # raw tool output; never enters any skill's context
@@ -39,13 +40,13 @@ independent and this document does not describe that file.
     playbooks/              # promoted, reviewed; the only part of .rca/ meant to be shared
 ```
 
-`rca-intake` is the only skill this ticket (#6) implements. It creates
-`issue.json`, `input/`, and the first run's `manifest.json` and
-`evidence/tools.jsonl`. Everything else in the tree above (`scope.json`,
-`analysis/round-N.json`, `conclusion.json`, `raw/` contents,
-`CONCLUSION.md`, `knowledge/`) is written by skills that do not exist yet
-and is shown here only so this file does not need to be restructured when
-they arrive.
+`rca-intake` creates `issue.json`, `input/`, and a run's `manifest.json`
+and `evidence/tools.jsonl`. `rca-scope` (issue #7) adds `scope.json` to an
+existing run and appends further ledger lines and `raw/` files for its own
+log queries. Everything else in the tree above (`analysis/round-N.json`,
+`conclusion.json`, `CONCLUSION.md`, `knowledge/`) is written by skills that
+do not exist yet and is shown here only so this file does not need to be
+restructured when they arrive.
 
 ## `issue.json`
 
@@ -159,6 +160,65 @@ Owners").
   created from, even though `input/plm-snapshot.json` itself is refreshed
   by later intake re-runs on the same issue.
 
+## `scope.json`
+
+Written by `rca-scope` (issue #7). Fully overwritten on every invocation —
+re-running `rca-scope` on an existing run **replaces** the scope, it never
+appends to or merges with a prior scope, and it never re-reads
+`input/plm-snapshot.json`'s source (PLM) — only the already-fetched file on
+disk.
+
+```json
+{
+  "completed_at": "<ISO 8601>",
+  "classification": {
+    "issue_type": "<e.g. volte_call_drop | sms_failure | no_service | emergency_call | generic>",
+    "matched_playbook": "<playbook id from rca-scope's references/known-issue-types.md, or null>",
+    "evidence": [
+      {"source": "plm-snapshot.title|plm-snapshot.description|classification_hint", "detail": "<what indicated this>"}
+    ],
+    "tier": "TESTER_REPORTED | ENGINEER_PROVIDED | null"
+  },
+  "reduced_tier": false,
+  "reduced_tier_reason": "<why, when true; null otherwise>",
+  "failure_time": {
+    "value": "<ISO 8601, or null if undetermined>",
+    "origin": "engineer | log | undetermined",
+    "tier": "ENGINEER_PROVIDED | VERIFIED_LOG | null",
+    "evidence_ref": "<ledger line + raw/ file pointer, when origin is \"log\"; null otherwise>"
+  },
+  "window": {
+    "start": "<ISO 8601>",
+    "end": "<ISO 8601>",
+    "basis": "<how this window was derived>"
+  },
+  "tables_in_scope": ["<table name>", "..."],
+  "layers": ["<protocol layer>", "..."],
+  "open_notes": ["<anything unresolved — e.g. failure time undetermined, generic classification>"]
+}
+```
+
+- `classification.tier` is `TESTER_REPORTED` when the match came from PLM
+  title/description text (the tester's own words), `ENGINEER_PROVIDED` when
+  an explicit `classification_hint` overrode it, and `null` when
+  `issue_type` is `generic` (nothing is being claimed).
+- `reduced_tier: true` means classification matched no playbook and
+  `rca-scope` proceeded generically — `tables_in_scope`/`layers` were not
+  narrowed by a playbook, and per issue #5's classification rule, findings
+  any later skill produces under this scope should be treated at a reduced
+  tier as a result. `rca-scope` states this plainly rather than forcing the
+  issue into the nearest-looking category.
+- `failure_time.tier` is `ENGINEER_PROVIDED` when supplied at invocation,
+  `VERIFIED_LOG` only once a log query actually hit a keyword and produced
+  a timestamp, and `null`/`origin: "undetermined"` when neither happened —
+  per `evidence-tiers.md`'s "guessing may ask, never answer" rule, a query
+  that misses does not get to claim a failure time either way.
+- `tables_in_scope` narrows (never widens) `input/log-pointers.json.tables`
+  — the full extent of what is loaded — to what this run's analysis should
+  query. `layers` is the corresponding set of protocol/application layers
+  (e.g. `RRC`, `NAS`, `IMS/SIP`, `PHY`) relevant to the classified (or
+  generic) issue type.
+
 ## Run numbering
 
 Runs are numbered `run-01`, `run-02`, … in creation order, zero-padded to
@@ -176,11 +236,13 @@ append-only.
 |---|---|
 | `issue.json` (create + refresh) | `rca-intake` |
 | `input/plm-snapshot.json` | `rca-intake` |
-| `input/log-pointers.json` | `rca-intake` — sole writer; a future `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
+| `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
-| `runs/run-NN/manifest.json.current_step`, `.next_step`, `.status`, `.updated_at`, `.current_round`, `.standing_recommendation` | Each pipeline skill updates these on entry/exit once it exists — the same bookkeeping exception the v6 suite makes for `meta.current_phase` (see `.cline/skills/_shared/state-file-schema.md`). No skill besides `rca-intake` exists yet, so this is forward-declared, not yet exercised. |
+| `runs/run-NN/manifest.json.current_step`, `.next_step`, `.status`, `.updated_at` | Each pipeline skill updates these on entry/exit — `rca-intake` and `rca-scope` both exercise this now; `.current_round`/`.standing_recommendation` remain forward-declared for `rca-analyze`'s checkpoint logic, not yet built |
+| `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |
-| `scope.json`, `analysis/round-N.json`, `conclusion.json`, `CONCLUSION.md`, `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-scope`, `rca-analyze`, `rca-conclude`, `rca-learn` respectively, per issue #5's ownership table |
+| `runs/run-NN/raw/*` | Written by whichever skill makes the call; files are never overwritten, only added to (see `log-query-invocation.md`'s numbering rule) |
+| `analysis/round-N.json`, `conclusion.json`, `CONCLUSION.md`, `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-analyze`, `rca-conclude`, `rca-learn` respectively, per issue #5's ownership table |
 
 Two skills writing one section is a defect regardless of whether it
 currently misbehaves — the same rule the v6 suite states for its own

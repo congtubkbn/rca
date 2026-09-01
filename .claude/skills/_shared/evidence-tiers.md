@@ -32,24 +32,33 @@ measured fact from an assumption without re-deriving it.
   positive or negative.
 - **`TESTER_REPORTED` is a claim, not a fact.** It is recorded so the
   pipeline can reason about what was reported without anchoring on it as
-  ground truth. `rca-intake` is the only skill that writes this tier — it
-  tags the PLM issue's tester-reported reproduction steps as they are
-  fetched, before any verification has had a chance to happen.
+  ground truth. It marks a claim traced to the PLM issue's own
+  title/description/reproduction-steps text — never to a query result or
+  an agent inference. `rca-intake` tags it onto the tester-reported
+  reproduction steps as they are fetched, before any verification has had
+  a chance to happen; `rca-scope` tags it onto an issue-type classification
+  when the classification came from matching that same PLM text, not from
+  an engineer override. Any skill reading `input/plm-snapshot.json` may
+  assign it, on the same basis: the claim traces to PLM's own words.
 - **`ENGINEER_PROVIDED` may override an agent inference when the engineer
   explicitly directs it**, but a conclusion resting on one is always
   labelled as resting on an engineer premise — never presented as if it
   were pipeline-verified.
 
-## Scope note for this ticket (issue #6)
+## Scope note for these tickets (issues #6, #7)
 
-`rca-intake` only ever writes `TESTER_REPORTED` (on the tester's
-reproduction steps) and, when the engineer supplies input at invocation
-time, `ENGINEER_PROVIDED` (on anything they assert directly, e.g. a known
-build/model or source commit). The other six tiers belong to skills that
-scope, analyse, and conclude — `rca-scope`, `rca-analyze`, `rca-conclude`
-— which do not exist yet. This file documents the whole vocabulary now,
-because the tier an existing skill writes must stay meaningful once the
-rest of the suite is built; it does not imply those skills' behavior.
+`rca-intake` writes `TESTER_REPORTED` (on the tester's reproduction steps)
+and, when the engineer supplies input at invocation time, `ENGINEER_PROVIDED`
+(on anything they assert directly, e.g. a known build/model or source
+commit). `rca-scope` writes `TESTER_REPORTED` (on an issue-type
+classification matched from PLM text), `ENGINEER_PROVIDED` (on an
+engineer-supplied failure time or classification hint), and `VERIFIED_LOG`
+(on a failure time actually found by a log query). The remaining tiers
+(`CODE_BOUND`, `SPEC_INFERRED`, `ASSUMED`, `CONTRADICTED`,
+`CODE_UNAVAILABLE`) belong to `rca-analyze`/`rca-conclude`, which do not
+exist yet. This file documents the whole vocabulary now, because the tier
+an existing skill writes must stay meaningful once the rest of the suite is
+built; it does not imply those skills' behavior.
 
 The keyword-provenance ladder (HARD / SOFT / FORBIDDEN — which *sources*
 may support a conclusion) is a related but separate concept, owned by

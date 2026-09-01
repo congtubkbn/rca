@@ -182,8 +182,10 @@ It drives PLM-issue analysis end to end:
 owning one section of a per-run bundle on disk under `.rca/issues/`, each
 independently invocable, with no orchestrator — `/rca` only dispatches the
 single next step and halts. As of this writing only `rca-intake` (run
-bundle foundation, issue #6) is built; the remaining four are tracked as
-separate sub-issues of #5.
+bundle foundation, issue #6) and `rca-scope` (issue classification, time
+anchor, log window, issue #7) are built; the remaining three
+(`rca-analyze`, `rca-conclude`, `rca-learn`) are tracked as separate
+sub-issues of #5.
 
 `.claude/skills/_shared/` is this suite's contract — read it before
 touching any skill in it, the same discipline the v6 suite's own
@@ -193,6 +195,8 @@ touching any skill in it, the same discipline the v6 suite's own
 - `contract-block-format.md` — the `contract:` block every skill declares
 - `evidence-tiers.md` — the eight evidence tiers
 - `tool-ledger-format.md` — the `evidence/tools.jsonl` line format
+- `log-query-invocation.md` — how `rca-scope` (and later skills) call the
+  DuckDB-backed log-query capability
 
 ## Working in this repo
 
