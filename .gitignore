@@ -30,4 +30,14 @@ output-notebooklm/
 
 # RCA run bundles: field logs, subscriber identifiers and NDA material.
 # Must never reach a remote. Committed before any run can be created.
-.rca/
+# Exception: .rca/knowledge/playbooks/ is reviewed, engineer-confirmed
+# prose containing no customer data (rca-learn checks this before writing
+# there) and is meant to be shared — see run-bundle-layout.md. Everything
+# else under .rca/, including .rca/knowledge/cases/ and .rca/issues/,
+# stays ignored. Git won't apply a "!" re-include inside an already-
+# ignored directory unless the intervening directories are re-included
+# too, hence the staged unignore below rather than a single "!" line.
+.rca/*
+!.rca/knowledge
+.rca/knowledge/*
+!.rca/knowledge/playbooks

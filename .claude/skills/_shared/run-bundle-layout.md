@@ -41,8 +41,8 @@ independent and this document does not describe that file.
       run-02/
         ...
   knowledge/
-    cases/                  # written by rca-learn when a run is accepted
-    playbooks/              # promoted, reviewed; the only part of .rca/ meant to be shared
+    cases/<case_id>.json   # written by rca-learn, one per accepted (active_run) conclusion
+    playbooks/<playbook_id>.md  # promoted, reviewed; the only part of .rca/ committed to git
 ```
 
 `rca-intake` creates `issue.json`, `input/`, and a run's `manifest.json`
@@ -59,9 +59,12 @@ checkpoint's reply is `accept` or `abort`, `next_step`/`status` too (issue
 `rca-scope`/`rca-analyze` already wrote — it runs no new query itself —
 and, only once an engineer explicitly confirms the draft, sets
 `issue.json.active_run` and advances `manifest.json.next_step` to
-`"rca-learn"`. `knowledge/` is written by `rca-learn`, which does not
-exist yet, and is shown here only so this file does not need to be
-restructured when it arrives.
+`"rca-learn"`. `rca-learn` (issue #11) writes exactly one
+`knowledge/cases/<case_id>.json` per accepted conclusion — the run named
+by `issue.json.active_run`, never any other — and, only on an explicit,
+separate engineer `promote` action, a reviewed `knowledge/playbooks/<playbook_id>.md`.
+See "`knowledge/cases/<case_id>.json`" and "`knowledge/playbooks/<playbook_id>.md`"
+below for both schemas.
 
 ## `issue.json`
 
@@ -314,6 +317,12 @@ above), leaving every round file exactly as fixed as it always was.
   "causal_chain_additions": [
     {"statement": "<a link this round established>", "tier": "<tier>", "evidence_ref": "<ledger line + raw/ pointer>"}
   ],
+  "contradicted_findings": [
+    {"document": "<citation.document, from the NotebookLM answer this contradicts>", "section": "<citation.section, or null>", "claim": "<what the document said>", "log_showed": "<what the log actually showed>", "tier": "CONTRADICTED", "evidence_ref": "<ledger line + raw/ pointer of the HARD finding that disagreed>"}
+  ],
+  "case_hints": [
+    {"source": "case | playbook", "id": "<case_id or playbook_id>", "hint": "<one line: what it suggested — a direction, a keyword, a table>", "used_for": "<hypothesis id this seeded, or null if read but not used>"}
+  ],
   "open_notes": ["<ladder rungs skipped and why, CONTRADICTED findings, anything unresolved>"],
   "checkpoint": {
     "causal_chain": ["<every link so far, this run, restated for direct display — see checkpoint-format.md>"],
@@ -352,6 +361,29 @@ above), leaving every round file exactly as fixed as it always was.
   `round == manifest.json.round_budget`, whose `checkpoint.recommendation`
   is therefore forced to recommend acceptance regardless of what survived
   — see `rca-analyze/SKILL.md`'s round-budget gate.
+- `contradicted_findings` (issue #11) is the structured record of a
+  vendor/spec-documentation claim (a rung 1/4 NotebookLM citation) that a
+  HARD finding this round disproved — the same event `keyword-provenance.md`'s
+  "Promotion and verification" describes as tagging the claim
+  `CONTRADICTED`, given a durable, machine-readable home instead of only a
+  free-text `open_notes` sentence, specifically so `rca-learn` can read it
+  without parsing prose. Empty on every round that produced no such
+  finding, which is the common case — this is not something a round is
+  expected to manufacture. A round written before issue #11 landed simply
+  has no `contradicted_findings` field at all, read as `[]`, the same
+  backward-compatibility rule `decisions[]` uses above.
+- `case_hints` (issue #11) records every `.rca/knowledge/cases/` or
+  `knowledge/playbooks/` entry this round's hypothesis generation actually
+  considered (resolution ladder rung 6, once `rca-learn` exists) — never
+  more than a one-line pointer to what it suggested. A case or playbook
+  hint may seed a hypothesis's `statement` or contribute a candidate
+  keyword to a `testing_query`, exactly like a rung-1/4 SOFT source or a
+  FORBIDDEN-origin guess can; it may never itself appear in
+  `causal_chain_additions`, `failure_point`, or any hypothesis's `queries[]`
+  — only the fresh query this round actually runs against *this* issue's
+  own log/code can do that (see `keyword-provenance.md`'s "cases suggest,
+  they never prove" note). Empty on every round that read no matching case
+  or playbook, or that predates issue #11.
 - `checkpoint` is the structured source `rca-analyze` renders into the
   prose format `checkpoint-format.md` specifies when reporting to the
   engineer — the file holds the data, that document holds the
@@ -447,6 +479,111 @@ is never rewritten; analyzing further means starting a new run via
   carve-out the older v6 suite uses for the same reason (the tester may use
   these words innocently in their own account).
 
+## `knowledge/cases/<case_id>.json`
+
+Written by `rca-learn` (issue #11), one file per accepted conclusion —
+`case_id` is `<issue_id>-<run_id>` (e.g. `PLM-12345-run-01`), so a case
+file's own name already states which run it came from. Written once, from
+a run's already-confirmed `conclusion.json` and the `analysis/round-NN.json`
+files it was built from; `rca-learn` runs no query of its own and invents
+nothing. **Only the run named by `issue.json.active_run` at the moment
+`rca-learn` runs may produce one** — an abandoned, aborted, or merely
+superseded run never enters the case base, even if it once had its own
+(unconfirmed, or since-superseded) conclusion.
+
+```json
+{
+  "case_id": "PLM-12345-run-01",
+  "issue_id": "PLM-12345",
+  "run_id": "run-01",
+  "written_at": "<ISO 8601>",
+  "issue_type": "<scope.json.classification.issue_type for this run>",
+  "symptom": "<input/plm-snapshot.json title, verbatim>",
+  "failure_point": {"statement": "<conclusion.json.problem.statement>", "tier": "<tier, copied verbatim>", "evidence_ref": "<copied verbatim, or null>"},
+  "root_cause": {"statement": "<conclusion.json.root_cause.statement>", "tier": "<tier, copied verbatim>", "evidence_ref": "<copied verbatim, or null>"},
+  "causal_chain": ["<conclusion.json.causal_chain, copied verbatim, tiers and evidence_refs intact>"],
+  "useful_queries": [
+    {"tool": "log-query | code-search | notebooklm", "table": "<table, or null>", "ledger_ref": "<copied verbatim>", "why_useful": "<one line: which failure_point/causal_chain entry this hit produced>"}
+  ],
+  "meaningful_keywords": ["<every keyword named in a useful_queries[] entry's ledger line, deduplicated>"],
+  "contradicted_docs": [
+    {"document": "<citation.document>", "section": "<citation.section, or null>", "chip_series": "<derived from input/log-pointers.json.build/model at write time, or \"unknown\" if neither is set>", "claim": "<what the document said>", "log_showed": "<what the log actually showed>", "evidence_ref": "<copied verbatim>"}
+  ]
+}
+```
+
+- Every tier and `evidence_ref` in this file is copied **verbatim** from
+  where `rca-conclude`/`rca-analyze` already recorded it — never
+  re-derived, never upgraded. Per `evidence-tiers.md`'s "a tier never
+  improves with the passage of time," a finding that was `ASSUMED` when
+  `conclusion.json` recorded it is still `ASSUMED` here, and stays
+  `ASSUMED` no matter how many later runs read this case back as a hint —
+  see `keyword-provenance.md`'s "cases suggest, they never prove."
+- `useful_queries` is drawn from every `hypotheses[].queries[]` entry
+  across this run's rounds with `outcome: "hit"`, restricted to the ones
+  whose finding actually reached `failure_point`, `causal_chain_additions`,
+  or a hypothesis that survived to the accepted recommendation — a hit
+  that fed an eliminated hypothesis is not "useful" in the sense this file
+  means, even though it was still a demonstrated fact in this log.
+  `meaningful_keywords` is the deduplicated union of every keyword named in
+  those entries' `evidence/tools.jsonl` lines (`params`/`keywords_in`).
+- `contradicted_docs` is drawn from every `analysis/round-NN.json.contradicted_findings[]`
+  entry across this run's rounds, each with `chip_series` filled in at
+  case-write time from this run's own `input/log-pointers.json` (a
+  workspace-supplied `build`/`model`, per `notebooklm-invocation.md`'s note
+  that the build/model-to-chip-series mapping is a workspace concern) —
+  never guessed when neither field is set. This is the accumulating "map
+  of where the vendor docs cannot be trusted for a given series" issue #5's
+  spec names as the suite's most durable output.
+- A case file, once written, is not rewritten — the same immutability
+  `conclusion.json` has from `confirmed: true` onward, for the same reason:
+  a further analysis of the same issue is a new run via `rca-intake`,
+  which (if it too reaches an accepted conclusion) writes its own,
+  differently-named `case_id`, never overwrites this one.
+- `rca-learn` writes no field here from its own reasoning — `symptom`,
+  `why_useful`, `claim`, `log_showed` are all short excerpts or copies of
+  text `rca-scope`/`rca-analyze`/`rca-conclude` already wrote or the PLM
+  snapshot already held, never a new analytical claim.
+
+## `knowledge/playbooks/<playbook_id>.md`
+
+Written by `rca-learn` (issue #11), only on a separate, explicit engineer
+`promote` action — never automatically, and never as a side effect of
+writing a case record. This is the **only** part of `.rca/` committed to
+git (see `.gitignore`'s carve-out); everything else under `.rca/`,
+`knowledge/cases/` included, stays local and git-ignored because it can
+hold field logs, subscriber identifiers, and other NDA material.
+
+Plain Markdown prose, not JSON — "prose a colleague can read and correct"
+(issue #5) — with no fixed schema beyond a required title line and a
+required provenance line naming which case(s) it was drafted from:
+
+```markdown
+# Playbook: <short title, e.g. "VoLTE call drop — Qualcomm 9205, IMS re-INVITE timeout">
+
+Promoted: <ISO 8601> — drafted from <case_id, case_id, ...>
+
+<engineer-reviewed prose: the pattern, the issue type(s) it applies to,
+what to check first, and any chip-series-specific vendor-documentation
+caveat this pattern has confirmed repeatedly>
+```
+
+A playbook is drafted first at `.rca/knowledge/.drafts/<playbook_id>.md` —
+git-ignored, like the rest of `.rca/`, since a draft is exactly the
+unreviewed state this file's own git-tracking is meant to never expose —
+and moved into this path only once the engineer's `confirm playbook
+<playbook_id>` reply passes the customer-data check (see
+`rca-learn/SKILL.md`). `rca-learn` never runs `git add`/`git commit`
+itself; writing to this path only makes the file one `.gitignore` no
+longer excludes; adding and committing it remains the engineer's own,
+separate action.
+
+This is a **different concept** from `scope.json.classification.matched_playbook`,
+which names a row in `rca-scope`'s hand-maintained
+`references/known-issue-types.md` — see that file's own note. Promoting a
+playbook here never adds a row there, and the two are read by different
+skills for different purposes.
+
 ## Run numbering
 
 Runs are numbered `run-01`, `run-02`, … in creation order, zero-padded to
@@ -468,7 +605,7 @@ append-only.
 | `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
 | `runs/run-NN/manifest.json.current_step`, `.updated_at` | Every pipeline skill updates these on entry/exit |
-| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply; `rca-conclude` (issue #10) additionally sets `next_step: "rca-learn"` on its own `accept` reply and `status: "aborted"` / `next_step: null` on its own `abort` reply — never on any other verb, and never `status` back out of `"aborted"` |
+| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply; `rca-conclude` (issue #10) additionally sets `next_step: "rca-learn"` on its own `accept` reply and `status: "aborted"` / `next_step: null` on its own `abort` reply; `rca-learn` (issue #11) additionally sets `next_step: "complete"` once it writes this run's case record — never on any other verb, and never `status` back out of `"aborted"`. `next_step: null` therefore means exactly one thing (`status == "aborted"`); pipeline completion after `rca-learn` is the distinct `"complete"` value instead, precisely so a `null` never has to be disambiguated by which skill set it — see `.claude/commands/rca.md`'s dispatcher, which treats `next_step == "complete"` as its own case, not as `null` |
 | `runs/run-NN/manifest.json.current_round`, `.standing_recommendation`, `.decisions` | `rca-analyze` — sole writer |
 | `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
 | `runs/run-NN/analysis/round-NN.json` (create; never overwritten once written) | `rca-analyze` — sole writer, one file per round |
@@ -476,7 +613,8 @@ append-only.
 | `runs/run-NN/CONCLUSION.md` | `rca-conclude` — sole writer, for this run only |
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |
 | `runs/run-NN/raw/*` | Written by whichever skill makes the call; files are never overwritten, only added to (see `log-query-invocation.md`'s numbering rule) |
-| `knowledge/cases/`, `knowledge/playbooks/` | Not yet built — owned by `rca-learn`, per issue #5's ownership table |
+| `knowledge/cases/<case_id>.json` (create once; never rewritten) | `rca-learn` — sole writer, one file per accepted conclusion of the run named `active_run` |
+| `knowledge/playbooks/<playbook_id>.md` | `rca-learn` — sole writer, only on an explicit, separate engineer `promote` action |
 
 Two skills writing one section is a defect regardless of whether it
 currently misbehaves — the same rule the v6 suite states for its own

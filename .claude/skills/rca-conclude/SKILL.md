@@ -388,14 +388,14 @@ Reached only from Step 3 case 1, on an existing unconfirmed draft.
    suite that ever writes this field.
 5. Update `manifest.json`: `current_step: "rca-conclude"`, `next_step:
    "rca-learn"`, `updated_at` to now. Leave `status: "in_progress"` — the
-   run is confirmed, not archived; `rca-learn` (issue #5's remaining
-   sub-issue, not yet built) is what would write the case record.
+   run is confirmed, not archived; `rca-learn` (issue #11) is what writes
+   the case record from here.
 6. Report: the conclusion is confirmed, `active_run` is set to `<run_id>`,
-   and the next pipeline step is `rca-learn`, which does not exist yet in
-   this suite as of this ticket (issue #10) — do not imply it will run
-   automatically, and do not attempt to improvise its behavior. State
-   plainly that no Technical Report was produced and that `tr-creator`
-   remains a separate, explicitly invoked skill. HALT.
+   and the next pipeline step is `rca-learn` — do not imply it will run
+   automatically; invoking it (directly, or via `/rca`'s dispatch) is a
+   separate step this skill does not take itself. State plainly that no
+   Technical Report was produced and that `tr-creator` remains a separate,
+   explicitly invoked skill. HALT.
 
 ### Handling `abort`
 
@@ -439,5 +439,5 @@ Reached only from Step 3 case 2, on an existing unconfirmed draft.
   HARD-evidenced disagreement is recorded at `CONTRADICTED`, not smoothed
   into agreement.
 - ❌ No chaining into `rca-learn` — halts after a confirmed `accept` and
-  states that skill does not exist yet, exactly as `rca-analyze` does for
-  this skill.
+  states that it is the next pipeline step, but never invokes it itself;
+  running it (directly, or via `/rca`'s dispatch) is a separate step.

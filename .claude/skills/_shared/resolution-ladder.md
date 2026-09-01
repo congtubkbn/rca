@@ -50,14 +50,31 @@ silently omitted from the round's record.
    formalized as a `redirect <information>` reply, recorded at
    `ENGINEER_PROVIDED` and carried into the next round
    (`rca-analyze/SKILL.md`'s Step 3/6).
-6. **Prior cases** (`.rca/knowledge/cases/`, written by `rca-learn`) — not
-   yet available; that skill is issue #11, not built. A round that would
-   have consulted this rung states so instead of skipping it silently
-   (the same pattern `/rca` uses for a `next_step` naming a skill that
-   does not exist yet). Once built, a case is a **hint that suggests where
-   to look, never evidence for a conclusion** (issue #5, "cases suggest,
-   they never prove") — this file is updated when issue #11 lands, but
-   that constraint is already fixed by the parent spec and won't change.
+6. **Prior cases and playbooks** (`.rca/knowledge/cases/` and
+   `.rca/knowledge/playbooks/`, written by `rca-learn`, issue #11) — a case
+   or playbook whose `issue_type` matches this run's
+   `scope.json.classification.issue_type` (or, once one exists, a
+   playbook naming this generic category) is read for what it suggests: a
+   candidate hypothesis statement, a keyword worth trying, a table worth
+   looking in. It is a **hint that suggests where to look, never evidence
+   for a conclusion** (issue #5, "cases suggest, they never prove") — a
+   case hit contributes nothing to `causal_chain_additions`,
+   `failure_point`, or a hypothesis's `queries[]` on its own; whatever it
+   suggests still has to survive a fresh query against *this* issue's own
+   log or code, exactly like a FORBIDDEN-origin guess can ask but never
+   answer (see `keyword-provenance.md`). Every case/playbook this round
+   actually reads is recorded in that round's `case_hints[]`
+   (`run-bundle-layout.md`), stating what it suggested and, when used,
+   which hypothesis it seeded — never silently absorbed into a hypothesis
+   with no trace of where the idea came from. A finding read back from a
+   case retains exactly the tier it was recorded at when the case was
+   written; reading it again, or reading it from several cases at once,
+   never promotes it (`evidence-tiers.md`'s "a tier never improves with
+   the passage of time" applies here precisely because a case is the one
+   thing designed to be read back repeatedly). No matching case or
+   playbook is a normal, common outcome for this rung, stated as such —
+   not an error, and not a reason to widen the search into cases from an
+   unrelated `issue_type`.
 
 ## Why this order, not spec-then-fault-tree
 

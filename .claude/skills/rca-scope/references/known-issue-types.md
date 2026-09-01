@@ -8,10 +8,12 @@ precondition"). When nothing here matches, `rca-scope` proceeds generically
 — it never forces an issue into the nearest-looking row of this table.
 
 This is a **different thing** from `.rca/knowledge/playbooks/` (promoted,
-reviewed playbooks written by `rca-learn`, not built yet). This file lives
-in the repository and is hand-maintained; `knowledge/playbooks/` will live
-per-workspace and accumulate from accepted runs. `rca-scope` reads only
-this file today.
+reviewed playbooks written by `rca-learn`, issue #11). This file lives in
+the repository and is hand-maintained; `knowledge/playbooks/` lives
+per-workspace and accumulates from accepted runs, one explicit `promote`
+action at a time. `rca-scope` reads only this file — it never reads
+`knowledge/playbooks/`, which is `rca-analyze`'s resolution-ladder rung 6
+concern instead (`resolution-ladder.md`).
 
 ## Matching rule
 
