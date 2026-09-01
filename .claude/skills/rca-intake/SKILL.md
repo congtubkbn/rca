@@ -155,9 +155,8 @@ State plainly:
   reproduction steps were snapshotted verbatim).
 - Which `log-pointers.json` fields are still `null` and therefore still
   need to be supplied before log-dependent steps can run.
-- That the next pipeline step is `rca-scope`, which does not exist yet
-  in this suite as of this ticket (issue #6) — do not imply it will run
-  automatically.
+- That the next pipeline step is `rca-scope` — do not imply it will run
+  automatically; that is a separate invocation (or `/rca`'s dispatch).
 
 ## What this skill does not do
 

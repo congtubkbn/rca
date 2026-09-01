@@ -183,11 +183,12 @@ owning one section of a per-run bundle on disk under `.rca/issues/`, each
 independently invocable, with no orchestrator — `/rca` only dispatches the
 single next step and halts. As of this writing `rca-intake` (run bundle
 foundation, issue #6), `rca-scope` (issue classification, time anchor, log
-window, issue #7), and `rca-analyze` (one round of hypothesis-driven
-analysis ending at a checkpoint, issue #8) are built; the multi-round loop
-around `rca-analyze` (`dig`/`redirect`/`abort`, round budget, autonomy —
-issue #9) and the remaining two skills (`rca-conclude`, `rca-learn`) are
-tracked as separate sub-issues of #5.
+window, issue #7), and `rca-analyze` (hypothesis-driven analysis
+round-by-round, issue #8, plus the multi-round loop around it —
+`dig`/`redirect`/`abort`/`accept`, the round budget, `manifest.json.autonomy`,
+and the four never-bypassable gates, issue #9) are built; the remaining
+two skills (`rca-conclude`, `rca-learn`) are tracked as separate
+sub-issues of #5.
 
 `.claude/skills/_shared/` is this suite's contract — read it before
 touching any skill in it, the same discipline the v6 suite's own

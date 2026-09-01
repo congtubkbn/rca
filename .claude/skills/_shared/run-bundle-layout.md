@@ -47,13 +47,16 @@ independent and this document does not describe that file.
 `rca-intake` creates `issue.json`, `input/`, and a run's `manifest.json`
 and `evidence/tools.jsonl`. `rca-scope` (issue #7) adds `scope.json` to an
 existing run and appends further ledger lines and `raw/` files for its own
-log queries. `rca-analyze` (issue #8) adds one `analysis/round-NN.json`
-per round it runs, appending further ledger lines and `raw/` files for its
-own log-query, code-graph, and NotebookLM calls, and updates
-`manifest.json`'s `current_round`/`standing_recommendation` fields.
-Everything else in the tree above (`conclusion.json`, `CONCLUSION.md`,
-`knowledge/`) is written by skills that do not exist yet and is shown here
-only so this file does not need to be restructured when they arrive.
+log queries. `rca-analyze` (issues #8 and #9) adds one
+`analysis/round-NN.json` per round it runs, appending further ledger
+lines and `raw/` files for its own log-query, code-graph, and NotebookLM
+calls, and updates `manifest.json`'s `current_round`/
+`standing_recommendation`/`decisions[]` fields every round — plus, when a
+checkpoint's reply is `accept` or `abort`, `next_step`/`status` too (issue
+#9; see the "Per-Section Write Owners" table below). Everything else in
+the tree above (`conclusion.json`, `CONCLUSION.md`, `knowledge/`) is
+written by skills that do not exist yet and is shown here only so this
+file does not need to be restructured when they arrive.
 
 ## `issue.json`
 
@@ -152,7 +155,8 @@ Owners").
   "autonomy": "review_all",
   "round_budget": 5,
   "current_round": 0,
-  "standing_recommendation": null
+  "standing_recommendation": null,
+  "decisions": []
 }
 ```
 
@@ -160,16 +164,47 @@ Owners").
   e.g. "first pass" or "re-run with corrected build". `rca-intake` asks
   for it or defaults to something inert like `"run <N>"`; it is never
   inferred from PLM content.
-- `autonomy` and `round_budget` are global run settings established at
-  creation time with the defaults above; `rca-analyze` (issue #8) updates
-  `current_round` and `standing_recommendation` as each round completes,
-  but does not yet act on `autonomy`/`round_budget` itself — every round
-  it runs halts at its checkpoint unconditionally. The loop that reads
-  these two fields to enforce the round budget and the four
-  never-bypassable gates is issue #9, not yet built.
+- `autonomy` (`review_all | auto_until_blocked | auto`) and `round_budget`
+  are global run settings established at creation time with the defaults
+  above, editable directly in this file by the engineer at any time
+  (issue #9 adds no separate input for changing them — this file already
+  is the configuration surface, so nothing else needs to exist). `status`
+  is `"in_progress"` for the whole life of a run except `"aborted"`, set
+  by `rca-analyze` (issue #9) the moment an `abort` is recorded — no other
+  skill sets `status`, and nothing sets it back once aborted. `rca-analyze`
+  (issues #8/#9) updates `current_round`, `standing_recommendation`, and
+  `decisions` on every round it writes, and additionally `next_step` (to
+  `"rca-conclude"` on `accept`, to `null` on `abort`) and `status` (to
+  `"aborted"` on `abort`) — see `rca-analyze/SKILL.md`'s loop-handling
+  steps and the "Per-Section Write Owners" table below.
+- `decisions` is an append-only audit log, one entry per checkpoint an
+  engineer (or autonomy) has actually responded to — mirroring the older
+  v6 suite's own `user_decisions[]` (`.cline/skills/_shared/state-file-schema.md`)
+  for the same reason: "a later decision to trust the agent more should
+  rest on evidence rather than impression" (issue #9). Each entry:
+  ```json
+  {
+    "round": 1,
+    "agent_recommendation": {"direction": "H1", "reason": "<one line, from that round's checkpoint.recommendation>"},
+    "engineer_response": {"verb": "dig | redirect | accept | abort | auto_continue", "input": "<direction, redirect text, abort reason, or null>", "recorded_at": "<ISO 8601>"},
+    "override": false,
+    "override_rationale": "<required when override is true; null otherwise>"
+  }
+  ```
+  `verb: "auto_continue"` marks a round `rca-analyze` advanced on its own
+  under `autonomy: "auto"`/`"auto_until_blocked"` rather than a reply an
+  engineer actually typed — see `rca-analyze/SKILL.md`'s loop-control
+  step. `override: true` records the one case a reply is honored past a
+  gate that would otherwise have blocked it (only the round-budget gate is
+  overridable at all, and only with an explicit override phrase carrying
+  `override_rationale` — see that file).
 - `input_snapshot_fetched_at` pins *this run* to the PLM snapshot it was
   created from, even though `input/plm-snapshot.json` itself is refreshed
   by later intake re-runs on the same issue.
+- `rca-intake` creates this file with `decisions: []`; no prior ticket's
+  `manifest.json` shape changes retroactively — a run created before issue
+  #9 landed simply has no `decisions` entries yet until `rca-analyze`
+  starts appending to it.
 
 ## `scope.json`
 
@@ -232,12 +267,16 @@ disk.
 
 ## `runs/run-NN/analysis/round-NN.json`
 
-Written by `rca-analyze` (issue #8), one file per round, zero-padded to
-two digits (`round-01.json`, `round-02.json`, …). **A round's file is
-never overwritten once written** — the same append-only discipline as
-`runs/run-NN` itself, and for the same reason: round N+1 must be provable
-against round N's actual recorded state, not a version silently rewritten
-after the fact.
+Written by `rca-analyze` (issues #8 and #9), one file per round,
+zero-padded to two digits (`round-01.json`, `round-02.json`, …). **A
+round's file is never overwritten once written** — the same append-only
+discipline as `runs/run-NN` itself, and for the same reason: round N+1
+must be provable against round N's actual recorded state, not a version
+silently rewritten after the fact. This is why the (agent recommendation,
+engineer decision) pair issue #9 adds is **not** a field on this file —
+it cannot be known until after the round is written and the checkpoint
+has been shown, so it lives in `manifest.json.decisions[]` instead (see
+above), leaving every round file exactly as fixed as it always was.
 
 ```json
 {
@@ -245,6 +284,8 @@ after the fact.
   "started_at": "<ISO 8601>",
   "completed_at": "<ISO 8601>",
   "direction": "<the candidate direction this round pursued, from the prior round's checkpoint — null for round 1>",
+  "engineer_redirect": {"text": "<verbatim, from a redirect reply that produced this round>", "tier": "ENGINEER_PROVIDED", "recorded_at": "<ISO 8601>"},
+  "forced_by_round_budget": false,
   "failure_point": {
     "located": true,
     "event": {"timestamp": "<ISO 8601>", "table": "<table>", "layer": "<layer>", "message": "<message/summary>"},
@@ -261,7 +302,8 @@ after the fact.
       "queries": [
         {"ledger_ref": "<ledger line + raw/ pointer>", "outcome": "hit | miss", "tier": "<tier the hit was recorded at, when outcome is hit; null on a miss>"}
       ],
-      "eliminated_by": "<the ledger ref of the contradicting HARD finding, when status is eliminated; null otherwise>"
+      "eliminated_by": "<the ledger ref of the contradicting HARD finding, when status is eliminated; null otherwise>",
+      "untested_tier": "<'ASSUMED', only when this hypothesis reached the checkpoint with queries: [] because no viable query could be constructed at all — see rca-analyze/SKILL.md's Step 6; null otherwise>"
     }
   ],
   "causal_chain_additions": [
@@ -280,7 +322,7 @@ after the fact.
 ```
 
 - `failure_point.located: false` (with `event: null`, `tier: null`) is a
-  valid, expected outcome — see `rca-analyze/SKILL.md`'s Step 4. It is
+  valid, expected outcome — see `rca-analyze/SKILL.md`'s Step 5. It is
   never papered over with a fabricated event.
 - `hypotheses[].status` is only ever `"surviving"` or `"eliminated"` —
   see `keyword-provenance.md`: a hypothesis is eliminated only by a
@@ -291,15 +333,31 @@ after the fact.
   "surviving but untested" (a miss recorded here, per
   `keyword-provenance.md`'s "guessing may ask, never answer", never
   eliminates the hypothesis on its own). `queries[]` is empty only when no
-  test has been attempted yet.
+  test has been attempted at all — the one case `untested_tier: "ASSUMED"`
+  applies (issue #9's "conclusion resting on an ASSUMED finding" gate
+  checks exactly this field on the round's recommended direction).
+- `engineer_redirect` (issue #9) is non-null only on a round produced by a
+  `redirect <information>` reply — see `rca-analyze/SKILL.md`'s handling
+  of that verb. It is read, not re-derived, by Step 6's hypothesis
+  generation on the round it appears in; it is never copied forward into a
+  later round's own `engineer_redirect` field (a later round that still
+  needs it reads this round's file directly, the same slice-read
+  discipline as `causal_chain_additions`).
+- `forced_by_round_budget: true` (issue #9) marks a round written at
+  `round == manifest.json.round_budget`, whose `checkpoint.recommendation`
+  is therefore forced to recommend acceptance regardless of what survived
+  — see `rca-analyze/SKILL.md`'s round-budget gate.
 - `checkpoint` is the structured source `rca-analyze` renders into the
   prose format `checkpoint-format.md` specifies when reporting to the
   engineer — the file holds the data, that document holds the
   presentation rules.
-- This ticket (issue #8) always writes exactly one round, halts, and
-  leaves `direction` for round 1 as `null`. Multi-round chaining — a later
-  invocation reading a prior round's `checkpoint.recommendation` to set
-  its own `direction` — is issue #9.
+- Issue #8 built the single round this schema always produced one of;
+  issue #9 adds the loop that chains rounds together — a later invocation
+  reading a prior round's `checkpoint.recommendation` (via `dig`) or
+  injecting new evidence (via `redirect`) to set `direction` /
+  `engineer_redirect` on the next round it writes. Round 1 of any run
+  still has `direction: null` and `engineer_redirect: null` — there is no
+  prior checkpoint to have produced either.
 
 ## Run numbering
 
@@ -321,8 +379,8 @@ append-only.
 | `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
 | `runs/run-NN/manifest.json.current_step`, `.updated_at` | Every pipeline skill updates these on entry/exit |
-| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` — `rca-analyze` deliberately leaves both untouched; deciding the true next step from a checkpoint's outcome is issue #9's loop's job, not this skill's |
-| `runs/run-NN/manifest.json.current_round`, `.standing_recommendation` | `rca-analyze` — sole writer |
+| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply — never on any other verb, and never `status` back out of `"aborted"` |
+| `runs/run-NN/manifest.json.current_round`, `.standing_recommendation`, `.decisions` | `rca-analyze` — sole writer |
 | `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
 | `runs/run-NN/analysis/round-NN.json` (create; never overwritten once written) | `rca-analyze` — sole writer, one file per round |
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |

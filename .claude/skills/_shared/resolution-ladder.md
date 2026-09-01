@@ -42,10 +42,14 @@ silently omitted from the round's record.
 5. **Ask the engineer** — when no rung above resolves a question this
    round needs answered, the round does not fabricate an answer to keep
    moving. It states the open question plainly in the checkpoint's
-   evidence gaps (see `checkpoint-format.md`). Issue #8 (this ticket) ends
-   every round at that checkpoint regardless; issue #9 (not yet built)
-   formalizes the engineer's answer as a `redirect` carrying
-   `ENGINEER_PROVIDED` evidence into the next round.
+   evidence gaps (see `checkpoint-format.md`). This rung is also, per
+   issue #9, one of the four never-bypassable gates: when the round's
+   *recommended* direction itself depends on a question this rung had to
+   reach, `rca-analyze` always halts here regardless of
+   `manifest.json.autonomy`. The engineer's answer, when it comes, is
+   formalized as a `redirect <information>` reply, recorded at
+   `ENGINEER_PROVIDED` and carried into the next round
+   (`rca-analyze/SKILL.md`'s Step 3/6).
 6. **Prior cases** (`.rca/knowledge/cases/`, written by `rca-learn`) — not
    yet available; that skill is issue #11, not built. A round that would
    have consulted this rung states so instead of skipping it silently
