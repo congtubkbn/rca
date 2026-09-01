@@ -45,7 +45,7 @@ measured fact from an assumption without re-deriving it.
   labelled as resting on an engineer premise — never presented as if it
   were pipeline-verified.
 
-## Scope note for these tickets (issues #6, #7)
+## Scope note for these tickets (issues #6, #7, #8, #9)
 
 `rca-intake` writes `TESTER_REPORTED` (on the tester's reproduction steps)
 and, when the engineer supplies input at invocation time, `ENGINEER_PROVIDED`
@@ -53,12 +53,22 @@ and, when the engineer supplies input at invocation time, `ENGINEER_PROVIDED`
 commit). `rca-scope` writes `TESTER_REPORTED` (on an issue-type
 classification matched from PLM text), `ENGINEER_PROVIDED` (on an
 engineer-supplied failure time or classification hint), and `VERIFIED_LOG`
-(on a failure time actually found by a log query). The remaining tiers
-(`CODE_BOUND`, `SPEC_INFERRED`, `ASSUMED`, `CONTRADICTED`,
-`CODE_UNAVAILABLE`) belong to `rca-analyze`/`rca-conclude`, which do not
-exist yet. This file documents the whole vocabulary now, because the tier
-an existing skill writes must stay meaningful once the rest of the suite is
-built; it does not imply those skills' behavior.
+(on a failure time actually found by a log query). `rca-analyze` writes
+`VERIFIED_LOG` and `CODE_BOUND` (a hypothesis-testing query's hit),
+`SPEC_INFERRED` (a cited NotebookLM answer, per rungs 1/4 of the
+resolution ladder), `CODE_UNAVAILABLE` (a branch behind a lib module), and
+`CONTRADICTED` (a HARD finding disproving a SOFT claim) — all issue #8.
+Issue #9's loop adds two more, both narrow and both gate-triggering rather
+than routine: `ENGINEER_PROVIDED` on a `redirect <information>` reply's
+injected text (recorded in `analysis/round-NN.json.engineer_redirect` —
+see `run-bundle-layout.md`), and `ASSUMED` on a hypothesis that reached
+the checkpoint with no query ever attempted against it at all
+(`hypotheses[].untested_tier` in the same file) — a rare case, since
+Step 6 of `rca-analyze/SKILL.md` always tries to construct a testing
+query, but not always possible (no viable keyword, no applicable table).
+`rca-conclude` does not exist yet; this file documents the whole
+vocabulary regardless, because the tier an existing skill writes must stay
+meaningful once the rest of the suite is built.
 
 The keyword-provenance ladder (HARD / SOFT / FORBIDDEN — which *sources*
 may support a conclusion) is a related but separate concept, owned by

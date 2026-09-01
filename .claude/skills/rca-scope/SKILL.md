@@ -18,7 +18,7 @@ description: >
   no run-bundle concept at all; the two are unrelated pipelines that
   happen to both use the word "scope". Do NOT use this to locate a failure
   point in signalling/trace, generate hypotheses, or reach any conclusion
-  — that is `rca-analyze`, not built yet. Do NOT use this to fetch or
+  — that is `rca-analyze`. Do NOT use this to fetch or
   re-fetch anything from PLM — that is `rca-intake`'s job; re-invoking
   this skill never touches PLM.
 ---
@@ -212,8 +212,9 @@ with a prior scope.
 
 Update in place (not a full rewrite): `current_step: "rca-scope"`,
 `next_step: "rca-analyze"`, `updated_at` to now. Leave `status`,
-`current_round`, and `standing_recommendation` untouched — those belong to
-`rca-analyze`'s checkpoint logic, not built yet.
+`current_round`, `standing_recommendation`, and `decisions` untouched —
+those belong to `rca-analyze`'s checkpoint/loop logic (issues #8/#9), not
+this skill's.
 
 ### 9. Report to the engineer
 
@@ -224,9 +225,9 @@ State plainly:
   undetermined and the window fell back to the full loaded range.
 - `window.start`/`window.end`, `tables_in_scope`, `layers`.
 - Every entry in `open_notes[]`.
-- That the next pipeline step is `rca-analyze`, which does not exist yet
-  in this suite as of this ticket (issue #7) — do not imply it will run
-  automatically.
+- That the next pipeline step is `rca-analyze` — do not imply it will run
+  automatically; that is a separate invocation (or `/rca`'s dispatch), not
+  something this skill chains into.
 
 ## What this skill does not do
 
@@ -241,5 +242,5 @@ State plainly:
   miss stays a miss, never becomes a negative claim or a fabricated
   timestamp.
 - ❌ No chaining into `rca-analyze` — halts after step 9 regardless of
-  `manifest.json.autonomy` (that field governs `rca-analyze`'s checkpoints,
-  not this skill).
+  `manifest.json.autonomy` (that field governs `rca-analyze`'s
+  checkpoints and loop, not this skill).

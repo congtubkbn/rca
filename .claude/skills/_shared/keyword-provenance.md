@@ -74,3 +74,14 @@ Table isolation is still not enforced (issue #5, "Explicit departures from
 v6"; `tool-ledger-format.md`'s `table` field records what was queried, for
 audit, not restriction). This file governs what a finding may be used
 *for*, not which table or tool it is permitted to touch.
+
+An engineer's `redirect <information>` reply (issue #9,
+`checkpoint-format.md`) is a fourth, separate axis from the HARD/SOFT/
+FORBIDDEN ranking above — it is not a *source* an agent chose, it is a
+premise the engineer asserted directly, tagged `ENGINEER_PROVIDED` per
+`evidence-tiers.md` regardless of how it gets used afterward. It may seed
+a hypothesis or supply a query keyword exactly like a SOFT source can, and
+per `evidence-tiers.md`'s `ENGINEER_PROVIDED` rule it may stand as a
+premise on its own — but a conclusion resting on it must still say plainly
+that it rests on an engineer premise, the same discipline as any other
+non-HARD tier reaching the checkpoint's evidence gaps.

@@ -1,16 +1,23 @@
 # Checkpoint Presentation Format
 
-`rca-analyze` (issue #8) ends every round here, then halts. This is the
-one piece of the round the engineer actually reads; everything else in
+`rca-analyze` (issues #8 and #9) ends every round here. This is the one
+piece of the round the engineer actually reads; everything else in
 `analysis/round-N.json` exists to make this checkpoint's claims traceable,
 not to be read directly.
 
-Issue #8 builds one round ending at this checkpoint. Issue #9 (not yet
-built) adds the loop around it — `dig <direction>` / `redirect
-<information>` / `accept` / `abort`, the round budget, and
-`meta.autonomy` — none of that exists yet; a round built by this ticket
-halts here unconditionally, regardless of what `manifest.json.autonomy`
-says.
+Issue #8 built one round ending at this checkpoint, always halting
+regardless of `manifest.json.autonomy`. Issue #9 adds the loop around it:
+a reply of `dig <direction>`, `redirect <information>`, `accept`, or
+`abort` (section 5, below) drives what `rca-analyze` does next, and at
+`autonomy: "auto"`/`"auto_until_blocked"` the skill may take that next
+step itself instead of waiting for the engineer to type it — see
+`rca-analyze/SKILL.md`'s loop-control steps for exactly when it does and
+does not stop to wait. Four gates always stop it regardless of autonomy:
+the round budget, a recommendation resting on an `ASSUMED` finding, the
+resolution ladder reaching "ask the engineer" for something the
+recommended direction depends on, and — always — final acceptance of a
+root cause (`rca-analyze` never invokes `rca-conclude` itself; it reports
+that `accept` is next and stops).
 
 ## Sections, in order
 
@@ -63,12 +70,58 @@ prose above:
   the "prior cases" rung not yet available because `rca-learn` does not
   exist) and what would need to be true to try them.
 
+### 5. How to respond
+
+Appended after section 4 whenever `rca-analyze` is actually halting here
+(i.e. not the mid-loop status line an `autonomy: "auto"`/
+`"auto_until_blocked"` round prints on its way to the next round
+automatically — see below). States plainly:
+
+- **`dig <direction>`** — start the next round narrowed onto one of
+  section 2's candidate directions (by hypothesis id or its statement).
+  Reads only `checkpoint.candidate_directions`, never conversation
+  history, so the same direction typed in a fresh session produces the
+  same next round as typed in a continuing one.
+- **`redirect <information>`** — hand the agent something it could not
+  have known: a fact about the device, network, or build. Recorded at
+  tier `ENGINEER_PROVIDED` (`analysis/round-N.json.engineer_redirect`,
+  never as ordinary chat) and folded into the next round's hypothesis
+  generation.
+- **`accept`** — this run's analysis is done; the next step is
+  `rca-conclude`. Always halts, at every autonomy setting — `rca-analyze`
+  records the decision and stops, it never invokes `rca-conclude` itself.
+- **`abort`** — close this run without a conclusion. State why, even
+  briefly; recorded verbatim.
+
+At the round budget, this section says so explicitly and states that only
+`accept`, `abort`, or an *explicit* override (stated as such, with a
+one-line rationale) can move past it — the round budget is the only one
+of the four gates an override can move past at all, and only for one more
+round at a time. When this round's recommendation instead rests on an
+`ASSUMED` finding, or the resolution ladder had to reach "ask the
+engineer" for something the recommendation depends on, this section states
+that plainly too, but there is no override for either — only `accept` or
+`abort` move past them; digging further requires whatever would actually
+resolve the gap (a query hit, an engineer's answer via `redirect`), not a
+reply that just asserts past it. See `rca-analyze/SKILL.md`'s gate steps
+(Step 7.4) for the exact wording each produces.
+
+When `autonomy` is `"auto"` or `"auto_until_blocked"` and none of the four
+gates above apply, `rca-analyze` does not print this section at all for
+that round — it takes its own recommendation as if the engineer had typed
+`dig <recommendation>`, records that in `manifest.json.decisions[]` as
+`verb: "auto_continue"` (not a real engineer reply), and continues
+straight into the next round within the same invocation. The final round
+of such a run — whichever one trips a gate or reaches the round budget —
+is the one that actually renders this section and halts.
+
 ## What this format does not do
 
-It does not ask a question and wait inline — the round has already ended
-by the time this is presented (`analysis/round-N.json` is written first).
-An engineer's answer becomes the next round's input once issue #9 exists;
-until then, an open question here is a statement, not a live prompt.
+It does not ask a question and wait inline mid-round — the round has
+already ended by the time this is presented (`analysis/round-N.json` is
+written first, in full, before the checkpoint built from it is shown).
+Nothing in the checkpoint itself is mutable; an engineer's reply changes
+what round `rca-analyze` writes *next*, never this one.
 
 It never presents `SPEC_INFERRED` or `ASSUMED` findings with the same
 confidence as `VERIFIED_LOG`/`CODE_BOUND` ones — tier labels are not
