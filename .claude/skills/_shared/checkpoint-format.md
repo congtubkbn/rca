@@ -93,13 +93,18 @@ automatically — see below). States plainly:
 - **`abort`** — close this run without a conclusion. State why, even
   briefly; recorded verbatim.
 
-At the round budget, or when this round's recommendation rests on an
-`ASSUMED` finding, or when the resolution ladder had to reach "ask the
-engineer" for something the recommendation depends on, this section says
-so explicitly and states that only `accept`, `abort`, or an *explicit*
-override (stated as such, with a one-line rationale) can move past it —
-see `rca-analyze/SKILL.md`'s gate steps for the exact wording each
-produces.
+At the round budget, this section says so explicitly and states that only
+`accept`, `abort`, or an *explicit* override (stated as such, with a
+one-line rationale) can move past it — the round budget is the only one
+of the four gates an override can move past at all, and only for one more
+round at a time. When this round's recommendation instead rests on an
+`ASSUMED` finding, or the resolution ladder had to reach "ask the
+engineer" for something the recommendation depends on, this section states
+that plainly too, but there is no override for either — only `accept` or
+`abort` move past them; digging further requires whatever would actually
+resolve the gap (a query hit, an engineer's answer via `redirect`), not a
+reply that just asserts past it. See `rca-analyze/SKILL.md`'s gate steps
+(Step 7.4) for the exact wording each produces.
 
 When `autonomy` is `"auto"` or `"auto_until_blocked"` and none of the four
 gates above apply, `rca-analyze` does not print this section at all for

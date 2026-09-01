@@ -163,10 +163,17 @@ invocation is replying to; read its `checkpoint` section (already on disk
    needs the information itself — what should the agent know?" Otherwise
    `engineer_redirect = {"text": redirect_info, "tier":
    "ENGINEER_PROVIDED", "recorded_at": <now>}`. `direction` = the standing
-   round's own `checkpoint.recommendation.direction` (a redirect adds a
-   premise, it does not by itself pick a different candidate — see
-   `run-bundle-layout.md`'s note on why this is round N+1, not a rewrite
-   of round N).
+   round's own `checkpoint.recommendation.direction` — a redirect adds a
+   premise to the same line of inquiry, it does not by itself pick a
+   different candidate. This is deliberately **not** a literal in-place
+   rewrite of the standing round: `run-bundle-layout.md`'s append-only
+   discipline ("a round's file is never overwritten once written") applies
+   to a `redirect` exactly as it does to every other reply, precisely so
+   round N+1 stays provable against round N's actual recorded state rather
+   than a version silently rewritten after the fact — "re-running the
+   round" against new information means writing the *next* round with
+   that information now in hand, not mutating the one already shown to
+   the engineer.
 5. **No `verb`, but `direction` supplied directly**: treat exactly as case
    3 above (a direct-invocation shortcut), except the round-budget gate
    still applies identically — a bare `direction` does not bypass it.
@@ -393,20 +400,41 @@ Otherwise:
       distinct one when the analysis simply converges early).
    Record which gate(s), if any, tripped — this drives Step 8.
 
+5. **Update `manifest.json` for this round, unconditionally, before
+   Step 8 decides anything**: `current_step: "rca-analyze"`,
+   `current_round: <round_number>`, `standing_recommendation` = this
+   round's `checkpoint.recommendation`, `updated_at` to now. Leave
+   `decisions` exactly as Step 3 left it (a fresh round 1 with no prior
+   checkpoint appended nothing there) — Step 8.2 appends to it separately,
+   below, only when it auto-continues. Leave `next_step` and `status`
+   untouched here — deciding whether the true next step is another round,
+   `rca-conclude`, or something else happens on the *next* invocation of
+   this skill (or is handled in "Handling `accept`"/"Handling `abort`").
+   This write must happen for every round this invocation produces,
+   including ones that immediately auto-continue — Step 4's
+   `round_number = manifest.json.current_round + 1` on the *next* pass
+   through this loop depends on `current_round` already reflecting the
+   round just written, or the next round would recompute the same number
+   and collide with "a round's file is never overwritten once written."
+
 ### 8. Decide: halt, or continue automatically
 
 1. If any gate from Step 7.4 tripped, OR `manifest.json.autonomy ==
-   "review_all"`: halt at this round's checkpoint. Go to "Update
-   `manifest.json`" then "Report to the engineer and HALT" below.
+   "review_all"`: halt at this round's checkpoint (`manifest.json` is
+   already current, per Step 7.5). Go to "Report to the engineer and
+   HALT" below.
 2. Otherwise (`autonomy` is `"auto_until_blocked"` or `"auto"`, and no
    gate tripped): do not wait for an engineer reply. Append a
-   `manifest.json.decisions[]` entry for this round now —
-   `agent_recommendation` = this round's `checkpoint.recommendation`,
-   `engineer_response = {"verb": "auto_continue", "input":
-   checkpoint.recommendation.direction, "recorded_at": <now>}`,
-   `override: false`, `override_rationale: null` — then set `direction =
-   checkpoint.recommendation.direction`, `engineer_redirect = null`, and
-   go back to Step 4 to write the next round within this same invocation.
+   `manifest.json.decisions[]` entry for the round Step 7 just wrote —
+   `round` = that round's number, `agent_recommendation` = its
+   `checkpoint.recommendation`, `engineer_response = {"verb":
+   "auto_continue", "input": checkpoint.recommendation.direction,
+   "recorded_at": <now>}`, `override: false`, `override_rationale: null`
+   — then set `direction = checkpoint.recommendation.direction`,
+   `engineer_redirect = null`, and go back to Step 4 to write the next
+   round within this same invocation (Step 7.5's update to `current_round`
+   is what makes Step 4.1's `round_number` calculation land on the next
+   number, not a repeat of this one).
    `"auto_until_blocked"` and `"auto"` differ only in framing, never in
    which gates apply — both are stopped by exactly the four gates above
    and nothing else; `"auto"` is the setting an engineer chooses expecting
@@ -421,14 +449,24 @@ Otherwise:
 
 Reached only from Step 3 when `verb == "accept"`; no new round is written.
 
-1. Append a `manifest.json.decisions[]` entry for the standing round:
-   `agent_recommendation` = its `checkpoint.recommendation`,
-   `engineer_response = {"verb": "accept", "input": null, "recorded_at":
-   <now>}`, `override` = `true` only if that round's recommendation was
-   *not* itself an acceptance recommendation (i.e. the engineer is
-   accepting earlier than the analysis itself suggested) with
-   `override_rationale` required in that case (HALT asking for one if
-   missing); otherwise `override: false`, `override_rationale: null`.
+1. Append a `manifest.json.decisions[]` entry for the standing round (or,
+   if `current_round == 0`, a decision with `round: 0` and
+   `agent_recommendation: null` — there is no round to have recommended
+   anything yet, the engineer is simply declining to run one):
+   `agent_recommendation` = the standing round's `checkpoint.recommendation`
+   when one exists, `engineer_response = {"verb": "accept", "input": null,
+   "recorded_at": <now>}`. `override`/`override_rationale` here simply
+   record the fact when applicable — `override: true` (with whatever
+   rationale text, if any, came with the reply, else `override_rationale:
+   null`) when that round's recommendation was *not* itself an acceptance
+   recommendation (the engineer is accepting earlier than the analysis
+   itself suggested, or there was no round at all); `override: false`,
+   `override_rationale: null` otherwise. Unlike the round-budget gate
+   (Step 3, case 3), this is never itself a HALT condition — the spec's
+   override/rationale requirement is specifically the round-budget gate's;
+   `accept` is always available to the engineer and this entry only
+   records that they used it early, it never blocks them for not
+   explaining why.
 2. Update `manifest.json`: `next_step: "rca-conclude"`, `current_step:
    "rca-analyze"`, `updated_at` to now. Leave `status` as `"in_progress"`
    — the run is not concluded, only handed off; `rca-conclude` (issue #10,
@@ -455,19 +493,6 @@ Reached only from Step 3 when `verb == "abort"`; no new round is written.
 3. Report: the run is closed without a conclusion, and why (the reason
    just recorded). State that a new run via `rca-intake` is required to
    analyze this issue further. HALT.
-
-### Update `manifest.json` (halted round)
-
-For the ordinary halted-round path (Step 8.1): update in place —
-`current_step: "rca-analyze"`, `current_round: <round_number>`,
-`standing_recommendation` = this round's `checkpoint.recommendation`,
-`decisions` unchanged by this step itself (Step 3 already appended
-whatever decision this invocation resolved, if any — a fresh round 1 with
-no prior checkpoint appends nothing), `updated_at` to now. Leave
-`next_step` and `status` untouched — deciding whether the true next step
-is another round, `rca-conclude`, or something else based on the
-engineer's response to *this* checkpoint happens on the *next* invocation
-of this skill (or is handled above, for `accept`/`abort`).
 
 ### Report to the engineer and HALT
 
