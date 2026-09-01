@@ -164,6 +164,36 @@ specifically to this one entry point. Generic `contract:` blocks,
 `resume <skill>` injection/supersession, and `standalone <skill>` mode
 (§3-4, §6 of that doc) are still design-only.
 
+### New, independent suite: `.claude/skills/` PLM-issue pipeline (GitHub issue #5)
+
+"PLM" here is the product lifecycle management issue tracker engineers
+file device-failure reports in — unrelated to the 3GPP protocol layers
+the v6 suite analyzes. A second, independent skill suite lives under
+`.claude/skills/`, plus a
+`/rca` Claude Code command at `.claude/commands/rca.md`. It is unrelated
+to `v6-coworker-interaction-model.md` above and does not modify the
+`.cline/skills/` v6 suite or its `.clinerules/workflows/rca.md` Cline
+dispatcher — both keep their existing `/rca` name; only accidental
+skill-trigger overlap between the two suites is tolerated (per issue #5),
+not shared code or shared state.
+
+It drives PLM-issue analysis end to end:
+`rca-intake → rca-scope → rca-analyze ⟲ → rca-conclude → rca-learn`, each
+owning one section of a per-run bundle on disk under `.rca/issues/`, each
+independently invocable, with no orchestrator — `/rca` only dispatches the
+single next step and halts. As of this writing only `rca-intake` (run
+bundle foundation, issue #6) is built; the remaining four are tracked as
+separate sub-issues of #5.
+
+`.claude/skills/_shared/` is this suite's contract — read it before
+touching any skill in it, the same discipline the v6 suite's own
+`_shared/` requires:
+- `run-bundle-layout.md` — the `.rca/issues/` directory layout and the
+  state schema for the sections each skill owns
+- `contract-block-format.md` — the `contract:` block every skill declares
+- `evidence-tiers.md` — the eight evidence tiers
+- `tool-ledger-format.md` — the `evidence/tools.jsonl` line format
+
 ## Working in this repo
 
 - There is no build, lint, or test command — validate changes by reading them
