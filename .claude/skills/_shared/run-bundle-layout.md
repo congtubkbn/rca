@@ -42,6 +42,7 @@ independent and this document does not describe that file.
         ...
   knowledge/
     cases/<case_id>.json   # written by rca-learn, one per accepted (active_run) conclusion
+    .drafts/<playbook_id>.md  # git-ignored staging area for an unconfirmed playbook draft — rca-learn only
     playbooks/<playbook_id>.md  # promoted, reviewed; the only part of .rca/ committed to git
 ```
 
@@ -614,6 +615,7 @@ append-only.
 | `runs/run-NN/evidence/tools.jsonl` | Appended by whichever skill makes the call; never rewritten, only appended to |
 | `runs/run-NN/raw/*` | Written by whichever skill makes the call; files are never overwritten, only added to (see `log-query-invocation.md`'s numbering rule) |
 | `knowledge/cases/<case_id>.json` (create once; never rewritten) | `rca-learn` — sole writer, one file per accepted conclusion of the run named `active_run` |
+| `knowledge/.drafts/<playbook_id>.md` (create/overwrite on `promote`; deleted on `confirm playbook`/`discard playbook`) | `rca-learn` — sole writer, the mutable pre-review staging copy of a playbook draft |
 | `knowledge/playbooks/<playbook_id>.md` | `rca-learn` — sole writer, only on an explicit, separate engineer `promote` action |
 
 Two skills writing one section is a defect regardless of whether it

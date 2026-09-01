@@ -25,7 +25,12 @@ description: >
   conclusion, run further analysis, or generate hypotheses — that is
   `rca-analyze`/`rca-conclude`, which this skill only reads. Do NOT use
   this to produce a Technical Report — that is `tr-creator`, a separate,
-  explicitly invoked skill this skill never calls.
+  explicitly invoked skill this skill never calls. Do NOT confuse a
+  `promote`/`confirm playbook` request with
+  `scope.json.classification.matched_playbook` — that is a row id in
+  `rca-scope`'s hand-maintained `references/known-issue-types.md`, a
+  different concept this skill neither reads nor writes; only
+  `rca-scope` touches it.
 ---
 
 # rca-learn

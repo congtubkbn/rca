@@ -379,6 +379,23 @@ Otherwise:
 
 ### 7. Write `round-NN.json`, build the checkpoint, and evaluate the gates
 
+Before writing anything: **run the case/playbook-hint check.** Scan every
+`evidence_ref`/`ledger_ref` value about to be written in this round —
+`failure_point.evidence_ref`, every `hypotheses[].queries[].ledger_ref`
+and `.eliminated_by`, and every `causal_chain_additions[].evidence_ref` —
+and confirm each one points at *this run's own*
+`evidence/tools.jsonl` line or `raw/` file, never at a path under
+`.rca/knowledge/` (a case or playbook). This is the mechanical
+enforcement of `keyword-provenance.md`'s "Cases and playbooks are hints,
+never evidence": `case_hints[]` entries carry no `tier`/`evidence_ref`
+field at all by schema (`run-bundle-layout.md`), so the only way a case
+could leak into something that looks like evidence is a reference
+pointing at it directly, which this check catches before the round is
+ever written. If the scan finds one: drop that `evidence_ref` and treat
+the underlying claim as unresolved (an open question this round could not
+close), never write a case/playbook path in as if it were this run's own
+finding.
+
 1. Write `analysis/round-<NN>.json` per the schema in
    `run-bundle-layout.md`, zero-padded, at the number determined in Step
    4, including `direction`/`engineer_redirect` from Step 3. Never
@@ -559,7 +576,11 @@ that the round budget was reached, per Step 7.4/8.
   may only suggest a direction or keyword for *this* round to test fresh
   against this issue's own log or code, and never carries a tier higher
   than whatever it was originally recorded at (`keyword-provenance.md`'s
-  "Cases and playbooks are hints, never evidence").
+  "Cases and playbooks are hints, never evidence"). Step 7's
+  case/playbook-hint check is the mechanical version of this rule, not
+  just a stated intention — it scans every `evidence_ref`/`ledger_ref`
+  this round is about to write and refuses to let one point at
+  `.rca/knowledge/` rather than this run's own ledger/`raw/` file.
 - ❌ Never presents a `SPEC_INFERRED`/`ASSUMED`/`ENGINEER_PROVIDED`
   finding with the same confidence as a `VERIFIED_LOG`/`CODE_BOUND` one in
   the checkpoint's causal chain or recommendation — that confusion is
