@@ -38,3 +38,18 @@ Exactly one line per run, for its single PLM MCP call: the issue fetch
 that produced title, description, and tester reproduction steps. On
 failure (PLM unavailable, unknown issue ID) it still writes the line, with
 `status: "error"` and the stated reason in `error`, before halting.
+
+## What `rca-analyze` writes here
+
+One line per call it makes across a round — to `log-query` (locate and
+hypothesis-testing queries), `code-search`, and `notebooklm` alike, in
+whatever mix that round's hypotheses required. This is the first skill in
+the suite to exercise `code-search` and `notebooklm` as `tool` values,
+and the first for which `keywords_in` is routinely non-empty (a
+hypothesis-testing query consuming a keyword a prior ladder rung — or a
+guess — produced). See `keyword-provenance.md`,
+`code-graph-invocation.md`, and `notebooklm-invocation.md` for what each
+call's `keywords_in`/`table`/`result_ref` mean per tool. A call that
+misses is still logged in full — a miss is itself part of the audit
+trail, even though `keyword-provenance.md` forbids drawing any claim from
+it.
