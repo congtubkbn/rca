@@ -27,3 +27,7 @@ Thumbs.db
 
 # notebooklm-deep-dive runtime artifacts
 output-notebooklm/
+
+# RCA run bundles: field logs, subscriber identifiers and NDA material.
+# Must never reach a remote. Committed before any run can be created.
+.rca/
