@@ -19,8 +19,8 @@ description: >
   run bundle. Do NOT use this to classify an issue or narrow the
   window/tables/layers — that's `rca-scope`, which this skill only reads.
   Do NOT use this to actually reach a final root cause or reproduction
-  scenario — that's `rca-conclude`, not built yet; `accept` here only
-  records the decision and names `rca-conclude` as next, never runs it.
+  scenario — that's `rca-conclude`; `accept` here only records the
+  decision and names `rca-conclude` as next, it never invokes it.
 ---
 
 # rca-analyze
@@ -469,12 +469,12 @@ Reached only from Step 3 when `verb == "accept"`; no new round is written.
    explaining why.
 2. Update `manifest.json`: `next_step: "rca-conclude"`, `current_step:
    "rca-analyze"`, `updated_at` to now. Leave `status` as `"in_progress"`
-   — the run is not concluded, only handed off; `rca-conclude` (issue #10,
-   not yet built) is what would actually reach a conclusion.
+   — the run is not concluded, only handed off; `rca-conclude` (issue #10)
+   is what actually reaches a conclusion.
 3. Report: the decision is recorded, the next pipeline step is
-   `rca-conclude`, which does not exist yet in this suite as of this
-   ticket (issue #9) — do not imply it will run automatically, and do not
-   attempt to improvise its behavior. HALT.
+   `rca-conclude` — do not imply it will run automatically; invoking it
+   (directly, or via `/rca`'s dispatch) is a separate step this skill does
+   not take itself. HALT.
 
 ### Handling `abort`
 
@@ -528,5 +528,4 @@ that the round budget was reached, per Step 7.4/8.
 - ❌ Never invokes `rca-conclude` — an `accept` reply only records the
   decision and names it as the next step.
 - ❌ No reaching a final root cause, causal-chain synthesis, or
-  reproduction scenario — that is `rca-conclude`, issue #10, not built
-  yet.
+  reproduction scenario — that is `rca-conclude`.

@@ -90,7 +90,7 @@ anything else afterward. HALT.
    - If `next_step` names a skill that does **not** exist in
      `.claude/skills/` yet: state plainly which step is next and that it
      is not implemented in this suite yet (link the tracking issue if
-     known, e.g. "next step is `rca-conclude`, tracked as a sub-issue of
+     known, e.g. "next step is `rca-learn`, tracked as a sub-issue of
      GitHub issue #5, not yet built"). Do **not** attempt to improvise
      that step's behavior, and do not fall back to the older v6 suite.
      HALT.
