@@ -347,7 +347,7 @@ above), leaving every round file exactly as fixed as it always was.
     {"document": "<citation.document, from the NotebookLM answer this contradicts>", "section": "<citation.section, or null>", "claim": "<what the document said>", "log_showed": "<what the log actually showed>", "tier": "CONTRADICTED", "evidence_ref": "<ledger line + raw/ pointer of the HARD finding that disagreed>"}
   ],
   "case_hints": [
-    {"source": "case | playbook", "id": "<case_id or playbook_id>", "hint": "<one line: what it suggested — a direction, a keyword, a table>", "used_for": "<hypothesis id this seeded, or null if read but not used>"}
+    {"source": "case | playbook", "id": "<case_id or playbook_id>", "hint": "<one line: what it suggested — a direction, a keyword, a table>", "used_for": "<hypothesis id this seeded, \"failure_point\" if it seeded Step 5's failure-point location instead, or null if read but not used>"}
   ],
   "open_notes": ["<ladder rungs skipped and why, CONTRADICTED findings, anything unresolved>"],
   "checkpoint": {
@@ -401,11 +401,14 @@ above), leaving every round file exactly as fixed as it always was.
   has no `contradicted_findings` field at all, read as `[]`, the same
   backward-compatibility rule `decisions[]` uses above.
 - `case_hints` (issue #11) records every `.rca/knowledge/cases/` or
-  `knowledge/playbooks/` entry this round's hypothesis generation actually
-  considered (resolution ladder rung 6, once `rca-learn` exists) — never
+  `knowledge/playbooks/` entry this round's hypothesis generation *or*
+  failure-point location actually considered (resolution ladder rung 6,
+  once `rca-learn` exists) — Step 5's failure-point fallback and Step 6's
+  hypothesis generation both read this rung and both write here — never
   more than a one-line pointer to what it suggested. A case or playbook
-  hint may seed a hypothesis's `statement` or contribute a candidate
-  keyword to a `testing_query`, exactly like a rung-1/4 SOFT source or a
+  hint may seed a hypothesis's `statement`, contribute a candidate keyword
+  to a `testing_query`, or contribute the keyword a failure-point locate
+  query is narrowed to, exactly like a rung-1/4 SOFT source or a
   FORBIDDEN-origin guess can; it may never itself appear in
   `causal_chain_additions`, `failure_point`, or any hypothesis's `queries[]`
   — only the fresh query this round actually runs against *this* issue's
