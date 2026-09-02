@@ -15,7 +15,7 @@ enters it, and never enters the agent's context either — it is written to
 One JSON object per line, no wrapping array:
 
 ```json
-{"ts": "<ISO 8601>", "run": "run-01", "skill": "rca-intake", "tool": "plm-mcp", "operation": "fetch_issue", "params": {"issue_id": "PLM-12345"}, "keywords_in": [], "table": null, "result_ref": "input/plm-snapshot.json", "status": "ok", "error": null}
+{"ts": "<ISO 8601>", "run": "run-01", "skill": "rca-intake", "tool": "plm-mcp", "operation": "fetch_description", "params": {"issue_id": "PLM-12345"}, "keywords_in": [], "table": null, "result_ref": "input/plm-snapshot.json", "status": "ok", "error": null}
 ```
 
 | Field | Meaning |
@@ -34,10 +34,12 @@ One JSON object per line, no wrapping array:
 
 ## What `rca-intake` writes here
 
-Exactly one line per run, for its single PLM MCP call: the issue fetch
-that produced title, description, and tester reproduction steps. On
-failure (PLM unavailable, unknown issue ID) it still writes the line, with
-`status: "error"` and the stated reason in `error`, before halting.
+One line **per PLM MCP operation actually called** this run — up to three:
+`fetch_title`, `fetch_description`, `fetch_comments`. Which operation
+failures HALT the run versus merely degrade it (and so whether a run ends
+up with two lines or three) is `plm-invocation.md`'s "When it is
+unavailable" — this file only fixes the *line shape* each call writes, not
+the pass/fail policy.
 
 ## What `rca-analyze` writes here
 

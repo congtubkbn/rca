@@ -32,14 +32,20 @@ measured fact from an assumption without re-deriving it.
   positive or negative.
 - **`TESTER_REPORTED` is a claim, not a fact.** It is recorded so the
   pipeline can reason about what was reported without anchoring on it as
-  ground truth. It marks a claim traced to the PLM issue's own
-  title/description/reproduction-steps text — never to a query result or
-  an agent inference. `rca-intake` tags it onto the tester-reported
-  reproduction steps as they are fetched, before any verification has had
-  a chance to happen; `rca-scope` tags it onto an issue-type classification
-  when the classification came from matching that same PLM text, not from
-  an engineer override. Any skill reading `input/plm-snapshot.json` may
-  assign it, on the same basis: the claim traces to PLM's own words.
+  ground truth. It marks a claim traced to the PLM issue's own verbatim
+  `title`/`description` text (which may itself contain the tester's
+  reported reproduction steps and expected result — PLM has no separate
+  field for these; see `plm-invocation.md`) — never to a query result, an
+  agent inference, or `engineer_clarification` (that is always
+  `ENGINEER_PROVIDED`, regardless of how closely it echoes the tester's
+  words). `rca-scope` tags it onto an issue-type classification when the
+  classification came from matching that PLM text, not from an engineer
+  override; `rca-conclude` tags it the same way when comparing
+  `plm-snapshot.json.description` against the log in
+  `tester_comparison`. Any skill reading `input/plm-snapshot.json`'s
+  verbatim fields may assign it, on the same basis: the claim traces to
+  PLM's own words. `rca-intake` itself assigns no tier to these fields at
+  fetch time — see the scope note above.
 - **`ENGINEER_PROVIDED` may override an agent inference when the engineer
   explicitly directs it**, but a conclusion resting on one is always
   labelled as resting on an engineer premise — never presented as if it
@@ -47,10 +53,14 @@ measured fact from an assumption without re-deriving it.
 
 ## Scope note for these tickets (issues #6, #7, #8, #9)
 
-`rca-intake` writes `TESTER_REPORTED` (on the tester's reproduction steps)
-and, when the engineer supplies input at invocation time, `ENGINEER_PROVIDED`
-(on anything they assert directly, e.g. a known build/model or source
-commit). `rca-scope` writes `TESTER_REPORTED` (on an issue-type
+`rca-intake` writes no `TESTER_REPORTED` itself — `title`/`description`/
+`comments` are stored verbatim from PLM, untagged, the same way
+`description` always was (not yet a claim used in analysis). It writes
+`ENGINEER_PROVIDED` in two places: on `input/plm-snapshot.json.engineer_clarification`'s
+populated fields (an engineer's explicit correction of an unclear or
+technically imprecise PLM account — see `run-bundle-layout.md`), and on
+anything the engineer asserts directly into `input/log-pointers.json` at
+invocation time (e.g. a known build/model or source commit). `rca-scope` writes `TESTER_REPORTED` (on an issue-type
 classification matched from PLM text), `ENGINEER_PROVIDED` (on an
 engineer-supplied failure time or classification hint), and `VERIFIED_LOG`
 (on a failure time actually found by a log query). `rca-analyze` writes
@@ -72,8 +82,8 @@ only copies `problem`/`root_cause`/`causal_chain`/
 `rca-scope`/`rca-analyze` already recorded (per this file's "never
 improves with time" rule), with one use specific to synthesis:
 `CONTRADICTED` when the reproduction scenario it derives from the causal
-chain disagrees with `input/plm-snapshot.json`'s
-`tester_reproduction_steps` text on a point a HARD finding actually
+chain disagrees with `input/plm-snapshot.json`'s verbatim `description`
+text (never `engineer_clarification`) on a point a HARD finding actually
 settles — the tester's account is checked against the log, not assumed
 correct, exactly as issue #5's "a mistaken account gets corrected here
 rather than carried into a report" states. This is why the table above

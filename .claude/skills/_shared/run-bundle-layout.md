@@ -92,28 +92,55 @@ below for both schemas.
 
 ## `input/plm-snapshot.json`
 
-Refreshed (fully overwritten) on every `rca-intake` invocation for this
-issue — it always reflects the latest fetch. Written verbatim; nothing in
-it is rephrased or summarized by the skill.
+`title`/`description`/`comments` are refreshed (fully overwritten) on
+every `rca-intake` invocation for this issue — they always reflect the
+latest PLM fetch, per `plm-invocation.md`. `engineer_clarification` is
+refreshed **per field**: a field supplied at this invocation overwrites
+its prior value; a field not supplied carries forward from this issue's
+previous run's snapshot unchanged (never reset to `null` just because this
+invocation didn't restate it). Nothing here is rephrased or summarized by
+the skill — `title`/`description`/`comments` are written verbatim from
+PLM; `engineer_clarification` is written verbatim from whatever the
+engineer supplied.
 
 ```json
 {
   "fetched_at": "<ISO 8601>",
   "title": "<verbatim>",
   "description": "<verbatim>",
-  "tester_reproduction_steps": {
-    "text": "<verbatim>",
-    "tier": "TESTER_REPORTED"
+  "comments": [
+    {"comment_id": "<verbatim>", "author": "<verbatim>", "timestamp": "<ISO 8601>", "text": "<verbatim>"}
+  ],
+  "engineer_clarification": {
+    "title": {"text": "<verbatim>", "tier": "ENGINEER_PROVIDED"} ,
+    "description": {"text": "<verbatim>", "tier": "ENGINEER_PROVIDED"},
+    "comments": {"text": "<verbatim>", "tier": "ENGINEER_PROVIDED"}
   }
 }
 ```
 
-`description` is the snapshotted PLM text itself, kept so a later edit in
-PLM cannot silently change what a conclusion rested on — it is not itself
-tagged with an evidence tier because it is not (yet) a claim used in
-analysis. `tester_reproduction_steps` is: it is the tester's claim about
-what reproduces the failure, recorded as a claim (`TESTER_REPORTED`), not
-as fact.
+`title`/`description`/`comments` are the snapshotted PLM text itself, kept
+so a later edit in PLM cannot silently change what a conclusion rested on
+— none of the three is itself tagged with an evidence tier at intake time,
+because none is (yet) a claim used in analysis (the same reasoning that
+already applied to `description` before this file's `engineer_clarification`
+addition). There is no separate reproduction-steps field — see
+`plm-invocation.md`'s "What this capability does not provide" for why.
+
+`engineer_clarification` is an engineer's optional, explicit correction or
+clarification of `title`/`description`/`comments` — supplied only when the
+tester's own account is unclear or technically imprecise, per
+`rca-intake/SKILL.md`'s inputs. Each populated sub-field is tier
+`ENGINEER_PROVIDED`, never `TESTER_REPORTED` — the system cannot verify
+that an engineer's rewrite preserves the tester's original words. It is
+written **alongside**, never in place of, the corresponding verbatim
+field: `rca-scope`/`rca-analyze` should prefer a populated
+`engineer_clarification` field over its raw counterpart when seeding
+classification or hypotheses (it is closer to the technical truth), while
+`rca-conclude`'s `tester_comparison` always reads the raw verbatim field —
+comparing the log against what the engineer already corrected would defeat
+the point of checking the tester's account against the log at all. An
+unpopulated sub-field is `null`.
 
 ## `input/log-pointers.json`
 
@@ -430,7 +457,7 @@ is never rewritten; analyzing further means starting a new run via
     ],
     "expected_failure": {"statement": "<what a tester would observe if it reproduces>", "tier": "<tier>", "evidence_ref": "<... or null>"},
     "tester_comparison": {
-      "tester_reported_text": "<verbatim, from input/plm-snapshot.json.tester_reproduction_steps.text>",
+      "tester_reported_text": "<verbatim, from input/plm-snapshot.json.description — never engineer_clarification.description>",
       "matches": ["<scenario statement that aligns with the tester's account>"],
       "divergences": [
         {"tester_claim": "<what the tester's text said>", "scenario_says": "<what the scenario states instead>", "tier": "CONTRADICTED | <other tier>", "evidence_ref": "<... or null>"}

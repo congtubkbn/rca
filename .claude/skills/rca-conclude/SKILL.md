@@ -212,7 +212,10 @@ Read only what's needed, never the whole bundle:
      observe if it reproduces — restates `problem`'s `statement`/`tier`/
      `evidence_ref`.
    - `tester_comparison`: `tester_reported_text` = verbatim
-     `input/plm-snapshot.json.tester_reproduction_steps.text`. Compare it
+     `input/plm-snapshot.json.description` — never
+     `engineer_clarification.description` (see `run-bundle-layout.md`):
+     this comparison exists to check the tester's own words against the
+     log, not an engineer's already-corrected reading of them. Compare it
      against `preconditions[]`/`steps[]`/`expected_failure`:
      - `matches[]`: scenario statements that agree with what the tester
        described.
