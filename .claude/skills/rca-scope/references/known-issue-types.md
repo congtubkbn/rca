@@ -2,13 +2,13 @@
 
 This is a small, hand-written lookup `rca-scope` consults when classifying
 an issue from its PLM title/description. It is a convenience cache, not a
-precondition (issue #5: "Classification does not require a hand-written
-playbook to exist... Playbooks are a cache that accumulates, not a
-precondition"). When nothing here matches, `rca-scope` proceeds generically
-— it never forces an issue into the nearest-looking row of this table.
+precondition ("Classification does not require a hand-written playbook to exist...
+Playbooks are a cache that accumulates, not a precondition"). When nothing here matches,
+`rca-scope` proceeds generically — it never forces an issue into the nearest-looking
+row of this table.
 
 This is a **different thing** from `.rca/knowledge/playbooks/` (promoted,
-reviewed playbooks written by `rca-learn`, issue #11). This file lives in
+reviewed playbooks written by `rca-learn`). This file lives in
 the repository and is hand-maintained; `knowledge/playbooks/` lives
 per-workspace and accumulates from accepted runs, one explicit `promote`
 action at a time. `rca-scope` reads only this file — it never reads
@@ -31,8 +31,7 @@ match, classification is `generic` (see `SKILL.md` step 3).
 ## Generic fallback keyword set
 
 Used for the time-anchor log query only when classification is `generic`
-(no row matched), so a vague report is still analysable (issue #5, "a vague
-report must still be analysable"). Not tied to any `issue_type`:
+(no row matched), so a vague report is still analysable. Not tied to any `issue_type`:
 
 `"release"`, `"reject"`, `"failure"`, `"drop"`, `"timeout"`, `"abort"`,
 `"disconnect"`

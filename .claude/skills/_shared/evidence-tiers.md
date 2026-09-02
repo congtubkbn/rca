@@ -1,7 +1,7 @@
 # Evidence Tiers
 
 Every claim the PLM-issue pipeline (`rca-intake → rca-scope → rca-analyze
-⟲ → rca-conclude → rca-learn`, GitHub issue #5) records carries one of
+⟲ → rca-conclude → rca-learn`) records carries one of
 these eight tiers, stating how the claim is known. A tier is not a
 formality — it is what lets a later reader (or a later run) tell a
 measured fact from an assumption without re-deriving it.
@@ -24,8 +24,7 @@ measured fact from an assumption without re-deriving it.
   was written at. Reaching `VERIFIED_LOG` requires verification against
   the log of the issue currently being analysed — never inherited from a
   prior run or a prior case record. This is the mechanism that stops an
-  assumption from being laundered into a verified finding by repetition
-  (see the parent spec's "evidence laundering" note, issue #5).
+  assumption from being laundered into a verified finding by repetition.
 - **Guessing may ask, never answer.** A tier is assigned to what a source
   actually said or showed — never to what a query merely failed to
   contradict. A failed guess teaches nothing and gets no tier at all,
@@ -45,13 +44,13 @@ measured fact from an assumption without re-deriving it.
   `tester_comparison`. Any skill reading `input/plm-snapshot.json`'s
   verbatim fields may assign it, on the same basis: the claim traces to
   PLM's own words. `rca-intake` itself assigns no tier to these fields at
-  fetch time — see the scope note above.
+  fetch time — see the skill-by-skill tier assignments below.
 - **`ENGINEER_PROVIDED` may override an agent inference when the engineer
   explicitly directs it**, but a conclusion resting on one is always
   labelled as resting on an engineer premise — never presented as if it
   were pipeline-verified.
 
-## Scope note for these tickets (issues #6, #7, #8, #9)
+## Skill-by-Skill Tier Assignments
 
 `rca-intake` writes no `TESTER_REPORTED` itself — `title`/`description`/
 `comments` are stored verbatim from PLM, untagged, the same way
@@ -60,23 +59,27 @@ measured fact from an assumption without re-deriving it.
 populated fields (an engineer's explicit correction of an unclear or
 technically imprecise PLM account — see `run-bundle-layout.md`), and on
 anything the engineer asserts directly into `input/log-pointers.json` at
-invocation time (e.g. a known build/model or source commit). `rca-scope` writes `TESTER_REPORTED` (on an issue-type
+invocation time (e.g. a known build/model or source commit).
+
+`rca-scope` writes `TESTER_REPORTED` (on an issue-type
 classification matched from PLM text), `ENGINEER_PROVIDED` (on an
 engineer-supplied failure time or classification hint), and `VERIFIED_LOG`
-(on a failure time actually found by a log query). `rca-analyze` writes
+(on a failure time actually found by a log query).
+
+`rca-analyze` writes
 `VERIFIED_LOG` and `CODE_BOUND` (a hypothesis-testing query's hit),
 `SPEC_INFERRED` (a cited NotebookLM answer, per rungs 1/4 of the
 resolution ladder), `CODE_UNAVAILABLE` (a branch behind a lib module), and
-`CONTRADICTED` (a HARD finding disproving a SOFT claim) — all issue #8.
-Issue #9's loop adds two more, both narrow and both gate-triggering rather
-than routine: `ENGINEER_PROVIDED` on a `redirect <information>` reply's
+`CONTRADICTED` (a HARD finding disproving a SOFT claim).
+Its loop also uses two gate-triggering tiers: `ENGINEER_PROVIDED` on a `redirect <information>` reply's
 injected text (recorded in `analysis/round-NN.json.engineer_redirect` —
 see `run-bundle-layout.md`), and `ASSUMED` on a hypothesis that reached
 the checkpoint with no query ever attempted against it at all
 (`hypotheses[].untested_tier` in the same file) — a rare case, since
 Step 6 of `rca-analyze/SKILL.md` always tries to construct a testing
 query, but not always possible (no viable keyword, no applicable table).
-`rca-conclude` (issue #10) writes no tier from a new query of its own — it
+
+`rca-conclude` writes no tier from a new query of its own — it
 only copies `problem`/`root_cause`/`causal_chain`/
 `reproduction_scenario` tiers forward verbatim from what
 `rca-scope`/`rca-analyze` already recorded (per this file's "never
@@ -85,11 +88,13 @@ improves with time" rule), with one use specific to synthesis:
 chain disagrees with `input/plm-snapshot.json`'s verbatim `description`
 text (never `engineer_clarification`) on a point a HARD finding actually
 settles — the tester's account is checked against the log, not assumed
-correct, exactly as issue #5's "a mistaken account gets corrected here
-rather than carried into a report" states. This is why the table above
+correct, so a mistaken account gets corrected here rather than carried into a report.
+This is why the table above
 names "the tester's own PLM account" alongside spec/vendor-doc/prior-case
 as a source `CONTRADICTED` can apply to — `rca-conclude` is the first
-skill to contradict that particular source. `rca-learn` (issue #11)
+skill to contradict that particular source.
+
+`rca-learn`
 writes no tier from a fresh query of its own either — like `rca-conclude`,
 it only copies tiers forward, from `conclusion.json` and
 `analysis/round-NN.json` into `knowledge/cases/<case_id>.json`, never
@@ -101,5 +106,5 @@ never as something reinforced by having accumulated across cases — see
 `keyword-provenance.md`'s "Cases and playbooks are hints, never evidence."
 
 The keyword-provenance ladder (HARD / SOFT / FORBIDDEN — which *sources*
-may support a conclusion) is a related but separate concept, owned by
-whichever ticket introduces `rca-analyze`. It is not documented here.
+may support a conclusion) is a related but separate concept, documented in
+`_shared/keyword-provenance.md`.

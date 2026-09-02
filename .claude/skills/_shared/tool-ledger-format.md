@@ -5,8 +5,7 @@ the PLM MCP connection, the DuckDB log-query skill, the tree-sitter code
 graph, NotebookLM — appends exactly one line to
 `.rca/issues/<issue_id>/runs/run-NN/evidence/tools.jsonl`. The ledger is
 append-only and per-run: it is how any keyword or claim in that run's
-conclusion can be traced back to the call that produced it (issue #5,
-"nothing is auditable" is the problem this solves). Raw tool output never
+conclusion can be traced back to the call that produced it. Raw tool output never
 enters it, and never enters the agent's context either — it is written to
 `raw/` and only a summary plus a pointer is kept.
 
@@ -27,7 +26,7 @@ One JSON object per line, no wrapping array:
 | `operation` | The specific operation requested of that tool. |
 | `params` | The exact parameters passed — enough to reproduce the call. |
 | `keywords_in` | Keywords this call *consumed* that must themselves already have provenance (empty for a call, like intake's, that introduces keywords rather than consuming them). |
-| `table` | The DuckDB table queried, when `tool` is `log-query`; `null` otherwise. Recorded for audit — this suite does not enforce table isolation (issue #5, "Explicit departures from v6"). |
+| `table` | The DuckDB table queried, when `tool` is `log-query`; `null` otherwise. Recorded for audit — this suite does not enforce table isolation. |
 | `result_ref` | Where the full result was written (a path under `input/`, `raw/`, or a state-file section) — never the raw payload itself. |
 | `status` | `"ok"` or `"error"`. |
 | `error` | The stated reason when `status` is `"error"`; `null` otherwise. A failed call is still logged — a missing PLM connection or an unknown issue ID is itself an auditable event, not a reason to skip the ledger. |

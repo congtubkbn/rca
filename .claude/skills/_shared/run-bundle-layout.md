@@ -1,7 +1,7 @@
 # Run Bundle Layout & State Schema
 
 This is the contract every skill in the PLM-issue pipeline (`rca-intake →
-rca-scope → rca-analyze ⟲ → rca-conclude → rca-learn`, GitHub issue #5)
+rca-scope → rca-analyze ⟲ → rca-conclude → rca-learn`)
 reads and writes against. There is no orchestrator and no in-memory state:
 the run bundle on disk under `.rca/` is the single source of truth, and a
 skill that discovers something but fails to write it here has genuinely
@@ -42,20 +42,20 @@ logs, subscriber identifiers, and NDA material must never reach a remote.
 ```
 
 `rca-intake` creates `issue.json`, `input/`, and a run's `manifest.json`
-and `evidence/tools.jsonl`. `rca-scope` (issue #7) adds `scope.json` to an
+and `evidence/tools.jsonl`. `rca-scope` adds `scope.json` to an
 existing run and appends further ledger lines and `raw/` files for its own
-log queries. `rca-analyze` (issues #8 and #9) adds one
+log queries. `rca-analyze` adds one
 `analysis/round-NN.json` per round it runs, appending further ledger
 lines and `raw/` files for its own log-query, code-graph, and NotebookLM
 calls, and updates `manifest.json`'s `current_round`/
 `standing_recommendation`/`decisions[]` fields every round — plus, when a
-checkpoint's reply is `accept` or `abort`, `next_step`/`status` too (issue
-#9; see the "Per-Section Write Owners" table below). `rca-conclude` (issue
-#10) synthesizes `conclusion.json` and `CONCLUSION.md` from what
+checkpoint's reply is `accept` or `abort`, `next_step`/`status` too (see
+the "Per-Section Write Owners" table below). `rca-conclude` synthesizes
+`conclusion.json` and `CONCLUSION.md` from what
 `rca-scope`/`rca-analyze` already wrote — it runs no new query itself —
 and, only once an engineer explicitly confirms the draft, sets
 `issue.json.active_run` and advances `manifest.json.next_step` to
-`"rca-learn"`. `rca-learn` (issue #11) writes exactly one
+`"rca-learn"`. `rca-learn` writes exactly one
 `knowledge/cases/<case_id>.json` per accepted conclusion — the run named
 by `issue.json.active_run`, never any other — and, only on an explicit,
 separate engineer `promote` action, a reviewed `knowledge/playbooks/<playbook_id>.md`.
@@ -78,9 +78,9 @@ below for both schemas.
 ```
 
 - `active_run` names the run that may feed a Technical Report or be
-  written into the case base (issue #5). It is set only when an engineer
+  written into the case base. It is set only when an engineer
   accepts a conclusion — a step owned by `rca-conclude`/`rca-learn`, not
-  `rca-intake`. It stays `null` through everything this ticket builds.
+  `rca-intake`. It stays `null` until conclusion acceptance.
 - `runs` is an append-only list of run IDs that exist for this issue, in
   creation order. `rca-intake` appends to it; nothing removes from it.
 - `title`/`url` are refreshed on every intake re-run — they are
@@ -191,27 +191,26 @@ Owners").
 }
 ```
 
-- `label` records the engineer's intent for this run (issue #5, story 6) —
+- `label` records the engineer's intent for this run —
   e.g. "first pass" or "re-run with corrected build". `rca-intake` asks
   for it or defaults to something inert like `"run <N>"`; it is never
   inferred from PLM content.
 - `autonomy` (`review_all | auto_until_blocked | auto`) and `round_budget`
   are global run settings established at creation time with the defaults
   above, editable directly in this file by the engineer at any time
-  (issue #9 adds no separate input for changing them — this file already
-  is the configuration surface, so nothing else needs to exist). `status`
-  is `"in_progress"` for the whole life of a run except `"aborted"`, set
-  by `rca-analyze` (issue #9) the moment an `abort` is recorded — no other
-  skill sets `status`, and nothing sets it back once aborted. `rca-analyze`
-  (issues #8/#9) updates `current_round`, `standing_recommendation`, and
+  (this file is the configuration surface, so no separate command or input
+  is needed). `status` is `"in_progress"` for the whole life of a run except
+  `"aborted"`, set by `rca-analyze` the moment an `abort` is recorded — no
+  other skill sets `status`, and nothing sets it back once aborted. `rca-analyze`
+  updates `current_round`, `standing_recommendation`, and
   `decisions` on every round it writes, and additionally `next_step` (to
   `"rca-conclude"` on `accept`, to `null` on `abort`) and `status` (to
   `"aborted"` on `abort`) — see `rca-analyze/SKILL.md`'s loop-handling
   steps and the "Per-Section Write Owners" table below.
 - `decisions` is an append-only audit log, one entry per checkpoint an
   engineer (or autonomy) has actually responded to — "a later decision to
-  trust the agent more should rest on evidence rather than impression"
-  (issue #9). Each entry:
+  trust the agent more should rest on evidence rather than impression".
+  Each entry:
   ```json
   {
     "round": 1,
@@ -235,14 +234,12 @@ Owners").
 - `input_snapshot_fetched_at` pins *this run* to the PLM snapshot it was
   created from, even though `input/plm-snapshot.json` itself is refreshed
   by later intake re-runs on the same issue.
-- `rca-intake` creates this file with `decisions: []`; no prior ticket's
-  `manifest.json` shape changes retroactively — a run created before issue
-  #9 landed simply has no `decisions` entries yet until `rca-analyze`
-  starts appending to it.
+- `rca-intake` creates this file with `decisions: []`; `rca-analyze`
+  appends to it on each round.
 
 ## `scope.json`
 
-Written by `rca-scope` (issue #7). Fully overwritten on every invocation —
+Written by `rca-scope`. Fully overwritten on every invocation —
 re-running `rca-scope` on an existing run **replaces** the scope, it never
 appends to or merges with a prior scope, and it never re-reads
 `input/plm-snapshot.json`'s source (PLM) — only the already-fetched file on
@@ -284,10 +281,9 @@ disk.
   `issue_type` is `generic` (nothing is being claimed).
 - `reduced_tier: true` means classification matched no playbook and
   `rca-scope` proceeded generically — `tables_in_scope`/`layers` were not
-  narrowed by a playbook, and per issue #5's classification rule, findings
-  any later skill produces under this scope should be treated at a reduced
-  tier as a result. `rca-scope` states this plainly rather than forcing the
-  issue into the nearest-looking category.
+  narrowed by a playbook, and findings any later skill produces under this
+  scope should be treated at a reduced tier as a result. `rca-scope` states
+  this plainly rather than forcing the issue into the nearest-looking category.
 - `failure_time.tier` is `ENGINEER_PROVIDED` when supplied at invocation,
   `VERIFIED_LOG` only once a log query actually hit a keyword and produced
   a timestamp, and `null`/`origin: "undetermined"` when neither happened —
@@ -301,15 +297,16 @@ disk.
 
 ## `runs/run-NN/analysis/round-NN.json`
 
-Written by `rca-analyze` (issues #8 and #9), one file per round,
+Written by `rca-analyze`, one file per round,
 zero-padded to two digits (`round-01.json`, `round-02.json`, …). **A
 round's file is never overwritten once written** — the same append-only
 discipline as `runs/run-NN` itself, and for the same reason: round N+1
 must be provable against round N's actual recorded state, not a version
 silently rewritten after the fact. This is why the (agent recommendation,
-engineer decision) pair issue #9 adds is **not** a field on this file —
+engineer decision) pair is **not** a field on this file —
 it cannot be known until after the round is written and the checkpoint
 has been shown, so it lives in `manifest.json.decisions[]` instead (see
+above), leaving every round file exactly as fixed as it always was.son.decisions[]` instead (see
 above), leaving every round file exactly as fixed as it always was.
 
 ```json
@@ -374,22 +371,22 @@ above), leaving every round file exactly as fixed as it always was.
   `keyword-provenance.md`'s "guessing may ask, never answer", never
   eliminates the hypothesis on its own). `queries[]` is empty only when no
   test has been attempted at all — the one case `untested_tier: "ASSUMED"`
-  applies (issue #9's "conclusion resting on an ASSUMED finding" gate
+  applies (the "conclusion resting on an ASSUMED finding" gate
   checks exactly this field on the round's recommended direction).
-- `engineer_redirect` (issue #9) is non-null only on a round produced by a
+- `engineer_redirect` is non-null only on a round produced by a
   `redirect <information>` reply — see `rca-analyze/SKILL.md`'s handling
   of that verb. It is read, not re-derived, by Step 6's hypothesis
   generation on the round it appears in; it is never copied forward into a
   later round's own `engineer_redirect` field (a later round that still
   needs it reads this round's file directly, the same slice-read
   discipline as `causal_chain_additions`).
-- `forced_by_round_budget: true` (issue #9) marks a round written at
+- `forced_by_round_budget: true` marks a round written at
   `round >= manifest.json.round_budget` — every round from the budget
   onward, not only the one exactly at it — whose
   `checkpoint.recommendation` is therefore forced to recommend acceptance
   regardless of what survived — see `rca-analyze/SKILL.md`'s round-budget
   gate.
-- `contradicted_findings` (issue #11) is the structured record of a
+- `contradicted_findings` is the structured record of a
   vendor/spec-documentation claim (a rung 1/4 NotebookLM citation) that a
   HARD finding this round disproved — the same event `keyword-provenance.md`'s
   "Promotion and verification" describes as tagging the claim
@@ -397,10 +394,9 @@ above), leaving every round file exactly as fixed as it always was.
   free-text `open_notes` sentence, specifically so `rca-learn` can read it
   without parsing prose. Empty on every round that produced no such
   finding, which is the common case — this is not something a round is
-  expected to manufacture. A round written before issue #11 landed simply
-  has no `contradicted_findings` field at all, read as `[]`, the same
-  backward-compatibility rule `decisions[]` uses above.
-- `case_hints` (issue #11) records every `.rca/knowledge/cases/` or
+  expected to manufacture. If missing from a legacy round file, it is read
+  as `[]`.
+- `case_hints` records every `.rca/knowledge/cases/` or
   `knowledge/playbooks/` entry this round's hypothesis generation *or*
   failure-point location actually considered (resolution ladder rung 6,
   once `rca-learn` exists) — Step 5's failure-point fallback and Step 6's
@@ -412,24 +408,23 @@ above), leaving every round file exactly as fixed as it always was.
   FORBIDDEN-origin guess can; it may never itself appear in
   `causal_chain_additions`, `failure_point`, or any hypothesis's `queries[]`
   — only the fresh query this round actually runs against *this* issue's
-  own log/code can do that (see `keyword-provenance.md`'s "cases suggest,
-  they never prove" note). Empty on every round that read no matching case
-  or playbook, or that predates issue #11.
+  own log/code can do that (see `keyword-provenance.md`'s "Cases and playbooks
+  are hints, never evidence" rule). Empty on every round that read no matching case
+  or playbook.
 - `checkpoint` is the structured source `rca-analyze` renders into the
   prose format `checkpoint-format.md` specifies when reporting to the
   engineer — the file holds the data, that document holds the
   presentation rules.
-- Issue #8 built the single round this schema always produced one of;
-  issue #9 adds the loop that chains rounds together — a later invocation
-  reading a prior round's `checkpoint.recommendation` (via `dig`) or
-  injecting new evidence (via `redirect`) to set `direction` /
+- Each round produces one file in this schema; rounds chain together in a loop
+  where a later invocation reads a prior round's `checkpoint.recommendation`
+  (via `dig`) or injects new evidence (via `redirect`) to set `direction` /
   `engineer_redirect` on the next round it writes. Round 1 of any run
-  still has `direction: null` and `engineer_redirect: null` — there is no
+  has `direction: null` and `engineer_redirect: null` — there is no
   prior checkpoint to have produced either.
 
 ## `runs/run-NN/conclusion.json`
 
-Written by `rca-conclude` (issue #10), reached only once
+Written by `rca-conclude`, reached only once
 `manifest.json.next_step == "rca-conclude"` (set by `rca-analyze`'s
 `accept` handling — see above). One file per run, written once and then
 either confirmed in place or left as-is: **mutable only up to its first
@@ -500,8 +495,8 @@ is never rewritten; analyzing further means starting a new run via
 - `rests_on_weak_evidence`/`weak_evidence_notice` are computed from whether
   `root_cause`, any `causal_chain` entry, or any `reproduction_scenario`
   precondition/step/`expected_failure` carries tier `ASSUMED` or
-  `CODE_UNAVAILABLE` — this is what issue #10's "states this prominently
-  rather than presenting uniform confidence" requirement checks.
+  `CODE_UNAVAILABLE` — this ensures weak evidence is stated prominently
+  rather than presenting uniform confidence.
 - A forbidden-pattern scan (fixes, patches, configuration changes, test
   cases, next-step suggestions — see `rca-conclude/SKILL.md`) runs over
   every authored string in this file before it is written, with a named
@@ -510,7 +505,7 @@ is never rewritten; analyzing further means starting a new run via
 
 ## `knowledge/cases/<case_id>.json`
 
-Written by `rca-learn` (issue #11), one file per accepted conclusion —
+Written by `rca-learn`, one file per accepted conclusion —
 `case_id` is `<issue_id>-<run_id>` (e.g. `PLM-12345-run-01`), so a case
 file's own name already states which run it came from. Written once, from
 a run's already-confirmed `conclusion.json` and the `analysis/round-NN.json`
@@ -547,7 +542,7 @@ superseded run never enters the case base, even if it once had its own
   improves with the passage of time," a finding that was `ASSUMED` when
   `conclusion.json` recorded it is still `ASSUMED` here, and stays
   `ASSUMED` no matter how many later runs read this case back as a hint —
-  see `keyword-provenance.md`'s "cases suggest, they never prove."
+  see `keyword-provenance.md`'s "Cases and playbooks are hints, never evidence."
 - `useful_queries` is drawn from every `hypotheses[].queries[]` entry
   across this run's rounds with `outcome: "hit"`, restricted to the ones
   whose finding actually reached `failure_point`, `causal_chain_additions`,
@@ -562,8 +557,8 @@ superseded run never enters the case base, even if it once had its own
   workspace-supplied `build`/`model`, per `notebooklm-invocation.md`'s note
   that the build/model-to-chip-series mapping is a workspace concern) —
   never guessed when neither field is set. This is the accumulating "map
-  of where the vendor docs cannot be trusted for a given series" issue #5's
-  spec names as the suite's most durable output.
+  of where the vendor docs cannot be trusted for a given series" as one of
+  the suite's primary durable outputs.
 - A case file, once written, is not rewritten — the same immutability
   `conclusion.json` has from `confirmed: true` onward, for the same reason:
   a further analysis of the same issue is a new run via `rca-intake`,
@@ -576,15 +571,15 @@ superseded run never enters the case base, even if it once had its own
 
 ## `knowledge/playbooks/<playbook_id>.md`
 
-Written by `rca-learn` (issue #11), only on a separate, explicit engineer
+Written by `rca-learn`, only on a separate, explicit engineer
 `promote` action — never automatically, and never as a side effect of
 writing a case record. This is the **only** part of `.rca/` committed to
 git (see `.gitignore`'s carve-out); everything else under `.rca/`,
 `knowledge/cases/` included, stays local and git-ignored because it can
 hold field logs, subscriber identifiers, and other NDA material.
 
-Plain Markdown prose, not JSON — "prose a colleague can read and correct"
-(issue #5) — with no fixed schema beyond a required title line and a
+Plain Markdown prose, not JSON — "prose a colleague can read and correct" —
+with no fixed schema beyond a required title line and a
 required provenance line naming which case(s) it was drafted from:
 
 ```markdown
@@ -634,7 +629,7 @@ append-only.
 | `input/log-pointers.json` | `rca-intake` — sole writer; `rca-scope` narrows into its own `scope.json` rather than writing back into this file |
 | `runs/run-NN/manifest.json` (create) | `rca-intake` |
 | `runs/run-NN/manifest.json.current_step`, `.updated_at` | Every pipeline skill updates these on entry/exit |
-| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` (issue #9) additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply; `rca-conclude` (issue #10) additionally sets `next_step: "rca-learn"` on its own `accept` reply and `status: "aborted"` / `next_step: null` on its own `abort` reply; `rca-learn` (issue #11) additionally sets `next_step: "complete"` once it writes this run's case record — never on any other verb, and never `status` back out of `"aborted"`. `next_step: null` therefore means exactly one thing (`status == "aborted"`); pipeline completion after `rca-learn` is the distinct `"complete"` value instead, precisely so a `null` never has to be disambiguated by which skill set it — see `.claude/commands/rca.md`'s dispatcher, which treats `next_step == "complete"` as its own case, not as `null` |
+| `runs/run-NN/manifest.json.next_step`, `.status` | `rca-intake` and `rca-scope` at their own steps; `rca-analyze` additionally sets `next_step: "rca-conclude"` on an `accept` reply and `next_step: null` / `status: "aborted"` on an `abort` reply; `rca-conclude` additionally sets `next_step: "rca-learn"` on its own `accept` reply and `status: "aborted"` / `next_step: null` on its own `abort` reply; `rca-learn` additionally sets `next_step: "complete"` once it writes this run's case record — never on any other verb, and never `status` back out of `"aborted"`. `next_step: null` therefore means exactly one thing (`status == "aborted"`); pipeline completion after `rca-learn` is the distinct `"complete"` value instead, precisely so a `null` never has to be disambiguated by which skill set it — see `.claude/commands/rca.md`'s dispatcher, which treats `next_step == "complete"` as its own case, not as `null` |
 | `runs/run-NN/manifest.json.current_round`, `.standing_recommendation`, `.decisions` | `rca-analyze` — sole writer |
 | `runs/run-NN/scope.json` (create + full overwrite on re-run) | `rca-scope` — sole writer |
 | `runs/run-NN/analysis/round-NN.json` (create; never overwritten once written) | `rca-analyze` — sole writer, one file per round |

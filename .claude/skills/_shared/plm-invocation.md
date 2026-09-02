@@ -1,6 +1,6 @@
 # PLM Invocation Contract
 
-This documents what `rca-intake` (issue #6) needs to call the PLM MCP
+This documents what `rca-intake` needs to call the PLM MCP
 connection. Like the log-query capability (`log-query-invocation.md`), the
 code-graph capability, and NotebookLM, it is a **workspace dependency, not
 part of this repository**: it is expected to already be configured in the
@@ -15,8 +15,8 @@ MCP tool names are **deliberately not fixed by this contract** — which
 registered tool actually answers `fetch_comments` in a given workspace is
 resolved by the calling skill at the moment it runs, the same way
 `log-query-invocation.md` never names the DuckDB capability's real function
-signature. This is what lets `rca-intake` be written before the concrete
-PLM MCP tool names are known: the contract states *intent*, never a
+signature. This lets `rca-intake` remain decoupled from concrete
+PLM MCP tool names: the contract states *intent*, never a
 binding.
 
 ## Invoking it

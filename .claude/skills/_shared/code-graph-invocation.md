@@ -1,10 +1,9 @@
 # Code-Graph Invocation Contract
 
-This documents what `rca-analyze` (issue #8) needs to call the tree-sitter
+This documents what `rca-analyze` needs to call the tree-sitter
 code-graph capability. Like the log-query capability
 (`log-query-invocation.md`) and the PLM MCP connection, it is a
-**workspace dependency, not part of this repository** (issue #5,
-"capabilities already exist as separate skills"). It is expected to
+**workspace dependency, not part of this repository**. It is expected to
 already be configured in the environment a skill runs in; no skill in
 this suite attempts to configure or discover it.
 

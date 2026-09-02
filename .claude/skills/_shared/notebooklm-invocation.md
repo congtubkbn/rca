@@ -1,6 +1,6 @@
 # NotebookLM Invocation Contract
 
-This documents what `rca-analyze` (issue #8) needs when consulting
+This documents what `rca-analyze` needs when consulting
 NotebookLM for the resolution ladder's rungs 1 (3GPP spec) and 4 (vendor
 documentation). It governs how this suite calls the general-purpose
 `notebooklm` skill already present in this repository
@@ -22,9 +22,9 @@ Two corpora, consulted at two different rungs (`resolution-ladder.md`):
 
 Which notebook to query for a given issue is a workspace configuration
 concern (which notebook IDs exist, which chip series/vendor this issue's
-`build`/`model` maps to) — out of scope for this ticket; when that mapping
-is not resolvable, this rung is skipped and stated per
-`resolution-ladder.md`, the same as a missing `source_checkout`.
+`build`/`model` maps to) — when that mapping is not resolvable, this rung
+is skipped and stated per `resolution-ladder.md`, the same as a missing
+`source_checkout`.
 
 ## Invoking it
 

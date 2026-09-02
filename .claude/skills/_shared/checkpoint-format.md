@@ -1,20 +1,17 @@
 # Checkpoint Presentation Format
 
-`rca-analyze` (issues #8 and #9) ends every round here. This is the one
-piece of the round the engineer actually reads; everything else in
-`analysis/round-N.json` exists to make this checkpoint's claims traceable,
-not to be read directly.
+`rca-analyze` ends every round here. This is the one piece of the round
+the engineer actually reads; everything else in `analysis/round-N.json`
+exists to make this checkpoint's claims traceable, not to be read directly.
 
-Issue #8 built one round ending at this checkpoint, always halting
-regardless of `manifest.json.autonomy`. Issue #9 adds the loop around it:
-a reply of `dig <direction>`, `redirect <information>`, `accept`, or
-`abort` (section 5, below) drives what `rca-analyze` does next, and at
-`autonomy: "auto"`/`"auto_until_blocked"` the skill may take that next
-step itself instead of waiting for the engineer to type it — see
-`rca-analyze/SKILL.md`'s loop-control steps for exactly when it does and
-does not stop to wait. Four gates always stop it regardless of autonomy:
-the round budget, a recommendation resting on an `ASSUMED` finding, the
-resolution ladder reaching "ask the engineer" for something the
+Each round ends at this checkpoint. A reply of `dig <direction>`,
+`redirect <information>`, `accept`, or `abort` (section 5, below) drives
+what `rca-analyze` does next, and at `autonomy: "auto"`/`"auto_until_blocked"`
+the skill may take that next step itself instead of waiting for the engineer
+to type it — see `rca-analyze/SKILL.md`'s loop-control steps for exactly when
+it does and does not stop to wait. Four gates always stop it regardless of
+autonomy: the round budget, a recommendation resting on an `ASSUMED` finding,
+the resolution ladder reaching "ask the engineer" for something the
 recommended direction depends on, and — always — final acceptance of a
 root cause (`rca-analyze` never invokes `rca-conclude` itself; it reports
 that `accept` is next and stops).

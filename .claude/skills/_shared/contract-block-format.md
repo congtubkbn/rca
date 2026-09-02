@@ -1,7 +1,7 @@
 # The `contract:` Block Format
 
 Every skill in this suite (`rca-intake → rca-scope → rca-analyze ⟲ →
-rca-conclude → rca-learn`, GitHub issue #5) declares a `contract:` block
+rca-conclude → rca-learn`) declares a `contract:` block
 near the top of its `SKILL.md`, after the frontmatter. It is what lets a
 skill be invoked directly and independently of the others — the skill
 checks its own contract against the run bundle on disk instead of trusting

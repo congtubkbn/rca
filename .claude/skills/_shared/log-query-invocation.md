@@ -1,10 +1,10 @@
 # Log-Query Invocation Contract
 
-This documents what `rca-scope` (GitHub issue #7) and `rca-analyze`
-(GitHub issue #8) need to call the log-query capability. The contract
-itself (invocation shape, return shape, numbering/ledger discipline) is
-identical for both callers — only *why* a query is issued differs, and
-that lives in each skill's own `SKILL.md`, not here.
+This documents what `rca-scope` and `rca-analyze` need to call the
+log-query capability. The contract itself (invocation shape, return
+shape, numbering/ledger discipline) is identical for both callers — only
+*why* a query is issued differs, and that lives in each skill's own
+`SKILL.md`, not here.
 
 ## What it is
 
@@ -12,14 +12,12 @@ The log-query capability is a DuckDB-backed retrieval tool over the two log
 tables an issue's data was loaded into (their names live in
 `input/log-pointers.json.tables`, per `run-bundle-layout.md`). Like the PLM
 MCP connection `rca-intake` calls, it is a **workspace dependency, not part
-of this repository** (issue #5, "capabilities already exist as separate
-skills"; see also root `CLAUDE.md`'s treatment of workspace dependencies).
-It is expected to already be configured in the environment a skill runs
-in; no skill in this suite attempts to configure or discover it. This
-suite's table-isolation posture
-(none enforced; every call records which table it touched instead) is
-`tool-ledger-format.md`'s `table` field — see that file rather than
-duplicating it here.
+of this repository** (see also root `CLAUDE.md`'s treatment of workspace
+dependencies). It is expected to already be configured in the environment
+a skill runs in; no skill in this suite attempts to configure or discover it.
+This suite's table-isolation posture (none enforced; every call records which
+table it touched instead) is `tool-ledger-format.md`'s `table` field — see that
+file rather than duplicating it here.
 
 ## Invoking it
 
@@ -41,9 +39,9 @@ Call the log-query capability with:
 - `keywords` must each have a stated origin the calling skill can name (e.g.
   "from the `<issue_type>` playbook's failure-indicator list", "from the
   generic fallback list", "from an engineer-supplied classification hint").
-  `rca-scope` is where this suite's query discipline starts (issue #7): a
-  query is always allowed to run, but the skill must be able to say where
-  each keyword came from when it records the call.
+  `rca-scope` establishes this suite's query discipline: a query is always
+  allowed to run, but the skill must be able to say where each keyword came
+  from when it records the call.
 - `time_window` bounds the search. A skill with no candidate window yet
   (e.g. `rca-scope` determining the failure time from scratch) passes the
   full loaded range from `input/log-pointers.json.time_range` when known,

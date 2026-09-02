@@ -1,6 +1,6 @@
 # Keyword Provenance — Source Ranking
 
-This governs what a keyword or claim used by `rca-analyze` (issue #8, the
+This governs what a keyword or claim used by `rca-analyze` (the
 first skill in this suite that can assert anything toward a conclusion)
 may be used *for*, based on where it came from. It is related to but
 distinct from `evidence-tiers.md`: tiers describe how a **claim** is known;
@@ -63,12 +63,12 @@ conclusion by itself. It is promoted only by an independent HARD check:
 - If a HARD query result **contradicts** a SOFT claim — the log shows the
   opposite of what the document said — record the claim at
   `CONTRADICTED`, per `evidence-tiers.md`. This is deliberately not
-  treated as an error to route around; it is the pipeline's most valuable
-  finding (issue #5, "where vendor documentation is wrong is the asset")
-  and belongs in the round's `contradicted_findings[]` (a structured
-  field, so `rca-learn`, issue #11, can pick it up without parsing prose —
-  see `run-bundle-layout.md`), not only the free-text `open_notes` entry a
-  round also states for the checkpoint's own display.
+  treated as an error to route around; discovering where documentation or
+  assumptions are wrong is a primary asset and belongs in the round's
+  `contradicted_findings[]` (a structured field, so `rca-learn` can pick it
+  up without parsing prose — see `run-bundle-layout.md`), not only the
+  free-text `open_notes` entry a round also states for the checkpoint's own
+  display.
 
 ## Cases and playbooks are hints, never evidence
 
@@ -76,17 +76,15 @@ conclusion by itself. It is promoted only by an independent HARD check:
 citable term.** Other files that need this rule should quote that exact
 phrase plus a pointer to this section
 (`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`)
-rather than reword it independently — it names the same rule as issue #5's
-"cases suggest, they never prove," used interchangeably below.
+rather than reword it independently.
 
-A fourth source exists alongside HARD/SOFT/FORBIDDEN once `rca-learn`
-(issue #11) has written anything: `.rca/knowledge/cases/` and
-`.rca/knowledge/playbooks/`, read at resolution-ladder rung 6
-(`resolution-ladder.md`). It ranks below even FORBIDDEN in one specific
-sense — a FORBIDDEN guess may still become HARD the moment it hits;
-**a case or playbook hit never can, no matter how many times it is read
-back.** Issue #5's own phrase for this is "cases suggest, they never
-prove," and it is absolute: a case may name a hypothesis worth trying, a
+A fourth source exists alongside HARD/SOFT/FORBIDDEN:
+`.rca/knowledge/cases/` and `.rca/knowledge/playbooks/`, read at
+resolution-ladder rung 6 (`resolution-ladder.md`). It ranks below even
+FORBIDDEN in one specific sense — a FORBIDDEN guess may still become HARD
+the moment it hits; **a case or playbook hit never can, no matter how
+many times it is read back.** Cases and playbooks suggest directions, they
+never prove conclusions: a case may name a hypothesis worth trying, a
 keyword worth querying, or a table worth looking in, but the fact it
 originally recorded stays at whatever tier it was written at, and using
 that hint still requires running the same fresh query against *this*
@@ -94,26 +92,25 @@ issue's own log or code that any other keyword origin requires. This is
 the mechanism that keeps a case base from becoming a laundering path the
 same way a repeated `ASSUMED` finding could otherwise launder itself into
 something that merely *looks* corroborated by having been written down
-and read back several times (issue #5, "Evidence laundering is the
-failure mode with no symptoms"). See `evidence-tiers.md`'s "a tier never
+and read back several times. See `evidence-tiers.md`'s "a tier never
 improves with the passage of time" for the general rule this is a special
 case of, and `run-bundle-layout.md`'s `case_hints[]` field for how a round
 records which case/playbook it actually read.
 
 ## What this does not change
 
-Table isolation is still not enforced (issue #5, "Explicit departures from
-v6"; `tool-ledger-format.md`'s `table` field records what was queried, for
-audit, not restriction). This file governs what a finding may be used
-*for*, not which table or tool it is permitted to touch.
+Table isolation is not enforced (`tool-ledger-format.md`'s `table` field
+records what was queried, for audit, not restriction). This file governs
+what a finding may be used *for*, not which table or tool it is permitted
+to touch.
 
-An engineer's `redirect <information>` reply (issue #9,
-`checkpoint-format.md`) is a fourth, separate axis from the HARD/SOFT/
-FORBIDDEN ranking above — it is not a *source* an agent chose, it is a
-premise the engineer asserted directly, tagged `ENGINEER_PROVIDED` per
-`evidence-tiers.md` regardless of how it gets used afterward. It may seed
-a hypothesis or supply a query keyword exactly like a SOFT source can, and
-per `evidence-tiers.md`'s `ENGINEER_PROVIDED` rule it may stand as a
-premise on its own — but a conclusion resting on it must still say plainly
-that it rests on an engineer premise, the same discipline as any other
-non-HARD tier reaching the checkpoint's evidence gaps.
+An engineer's `redirect <information>` reply (`checkpoint-format.md`)
+is a separate axis from the HARD/SOFT/FORBIDDEN ranking above — it is
+not a *source* an agent chose, it is a premise the engineer asserted
+directly, tagged `ENGINEER_PROVIDED` per `evidence-tiers.md` regardless
+of how it gets used afterward. It may seed a hypothesis or supply a query
+keyword exactly like a SOFT source can, and per `evidence-tiers.md`'s
+`ENGINEER_PROVIDED` rule it may stand as a premise on its own — but a
+conclusion resting on it must still say plainly that it rests on an
+engineer premise, the same discipline as any other non-HARD tier
+reaching the checkpoint's evidence gaps.
