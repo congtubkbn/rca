@@ -13,10 +13,10 @@ tables an issue's data was loaded into (their names live in
 `input/log-pointers.json.tables`, per `run-bundle-layout.md`). Like the PLM
 MCP connection `rca-intake` calls, it is a **workspace dependency, not part
 of this repository** (issue #5, "capabilities already exist as separate
-skills"; see also root `CLAUDE.md`'s treatment of the older v6 suite's
-`3gpp-tools/*.py` for the same relationship). It is expected to already be
-configured in the environment a skill runs in; no skill in this suite
-attempts to configure or discover it. This suite's table-isolation posture
+skills"; see also root `CLAUDE.md`'s treatment of workspace dependencies).
+It is expected to already be configured in the environment a skill runs
+in; no skill in this suite attempts to configure or discover it. This
+suite's table-isolation posture
 (none enforced; every call records which table it touched instead) is
 `tool-ledger-format.md`'s `table` field — see that file rather than
 duplicating it here.
@@ -73,7 +73,7 @@ query did not find it.
 
 ## What the calling skill must do with the result
 
-Unlike the older v6 suite's Python scripts, this capability does not write
+This capability does not write
 into the run bundle itself — the calling skill does, immediately, so the
 full result never lingers in context beyond the single turn it arrived in:
 

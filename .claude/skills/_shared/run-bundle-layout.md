@@ -11,11 +11,6 @@ it in the same change if a skill's write shape changes.
 `.rca/` is git-ignored from the first commit (see `.gitignore`) — field
 logs, subscriber identifiers, and NDA material must never reach a remote.
 
-This `.rca/` directory is a sibling of, and does not collide with, the
-older v6 suite's own use of `.rca/current_state_path.txt` (see
-`.cline/skills/_shared/state-file-schema.md`) — the two suites are
-independent and this document does not describe that file.
-
 ## Directory layout
 
 ```
@@ -187,10 +182,9 @@ Owners").
   `"aborted"` on `abort`) — see `rca-analyze/SKILL.md`'s loop-handling
   steps and the "Per-Section Write Owners" table below.
 - `decisions` is an append-only audit log, one entry per checkpoint an
-  engineer (or autonomy) has actually responded to — mirroring the older
-  v6 suite's own `user_decisions[]` (`.cline/skills/_shared/state-file-schema.md`)
-  for the same reason: "a later decision to trust the agent more should
-  rest on evidence rather than impression" (issue #9). Each entry:
+  engineer (or autonomy) has actually responded to — "a later decision to
+  trust the agent more should rest on evidence rather than impression"
+  (issue #9). Each entry:
   ```json
   {
     "round": 1,
@@ -476,9 +470,7 @@ is never rewritten; analyzing further means starting a new run via
   cases, next-step suggestions — see `rca-conclude/SKILL.md`) runs over
   every authored string in this file before it is written, with a named
   exception for verbatim-quoted external text (`tester_reported_text`) —
-  the same "exception: matches inside verbatim input text are allowed"
-  carve-out the older v6 suite uses for the same reason (the tester may use
-  these words innocently in their own account).
+  the tester may use these words innocently in their own account.
 
 ## `knowledge/cases/<case_id>.json`
 
@@ -619,8 +611,7 @@ append-only.
 | `knowledge/playbooks/<playbook_id>.md` | `rca-learn` — sole writer, only on an explicit, separate engineer `promote` action |
 
 Two skills writing one section is a defect regardless of whether it
-currently misbehaves — the same rule the v6 suite states for its own
-schema.
+currently misbehaves.
 
 ## Slice-read discipline
 

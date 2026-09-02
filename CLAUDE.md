@@ -6,235 +6,153 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Not a software project with a build/test/lint cycle — there is no source code, no
 package manifest, no compiler. This repo **is** the specification/config for an
-agentic pipeline: a suite of Markdown "skills" and "workflows" for **Cline**
-(VS Code extension) that drive a 3GPP UE (mobile handset) Root Cause Analysis
-process. Editing this repo means editing `SKILL.md` files, `.clinerules/`
-workflow files, and shared reference docs in prose/YAML-frontmatter/JSON-schema
+agentic pipeline: a suite of Markdown "skills" for **Claude Code** that drives
+root-cause analysis on PLM issues — the product lifecycle management tracker
+engineers file device-failure reports in. Editing this repo means editing
+`SKILL.md` files and shared reference docs in prose/YAML-frontmatter/JSON-schema
 form — there is nothing to `npm install`, build, or unit-test.
 
 Two dependencies referenced throughout the skills are **not present in this
-repo** and must not be hunted for locally:
-- `<workspace>/3gpp-tools/{spec_query.py,code_search.py,log_query.py}` — Python
-  tools invoked via shell that back a spec GraphRAG, a UE codebase semantic
-  search, and a DuckDB query helper. They live in the target workspace where
-  the pipeline actually runs, not in this repo.
-- `evaluation/` (scripts + golden cases + DuckDB store) — referenced by
-  `/rca-eval`, also lives in the target workspace, not here.
+repo** and must not be hunted for locally — both are workspace dependencies,
+expected to already be configured in the environment a skill runs in:
+- The **PLM MCP connection** `rca-intake` calls to fetch an issue's title,
+  description, and tester reproduction steps.
+- A **DuckDB-backed log-query capability** and a **tree-sitter code-graph
+  capability** that `rca-scope`/`rca-analyze` call — see
+  `.claude/skills/_shared/log-query-invocation.md` and
+  `code-graph-invocation.md` for the exact call shape.
 
 ## Repository layout
 
 ```
-.clinerules/
-  3gpp-rca-collaboration.md   # the ONE always-on rule; architecture summary + invariants
-  workflows/
-    rca.md                    # /rca — main pipeline dispatcher workflow
-    rca-eval.md                # /rca-eval — post-run quality evaluation workflow
-.cline/skills/
-  3gpp-rca-orchestrator/       # Phase 0 (init) + Phase 4 (finalize) — the only two orchestrator jobs
-  3gpp-scoping/                # Phase 1 — IS/IS-NOT scope filter
-  3gpp-event-timeline/         # Phase 2 — event timeline, top_event_candidates[]
-  3gpp-top-event-confirmation/ # Checkpoint A — user confirms top event
-  3gpp-fta-build-tree/         # Phase 3.1 (per iteration) — hybrid fault tree skeleton + code binding
-  3gpp-fta-evaluate-branches/  # Phase 3.2+3.3 (per iteration) — Gate A pivot-pruning, Gate B expansion
-  3gpp-fta-cross-reference/    # Phase 3.4 (per iteration) — commanded-vs-actual value comparison
-  3gpp-fta-root-cause/         # Phase 3.5 (per iteration) — synthesize iteration root cause
-  3gpp-fta-iteration-controller/ # Checkpoint B — recommendation + user dig/accept/abort gate
-  3gpp-fta-seed-init/          # engineer-provided top event → seed state directly into FTA iteration 1, bypassing Phase 1/2/Checkpoint A
-  3gpp-spec-retrieval/         # shared: wraps spec_query.py, invoked by phase skills only
-  3gpp-code-retrieval/         # shared: wraps code_search.py, invoked by phase skills only
-  3gpp-log-queries/            # shared: wraps log_query.py, invoked by phase skills only
-  3gpp-rca-evaluator/          # backs /rca-eval (extract/judge/ingest stages)
-  _shared/                     # cross-skill contracts, read these before editing any skill
-    state-file-schema.md            # full JSON schema of the run's state file — READ FIRST
-    tool-invocation-templates.md    # exact CLI shape + return JSON for all 3 Python tools
-    keyword-provenance-rules.md     # anti-hallucination keyword-origin rules, per phase/iteration
-    checkpoint-presentation-formats.md # exact ASCII templates for Checkpoint A and B
-    rca-report-template.md          # final report template Phase 4 fills in
-documents/design-v6/           # PDFs/HTML design-review docs (background reading, not source of truth)
-v6-coworker-interaction-model.md # forward-looking design doc (NOT implemented) — see below
+.claude/
+  commands/rca.md              # /rca — dispatcher: runs whichever single next step is due, then halts
+  skills/
+    rca-intake/                # fetch a PLM issue, open (or add a run to) its .rca/issues/<issue_id>/ bundle
+    rca-scope/                 # classify the issue, settle a failure time, narrow window/tables/layers → scope.json
+    rca-analyze/                # hypothesis-driven analysis, round by round, with the dig/redirect/accept/abort loop
+    rca-conclude/               # synthesize the accepted analysis into conclusion.json + CONCLUSION.md
+    rca-learn/                  # write a knowledge/cases/ record; separate engineer-gated playbook promotion
+    _shared/                    # cross-skill contracts, read these before editing any skill
+      run-bundle-layout.md            # the .rca/issues/ directory layout and per-section write owners — READ FIRST
+      contract-block-format.md        # the `contract:` block every skill declares
+      evidence-tiers.md               # the eight evidence tiers
+      tool-ledger-format.md           # the evidence/tools.jsonl line format
+      log-query-invocation.md         # how rca-scope/rca-analyze call the log-query capability
+      code-graph-invocation.md        # how rca-analyze calls the code-graph capability
+      notebooklm-invocation.md        # how rca-analyze calls NotebookLM, plus this suite's citation requirement
+      keyword-provenance.md           # HARD/SOFT/FORBIDDEN source ranking; "guessing may ask, never answer"
+      resolution-ladder.md            # the order rca-analyze tries to resolve an open question
+      checkpoint-format.md            # the presentation rca-analyze ends every round with
+docs/agents/
+  issue-tracker.md              # issues tracked on GitHub (congtubkbn/rca), via `gh`
+  triage-labels.md               # the five canonical triage labels
+  domain.md                      # how skills should consume this repo's CONTEXT.md / ADRs
 ```
 
-When editing a skill, the shared files in `.cline/skills/_shared/` are the
+When editing a skill, the shared files in `.claude/skills/_shared/` are the
 contract every skill must honor — read the relevant one(s) before changing a
-skill's behavior, since changing e.g. the state file schema in one skill
-without updating `_shared/state-file-schema.md` (and every other skill that
+skill's behavior, since changing e.g. the run-bundle layout in one skill
+without updating `_shared/run-bundle-layout.md` (and every other skill that
 reads/writes that section) will break the pipeline.
 
 ## Architecture
 
-### Pipeline shape: per-iteration FTA with mandatory user gates
+### Pipeline shape: a per-run bundle on disk, no orchestrator
 
-v6's defining change from earlier versions: Fault Tree Analysis (FTA, Phase 3)
-runs as a loop of **iterations**, not one flat tree. Each iteration drills into
-one base event from the previous iteration and produces its own root cause;
-iterations chain into a causal chain. Flow:
-
-```
-/rca <description>                          (fresh start)
-  → orchestrator init (Phase 0)
-  → 3gpp-scoping (Phase 1, IS/IS-NOT)
-  → 3gpp-event-timeline (Phase 2, top_event_candidates[])
-  → 3gpp-top-event-confirmation → HALT (Checkpoint A)
-/rca confirm                                 (user resumes)
-  → iteration 1: build-tree → evaluate-branches → cross-reference → root-cause
-  → 3gpp-fta-iteration-controller → HALT (Checkpoint B-1)
-/rca dig deeper into P2.2                    (user resumes)
-  → iteration 2: same 4-skill sequence, seeded from iteration 1's base event
-  → HALT (Checkpoint B-2)
-/rca accept                                  (user resumes)
-  → phase3_root_cause_chain synthesized across all iterations
-  → orchestrator finalize (Phase 4) → report written → complete
-```
-
-`/rca` is a **dispatcher**, not a linear script: it reads
-`meta.current_phase` from the state file and runs only the next step, then
-halts. It never guesses the phase from context — always re-derive it from the
-state file's `current_phase` state machine (documented in
-`_shared/state-file-schema.md`).
-
-### The state file is the single source of truth
-
-Every skill reads and writes one JSON state file
-(`/tmp/rca_state_<UTC_ts>.json`, path cached at
-`.rca/current_state_path.txt` in the target workspace). No skill holds state
-in conversation memory alone — if it's not in the state file, it doesn't
-count. Skills are required to **slice-read** only the sections they need
-(never eagerly load the whole file — the orchestrator's Phase 4 finalize is
-the *only* full-file read in the pipeline).
-
-### Hard invariants (apply to every skill — see `.clinerules/3gpp-rca-collaboration.md`)
-
-1. **Table isolation**, enforced at the tool layer by `log_query.py`:
-   Phase 1/2 and FTA Gate A may only query `UE_3gpp_signaling_log`; FTA Gate B
-   may only query `UE_Trace_log`. Violating this is a policy error, not a
-   style nit.
-2. **Keyword provenance**: every keyword (message name, IE name, log literal,
-   function name) used in any query must trace back to a prior Python tool
-   invocation *in the same iteration* — never from the model's pretrained
-   knowledge. Cross-iteration reuse is allowed only for deriving the next
-   iteration's top event from the previous iteration's base event. See
-   `_shared/keyword-provenance-rules.md`.
-3. **Hard termination, no fix generation**: the pipeline's deliverable is a
-   verified root cause and causal chain — never a fix, patch, config change,
-   test case, or "next step". This is checked mechanically at Phase 4 finalize
-   (a forbidden-pattern string scan) and must be preserved in any skill you
-   edit or add.
-4. **User gates are mandatory**: Checkpoint A (confirm top event) and
-   Checkpoint B (per-iteration dig/accept/abort) cannot be skipped or
-   fast-mode'd. Overriding the agent's recommendation is allowed but requires
-   an explicit `confirm override` round-trip, and both the recommendation and
-   the override are recorded in `user_decisions[]` for audit.
-5. **Iteration budget** defaults to 5 (`meta.iteration_budget`); the
-   iteration-controller forces an `accept_terminal` recommendation once
-   near/at budget, though the user can still override.
-
-### Tool invocation pattern
-
-Skills never call retrieval systems directly — they shell out to one of three
-Python scripts under `3gpp-tools/` (`spec_query.py`, `code_search.py`,
-`log_query.py`), selecting behavior via `--operation`/`--phase-tag` flags. Each
-script writes its structured output directly into the state file and prints a
-compressed JSON summary to stdout (raw spec/code/log data never round-trips
-through stdout). Exit codes 0–4 have specific meanings (success / bad args /
-tool unavailable / policy violation / empty result) that calling skills must
-branch on — see `_shared/tool-invocation-templates.md` for the full contract
-per operation.
-
-### `v6-coworker-interaction-model.md` is a design doc, mostly not implemented behavior
-
-This file at the repo root describes a proposed "engineer as co-worker"
-inversion (standalone skill invocation, state seeding, resume-with-injection)
-that is **mostly not built** into the skills — it explicitly says so in its
-own "NOTE ON BASELINE ALIGNMENT" section. Skills as they exist today assume
-the `full_workflow` orchestrator-driven mode described in `.clinerules/`.
-Don't assume generic `contract:` blocks, `resume <skill>`, or `standalone
-<skill>` invocation modes exist in the current skills unless you're
-implementing more of this design.
-
-**Exception — one narrow slice IS implemented:** that doc's §5 ("Direct top
-event → start FTA") exists today as `3gpp-fta-seed-init`
-(`.cline/skills/3gpp-fta-seed-init/SKILL.md`, see also
-`docs/superpowers/specs/2026-08-04-rca-fta-seed-design.md`). An engineer who
-already has a confirmed top event can seed a state directly and skip Phase
-1/2/Checkpoint A; `/rca` resumes it via a dedicated dispatch case
-(`phase2_confirmed_via_seed` in `rca.md`). This is the ONLY part of the
-co-worker model implemented — `meta.mode: "seed_and_run"` and the
-`ENGINEER_PROVIDED` evidence tier exist and are real, but scoped
-specifically to this one entry point. Generic `contract:` blocks,
-`resume <skill>` injection/supersession, and `standalone <skill>` mode
-(§3-4, §6 of that doc) are still design-only.
-
-### New, independent suite: `.claude/skills/` PLM-issue pipeline (GitHub issue #5)
-
-"PLM" here is the product lifecycle management issue tracker engineers
-file device-failure reports in — unrelated to the 3GPP protocol layers
-the v6 suite analyzes. A second, independent skill suite lives under
-`.claude/skills/`, plus a
-`/rca` Claude Code command at `.claude/commands/rca.md`. It is unrelated
-to `v6-coworker-interaction-model.md` above and does not modify the
-`.cline/skills/` v6 suite or its `.clinerules/workflows/rca.md` Cline
-dispatcher — both keep their existing `/rca` name; only accidental
-skill-trigger overlap between the two suites is tolerated (per issue #5),
-not shared code or shared state.
-
-It drives PLM-issue analysis end to end:
 `rca-intake → rca-scope → rca-analyze ⟲ → rca-conclude → rca-learn`, each
-owning one section of a per-run bundle on disk under `.rca/issues/`, each
-independently invocable, with no orchestrator — `/rca` only dispatches the
-single next step and halts. As of this writing `rca-intake` (run bundle
-foundation, issue #6), `rca-scope` (issue classification, time anchor, log
-window, issue #7), `rca-analyze` (hypothesis-driven analysis
-round-by-round, issue #8, plus the multi-round loop around it —
-`dig`/`redirect`/`abort`/`accept`, the round budget, `manifest.json.autonomy`,
-and the four never-bypassable gates, issue #9), `rca-conclude`
-(synthesizing the accepted analysis into `conclusion.json`/
-`CONCLUSION.md` — problem, root cause, causal chain, and a reproduction
-scenario checked against the tester's account — gated on an explicit
-engineer `accept` at every autonomy setting, issue #10), and `rca-learn`
-(the pipeline's last step, issue #11: one `knowledge/cases/<case_id>.json`
-per accepted conclusion of the run named `issue.json.active_run`, never
-any other run, capturing the failure point, the queries and keywords that
-actually proved useful, the root cause, and any `CONTRADICTED`
-vendor/spec-documentation finding with its chip series; plus a separate,
-explicitly engineer-gated `promote`/`confirm playbook` action that drafts
-and, after a customer-data check, commits reviewed prose to
-`knowledge/playbooks/` — the one part of `.rca/` tracked in git) are all
-built. All five pipeline skills now exist.
+skill owning one section of a run bundle under `.rca/issues/<issue_id>/`,
+each independently invocable. There is **no orchestrator skill** — `/rca`
+(`.claude/commands/rca.md`) only dispatches the single next step, by reading
+`manifest.json.next_step`, and halts. It never chains steps in one
+invocation and never guesses what step comes next from conversation
+context. Invoking any skill in the suite directly (e.g. asking for
+`rca-scope` by name) always works and always wins over the dispatcher — it
+is never required to go through `/rca`.
 
-`.claude/skills/_shared/` is this suite's contract — read it before
-touching any skill in it, the same discipline the v6 suite's own
-`_shared/` requires:
-- `run-bundle-layout.md` — the `.rca/issues/` directory layout and the
-  state schema for the sections each skill owns
-- `contract-block-format.md` — the `contract:` block every skill declares
-- `evidence-tiers.md` — the eight evidence tiers
-- `tool-ledger-format.md` — the `evidence/tools.jsonl` line format
-- `log-query-invocation.md` — how `rca-scope` and `rca-analyze` call the
-  DuckDB-backed log-query capability
-- `code-graph-invocation.md` — how `rca-analyze` calls the tree-sitter
-  code-graph capability
-- `notebooklm-invocation.md` — how `rca-analyze` calls NotebookLM, with
-  the citation requirement this suite adds on top of the general-purpose
-  `notebooklm` skill
-- `keyword-provenance.md` — the HARD/SOFT/FORBIDDEN source ranking and the
-  "guessing may ask, never answer" rule
-- `resolution-ladder.md` — the order `rca-analyze` tries to resolve an
-  open question (spec → log → code → vendor docs → engineer → prior cases)
-- `checkpoint-format.md` — the presentation `rca-analyze` ends every round
-  with
+```
+/rca PLM-12345                               (fresh start)
+  → rca-intake: fetch PLM issue, open .rca/issues/PLM-12345/runs/run-01/
+/rca                                          (resume)
+  → rca-scope: classify issue, settle failure time, narrow window/tables/layers → scope.json
+/rca                                          (resume)
+  → rca-analyze round 1: locate failure point, generate/test hypotheses → checkpoint
+/rca dig into H2                              (engineer replies to checkpoint)
+  → rca-analyze round 2: same loop, seeded from round 1's checkpoint
+/rca accept                                   (engineer accepts the analysis)
+  → rca-conclude: synthesize conclusion.json + CONCLUSION.md → draft presented
+/rca accept                                   (engineer confirms the conclusion)
+  → sets issue.json.active_run, hands off to rca-learn
+  → rca-learn: writes knowledge/cases/<case_id>.json
+```
+
+A separate, explicit `promote` action (handled by `rca-learn`) drafts and,
+after a customer-data check, commits reviewed prose to
+`.rca/knowledge/playbooks/` — the one part of `.rca/` tracked in git.
+
+### The run bundle is the single source of truth
+
+Every skill reads and writes files under one run bundle,
+`.rca/issues/<issue_id>/runs/<run_id>/` (full schema in
+`_shared/run-bundle-layout.md`). No skill holds state in conversation memory
+alone — if it's not written to disk, it doesn't count. Skills **slice-read**
+only the sections/files they need (e.g. a skill that needs a prior run's
+conclusion reads that run's `conclusion.json` directly, never the whole
+issue tree). `.rca/` is git-ignored from the first commit — field logs,
+subscriber identifiers, and NDA material must never reach a remote; the sole
+carve-out is `.rca/knowledge/playbooks/`, promoted and reviewed before it is
+ever committed.
+
+### Hard invariants
+
+1. **Keyword provenance**: every keyword used in a query must trace back to
+   a prior tool call or verbatim engineer/PLM/case-hint input — never from
+   the model's pretrained knowledge. See `_shared/keyword-provenance.md`'s
+   HARD/SOFT/FORBIDDEN ranking and its "guessing may ask, never answer"
+   rule — a query that misses does not get to claim a finding either way.
+2. **Evidence tiers never improve with time**: a finding copied forward
+   into a later file (a conclusion, a case record) keeps the tier it was
+   first recorded at — see `_shared/evidence-tiers.md`.
+3. **Hard termination, no fix generation**: the pipeline's deliverable is a
+   verified root cause, causal chain, and reproduction scenario — never a
+   fix, patch, config change, test case, or "next step". `rca-conclude` runs
+   a forbidden-pattern string scan over every authored string before
+   writing `conclusion.json`, with a named exception for verbatim-quoted
+   external (tester/PLM) text.
+4. **Engineer gates are mandatory and never bypassed on their own**: every
+   `rca-analyze` round ends at a checkpoint; advancing past the round budget
+   requires an explicit override with a recorded rationale;
+   `rca-conclude`'s draft is confirmed only by an explicit engineer
+   `accept`; `rca-learn`'s playbook promotion is a separate, explicit
+   `promote`/`confirm playbook` action. `manifest.json.autonomy`
+   (`review_all | auto_until_blocked | auto`) controls how much
+   `rca-analyze` continues on its own between checkpoints, never whether a
+   gate exists at all.
+5. **Round budget** defaults to 5 (`manifest.json.round_budget`); a round
+   written at the budget is forced to recommend acceptance, though the
+   engineer can still override with a stated rationale.
+
+### Append-only, immutable-once-written files
+
+`analysis/round-NN.json` files are never overwritten once written — round
+N+1 must be provable against round N's actual recorded state. `conclusion.json`
+is mutable only up to `confirmed: true`, after which it is immutable —
+analyzing further means starting a new run via `rca-intake`, never rewriting
+an existing run. `knowledge/cases/<case_id>.json` is written once and never
+rewritten, for the same reason. See `_shared/run-bundle-layout.md`'s
+"Per-Section Write Owners" table for the full write-ownership map.
 
 ## Working in this repo
 
 - There is no build, lint, or test command — validate changes by reading them
-  against `_shared/state-file-schema.md` (state shape), the invariants above,
-  and consistency with sibling skills that read/write the same state-file
-  sections (see the "Per-Section Write Owners" table in
-  `_shared/state-file-schema.md`).
-- Frontmatter `description:` in each `SKILL.md` is what Cline's skill
+  against `_shared/run-bundle-layout.md` (the run-bundle shape), the
+  invariants above, and consistency with sibling skills that read/write the
+  same files (see the "Per-Section Write Owners" table in
+  `_shared/run-bundle-layout.md`).
+- Frontmatter `description:` in each `SKILL.md` is what Claude Code's skill
   triggering matches against — keep it specific about when the skill fires
-  and when it must NOT (most skills list explicit anti-triggers).
-- `.clinerules/3gpp-rca-collaboration.md` is the only always-on rule; anything
-  phase-specific belongs in the relevant `SKILL.md`, not there.
+  and when it must NOT (each skill lists explicit anti-triggers, mostly
+  pointing engineers at the correct pipeline skill for a given ask).
 
 ## Agent skills
 

@@ -27,7 +27,7 @@ One JSON object per line, no wrapping array:
 | `operation` | The specific operation requested of that tool. |
 | `params` | The exact parameters passed — enough to reproduce the call. |
 | `keywords_in` | Keywords this call *consumed* that must themselves already have provenance (empty for a call, like intake's, that introduces keywords rather than consuming them). |
-| `table` | The DuckDB table queried, when `tool` is `log-query`; `null` otherwise. Recorded for audit — this suite does not enforce table isolation the way v6 did (issue #5, "Explicit departures from v6"). |
+| `table` | The DuckDB table queried, when `tool` is `log-query`; `null` otherwise. Recorded for audit — this suite does not enforce table isolation (issue #5, "Explicit departures from v6"). |
 | `result_ref` | Where the full result was written (a path under `input/`, `raw/`, or a state-file section) — never the raw payload itself. |
 | `status` | `"ok"` or `"error"`. |
 | `error` | The stated reason when `status` is `"error"`; `null` otherwise. A failed call is still logged — a missing PLM connection or an unknown issue ID is itself an auditable event, not a reason to skip the ledger. |

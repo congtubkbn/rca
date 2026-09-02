@@ -20,7 +20,7 @@ Single-context repo (this repo):
 ├── docs/adr/
 │   ├── 0001-....md
 │   └── 0002-....md
-└── (skills, .cline/, .clinerules/, etc.)
+└── (skills, etc.)
 ```
 
 ## Use the glossary's vocabulary

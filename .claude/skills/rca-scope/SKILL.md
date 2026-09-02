@@ -10,13 +10,7 @@ description: >
   an existing PLM-issue run (e.g. "scope PLM-12345", "narrow the window on
   this run", "re-run scoping with a tighter window", "what kind of issue is
   this"). Requires a run bundle that already exists — invoke `rca-intake`
-  first if `.rca/issues/<issue_id>/` does not yet exist. Do NOT use this
-  for the older, independent v6 3GPP fault-tree suite's `3gpp-scoping`
-  skill (`.cline/skills/3gpp-scoping/`) — that skill builds an IS/IS-NOT
-  `phase1_scope_filter` from a free-text *description of a UE failure*
-  into a `/tmp/rca_state_*.json` state file, has no PLM issue ID, and has
-  no run-bundle concept at all; the two are unrelated pipelines that
-  happen to both use the word "scope". Do NOT use this to locate a failure
+  first if `.rca/issues/<issue_id>/` does not yet exist. Do NOT use this to locate a failure
   point in signalling/trace, generate hypotheses, or reach any conclusion
   — that is `rca-analyze`. Do NOT use this to fetch or
   re-fetch anything from PLM — that is `rca-intake`'s job; re-invoking
