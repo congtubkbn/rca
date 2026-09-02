@@ -10,11 +10,11 @@ description: >
   an existing PLM-issue run (e.g. "scope PLM-12345", "narrow the window on
   this run", "re-run scoping with a tighter window", "what kind of issue is
   this"). Requires a run bundle that already exists — invoke `rca-intake`
-  first if `.rca/issues/<issue_id>/` does not yet exist. Do NOT use this to locate a failure
-  point in signalling/trace, generate hypotheses, or reach any conclusion
-  — that is `rca-analyze`. Do NOT use this to fetch or
-  re-fetch anything from PLM — that is `rca-intake`'s job; re-invoking
-  this skill never touches PLM.
+  first if `.rca/issues/<issue_id>/` does not yet exist. `rca-analyze` is
+  what locates a failure point in signalling/trace, generates hypotheses,
+  and reaches a conclusion — do not use this skill for those. `rca-intake`
+  is what fetches and re-fetches anything from PLM — do not use this skill
+  for that; re-invoking this skill never touches PLM.
 ---
 
 # rca-scope
@@ -225,16 +225,10 @@ State plainly:
 
 ## What this skill does not do
 
-- ❌ Never calls PLM — it only reads the snapshot `rca-intake` already
-  wrote, on a fresh scope or a re-run alike.
-- ❌ No hypothesis generation, no failure-point location within a message
-  exchange, no root cause — that is `rca-analyze`.
-- ❌ Never forces a classification onto the nearest-looking row in
-  `known-issue-types.md` when nothing actually matches — it says so and
-  proceeds generically at a reduced tier instead.
-- ❌ Never claims a failure time from a log query that found nothing — a
-  miss stays a miss, never becomes a negative claim or a fabricated
-  timestamp.
-- ❌ No chaining into `rca-analyze` — halts after step 9 regardless of
-  `manifest.json.autonomy` (that field governs `rca-analyze`'s
-  checkpoints and loop, not this skill).
+- `rca-analyze` owns hypothesis generation, failure-point location within
+  a message exchange, and reaching a root cause — not this skill.
+- A failure-time query that finds no hit stays a miss: `failure_time.value`
+  is set to `null` (`origin: "undetermined"`) — never inferred or
+  fabricated into a timestamp.
+- `manifest.json.autonomy` governs only `rca-analyze`'s checkpoints and
+  loop — this skill halts after Step 9 regardless of that field's value.
