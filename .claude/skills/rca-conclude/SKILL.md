@@ -14,13 +14,13 @@ description: >
   `manifest.json.next_step == "rca-conclude"` (set by `rca-analyze`'s own
   `accept` reply) or an existing `conclusion.json` on this run — invoke
   `rca-analyze` and reply `accept` to its checkpoint first if neither
-  holds. Do NOT use this to run further
-  analysis, generate or test hypotheses, or locate a failure point — that
-  is `rca-analyze`, which this skill only reads. Do NOT use this to
-  produce a Technical Report — that is `tr-creator`, a separate,
-  explicitly invoked skill this skill never calls. Do NOT use this to
-  propose a fix, patch, configuration change, or test case — this skill
-  mechanically refuses to write any of those, by design.
+  holds. Running further analysis, generating or testing hypotheses, or
+  locating a failure point is `rca-analyze`'s job, which this skill only
+  reads — do not use this skill for that. Producing a Technical Report is
+  `tr-creator`'s job, a separate, explicitly invoked skill this skill
+  never calls — do not use this skill for that either. This skill
+  mechanically refuses to write a fix, patch, configuration change, or
+  test case, by design — do not use it to propose one.
 ---
 
 # rca-conclude
@@ -40,16 +40,15 @@ Read `.claude/skills/_shared/run-bundle-layout.md` before changing
 anything below — it is the authoritative schema for `conclusion.json`,
 including exactly which fields this skill may copy forward from
 `scope.json`/`analysis/round-NN.json` versus author itself. Also read
-`_shared/evidence-tiers.md` — specifically its `CONTRADICTED` tier
-("never improves when copied forward" plus the fact that this skill is
-the first to apply `CONTRADICTED` against the tester's own PLM account as
-a source, not only spec/vendor-doc/prior-case). This skill does not call
-`_shared/keyword-provenance.md`'s ranking mechanism at all — that file
-governs promoting a SOFT (NotebookLM) claim during `rca-analyze`'s
-rounds, a different, source-ranking concern this skill has no part in; nor
-does it call `_shared/log-query-invocation.md`, `code-graph-invocation.md`,
-or `notebooklm-invocation.md` — it makes no tool calls of any of those
-kinds.
+`_shared/evidence-tiers.md`'s **Tier immutability** rule, plus the fact
+that this skill is the first to apply its `CONTRADICTED` tier against the
+tester's own PLM account as a source, not only spec/vendor-doc/prior-case.
+This skill does not call `_shared/keyword-provenance.md`'s ranking
+mechanism at all — that file governs promoting a SOFT (NotebookLM) claim
+during `rca-analyze`'s rounds, a different, source-ranking concern this
+skill has no part in; nor does it call `_shared/log-query-invocation.md`,
+`code-graph-invocation.md`, or `notebooklm-invocation.md` — it makes no
+tool calls of any of those kinds.
 
 ```yaml
 contract:
@@ -406,22 +405,8 @@ Reached only from Step 3 case 2, on an existing unconfirmed draft.
 
 ## What this skill does not do
 
-- ❌ Never runs a new log-query, code-graph, or NotebookLM call — every
-  tier and evidence reference in `conclusion.json` is copied forward from
-  `scope.json`/`analysis/round-NN.json`, never freshly derived.
 - ❌ Never writes to `analysis/round-NN.json` or `manifest.json.decisions`
   — those stay `rca-analyze`'s alone.
-- ❌ Never sets `issue.json.active_run` without an explicit `accept` reply
-  to the draft this skill itself presented — not on synthesis, not under
-  any `autonomy` setting.
-- ❌ Never rewrites a `conclusion.json` once `confirmed: true` — a further
-  analysis of the same issue is a new run via `rca-intake`, never a
-  reopened conclusion.
-- ❌ Never writes a fix, patch, configuration change, test case, or
-  next-step suggestion into `conclusion.json` or `CONCLUSION.md` — Step 5's
-  scan blocks the write mechanically if one appears.
-- ❌ Never produces a Technical Report — that is `tr-creator`, a separate,
-  explicitly invoked skill this skill never calls.
 - ❌ Never presents an `ASSUMED`/`CODE_UNAVAILABLE`-resting conclusion with
   the same confidence as one resting on `VERIFIED_LOG`/`CODE_BOUND` —
   `rests_on_weak_evidence`/`weak_evidence_notice` exist specifically to
@@ -430,6 +415,3 @@ Reached only from Step 3 case 2, on an existing unconfirmed draft.
   truth — the scenario is checked against them, and a genuine,
   HARD-evidenced disagreement is recorded at `CONTRADICTED`, not smoothed
   into agreement.
-- ❌ No chaining into `rca-learn` — halts after a confirmed `accept` and
-  states that it is the next pipeline step, but never invokes it itself;
-  running it (directly, or via `/rca`'s dispatch) is a separate step.
