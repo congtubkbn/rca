@@ -19,13 +19,13 @@ measured fact from an assumption without re-deriving it.
 
 ## Rules
 
-- **A tier never improves with the passage of time.** A finding carried
-  forward from an earlier run is still whatever tier it was written at.
-  Reaching `VERIFIED_LOG` requires verification against the log of the
-  issue currently being analysed — never inherited from a prior run or a
-  prior case record. This is the mechanism that stops an assumption from
-  being laundered into a verified finding by repetition (see the parent
-  spec's "evidence laundering" note, issue #5).
+- **Tier immutability: a tier never improves with the passage of time.**
+  A finding carried forward from an earlier run is still whatever tier it
+  was written at. Reaching `VERIFIED_LOG` requires verification against
+  the log of the issue currently being analysed — never inherited from a
+  prior run or a prior case record. This is the mechanism that stops an
+  assumption from being laundered into a verified finding by repetition
+  (see the parent spec's "evidence laundering" note, issue #5).
 - **Guessing may ask, never answer.** A tier is assigned to what a source
   actually said or showed — never to what a query merely failed to
   contradict. A failed guess teaches nothing and gets no tier at all,
