@@ -65,14 +65,21 @@ Read `runs/run-NN/scope.json`. If missing: HALT with `"Run <run_id> has no scope
   - **`verb == "abort"`**: Jump to **Branch: Handling `abort`**.
   - **`verb == "dig"`**:
     - If `direction` is missing: HALT with `"dig needs a direction — which candidate? [list checkpoint.candidate_directions]"`.
+    - Apply **Gate 2/3 precondition** (below); HALT there if it trips.
     - If standing round has `forced_by_round_budget == true` and `override` is absent/lacks rationale: HALT restating the round budget gate.
     - Set `direction = supplied_direction`, `engineer_redirect = null`.
   - **`verb == "redirect"`**:
     - If `redirect_info` is missing: HALT with `"redirect needs information — what should the agent know?"`.
     - Set `engineer_redirect = {"text": redirect_info, "tier": "ENGINEER_PROVIDED", "recorded_at": <ISO 8601 now>}`.
     - Set `direction = standing_round.checkpoint.recommendation.direction`.
-  - **Bare `direction`** (no verb): Treat as `dig` (round budget gate applies).
-  - **Implicit continue** (no verb, no direction): Set `direction = standing_round.checkpoint.recommendation.direction`, `engineer_redirect = null`, note in `open_notes`.
+  - **Bare `direction`** (no verb): Treat as `dig` (Gate 2/3 precondition and round budget gate both apply).
+  - **Implicit continue** (no verb, no direction): Apply **Gate 2/3 precondition** (below); HALT there if it trips. Otherwise set `direction = standing_round.checkpoint.recommendation.direction`, `engineer_redirect = null`, note in `open_notes`.
+  - **Gate 2/3 precondition** (applies to the `dig` branch, the bare-`direction` branch, and the implicit-continue branch above — never to `redirect`, `accept`, or `abort`, which are unconditionally honored):
+    - If `standing_round.checkpoint.recommendation.direction` is non-null, resolve it to its entry in `standing_round.hypotheses[]`.
+    - **Gate 2** (same test as Step 7.5.2): If a hypothesis was resolved and its `untested_tier == "ASSUMED"`: HALT with `"Round <current_round> for run <run_id>'s recommendation rests on an untested (ASSUMED) finding — only accept, abort, or redirect <information> can move past this gate."`
+    - **Gate 3**: If `standing_round.failure_point.located == false`, or the recommendation depends on an unresolved rung 1–4 question (same test as Step 7.5.3 — not merely any non-HARD item in `checkpoint.evidence_gaps`, most of which are expected `SPEC_INFERRED`/`TESTER_REPORTED`/`CODE_UNAVAILABLE`/`CONTRADICTED` entries that do not by themselves indicate the ladder had to ask the engineer): HALT with `"Round <current_round> for run <run_id>'s recommendation depends on a question the resolution ladder could not resolve — only accept, abort, or redirect <information> can move past this gate."`
+    - Either HALT here happens before Record Decision below and before Step 4 — no new round file is written, no `manifest.json.decisions[]` entry is appended.
+    - A round that trips gate 1 (round budget) alongside gate 2 or 3 HALTs here with the gate 2/3 message, not the round-budget one — no override moves past gate 2/3 either way, so this is never a false negative for the engineer.
   - **Record Decision**: Append entry to `manifest.json.decisions[]` (skip if entry for this round already exists):
     `round: current_round`, `agent_recommendation: standing_round.checkpoint.recommendation`, `engineer_response: {"verb": <verb>, "input": <direction | redirect_info | null>, "recorded_at": <now>}`, `override: <boolean>`, `override_rationale: <string | null>`.
 
