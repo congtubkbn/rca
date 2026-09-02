@@ -33,14 +33,11 @@ contract:
   except `issue_id`).
 - **`optional`** — read if present, skipped if not. A skill must never
   *assume* an optional input is present; it degrades gracefully instead of
-  erroring when it is absent (see `docs/superpowers/specs/2026-08-04-rca-fta-seed-design.md`
-  for the same pattern applied to the older v6 suite).
+  erroring when it is absent.
 - **`produces`** — the section(s) or file(s) this skill writes, and the
   full extent of what it writes. A skill writing outside its declared
   `produces` is a defect, regardless of whether it currently misbehaves —
-  the same write-owner discipline the v6 suite uses (see
-  `.cline/skills/_shared/state-file-schema.md`'s "Per-Section Write
-  Owners" table), applied here to files instead of state-file sections.
+  see `run-bundle-layout.md`'s "Per-Section Write Owners" table.
 - **`self_seedable`** — whether the engineer can supply everything in
   `requires` directly at invocation time, without having run any upstream
   skill first. `rca-intake` is `self_seedable: true` by construction: it

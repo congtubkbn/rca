@@ -13,12 +13,6 @@ step, and halts. It never chains steps in one invocation, and never
 guesses what step comes next from conversation context — always re-derive
 it from `manifest.json.next_step`.
 
-This command is independent of `.clinerules/workflows/rca.md`, which
-remains the older v6 3GPP fault-tree suite's Cline dispatcher, unchanged
-by this suite (see root `CLAUDE.md`). The two share the `/rca` name by
-coincidence of each suite choosing the obvious one; they read and write
-entirely different files and never interact.
-
 Invoking any skill in this suite directly (e.g. asking for `rca-intake`
 by name) always works and always wins over this dispatcher — it is never
 required to go through `/rca`.
@@ -100,7 +94,6 @@ anything else afterward. HALT.
      is not implemented in this suite yet (link the tracking issue if
      known, e.g. "next step is `rca-learn`, tracked as a sub-issue of
      GitHub issue #5, not yet built"). Do **not** attempt to improvise
-     that step's behavior, and do not fall back to the older v6 suite.
-     HALT.
+     that step's behavior. HALT.
 
 </explicit_instructions>

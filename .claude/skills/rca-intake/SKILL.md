@@ -7,11 +7,7 @@ description: >
   `.rca/issues/<issue_id>/` folder on disk. Use ONLY when the engineer
   names a PLM issue ID and wants to start or restart analysis on it (e.g.
   "start analysis on PLM-12345", "open a new run for PLM-12345 with the
-  new logs", "intake this PLM issue"). Do NOT use this for the older,
-  independent v6 3GPP fault-tree suite under `.cline/skills/` — that suite
-  is triggered by `3gpp-rca-orchestrator`, `3gpp-scoping`, and
-  `3gpp-fta-seed-init`, which run on a *description of a UE failure*
-  against an already-loaded DuckDB log, not a PLM issue ID. Do NOT use
+  new logs", "intake this PLM issue"). Do NOT use
   this mid-analysis to advance an existing run to its next step — that is
   `/rca`'s job, and the next step after intake is `rca-scope`, not this
   skill again. Do NOT use this to classify the issue, narrow a time
@@ -78,8 +74,7 @@ If missing, HALT per above. Otherwise proceed.
 Call the PLM MCP connection's issue-fetch operation for `issue_id`,
 requesting title, description, and tester reproduction steps.
 
-This connection is a workspace dependency, not part of this repository —
-the same relationship the older v6 suite has with `3gpp-tools/*.py` (see
+This connection is a workspace dependency, not part of this repository (see
 root `CLAUDE.md`): it is expected to already be configured in the
 environment this skill runs in, and this skill does not attempt to
 configure or discover it.

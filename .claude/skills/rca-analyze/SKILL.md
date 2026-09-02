@@ -13,10 +13,7 @@ description: >
   continue, or reply to a round of analysis on a run that already has a
   `scope.json` (e.g. "analyze PLM-12345", "dig into H2", "redirect: it's a
   Qualcomm 9205 build", "accept this", "abort this run"). Requires
-  `scope.json` to exist — invoke `rca-scope` first if it does not. Do NOT
-  use this for the older v6 3GPP fault-tree suite's FTA skills
-  (`.cline/skills/3gpp-fta-*`) — unrelated pipeline, no PLM issue ID, no
-  run bundle. Do NOT use this to classify an issue or narrow the
+  `scope.json` to exist — invoke `rca-scope` first if it does not. Do NOT use this to classify an issue or narrow the
   window/tables/layers — that's `rca-scope`, which this skill only reads.
   Do NOT use this to actually reach a final root cause or reproduction
   scenario — that's `rca-conclude`; `accept` here only records the

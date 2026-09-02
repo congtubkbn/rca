@@ -78,11 +78,11 @@ silently omitted from the round's record.
 
 ## Why this order, not spec-then-fault-tree
 
-The v6 suite (`.cline/skills/`) built a fault-tree skeleton from spec
-before looking at any log data, and bound code at that point. This ladder
-inverts that deliberately (issue #5, "Explicit departures from v6"):
-hypotheses in `rca-analyze` are generated against an **observed** failure
-point (rung 2, or a rung-1-guided query that hit), not derived from a
-procedure diagram before anyone has looked at the log — spec-before-log is
-exactly where an LLM invents most freely, and code-binding-as-precondition
-is exactly where source is least likely to exist.
+An earlier design built a fault-tree skeleton from spec before looking at
+any log data, and bound code at that point. This ladder inverts that
+deliberately (issue #5, "Explicit departures from v6"): hypotheses in
+`rca-analyze` are generated against an **observed** failure point (rung 2,
+or a rung-1-guided query that hit), not derived from a procedure diagram
+before anyone has looked at the log — spec-before-log is exactly where an
+LLM invents most freely, and code-binding-as-precondition is exactly where
+source is least likely to exist.

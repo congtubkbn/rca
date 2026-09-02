@@ -19,9 +19,7 @@ description: >
   `issue.json.active_run` to be set with a confirmed `conclusion.json` —
   invoke `rca-conclude` and reply `accept` to its draft first if it is
   not; this skill refuses to run at all otherwise and states why. Do NOT
-  use this for the older, independent v6 3GPP fault-tree suite
-  (`.cline/skills/`) — that suite has no PLM issue ID, no run-bundle
-  concept, and no case base of any kind. Do NOT use this to reach a
+  use this to reach a
   conclusion, run further analysis, or generate hypotheses — that is
   `rca-analyze`/`rca-conclude`, which this skill only reads. Do NOT use
   this to produce a Technical Report — that is `tr-creator`, a separate,

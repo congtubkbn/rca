@@ -14,11 +14,7 @@ description: >
   `manifest.json.next_step == "rca-conclude"` (set by `rca-analyze`'s own
   `accept` reply) or an existing `conclusion.json` on this run — invoke
   `rca-analyze` and reply `accept` to its checkpoint first if neither
-  holds. Do NOT use this for the older, independent v6 3GPP fault-tree
-  suite's `3gpp-fta-root-cause`/`3gpp-rca-orchestrator` skills
-  (`.cline/skills/`) — that suite's Phase 3.5/Phase 4 write an entirely
-  different `/tmp/rca_state_*.json` state file, have no PLM issue ID, and
-  have no run-bundle concept at all. Do NOT use this to run further
+  holds. Do NOT use this to run further
   analysis, generate or test hypotheses, or locate a failure point — that
   is `rca-analyze`, which this skill only reads. Do NOT use this to
   produce a Technical Report — that is `tr-creator`, a separate,
@@ -196,8 +192,7 @@ Read only what's needed, never the whole bundle:
    - If `causal_chain` is empty: `established: false`, `statement` states
      plainly that this run's accepted analysis produced no causal-chain
      finding to conclude from, `tier: null`, `evidence_ref: null`. This is
-     a legitimate, statable outcome (the v6 suite's closest analogue is
-     `root_cause_class: OPEN`) — never fabricated to fill the field.
+     a legitimate, statable outcome — never fabricated to fill the field.
 4. **`reproduction_scenario`** — built from `causal_chain`, `problem`, and
    `scope.json.window`/`classification`, at protocol level (message
    names, procedure steps, network/device conditions — not log-internal
@@ -265,10 +260,7 @@ changed"`, `"should be modified"`, `"should be updated to"`.
 **Exception**: matches inside verbatim-quoted external text —
 `reproduction_scenario.tester_comparison.tester_reported_text` — are
 allowed, since the tester may use these words innocently in their own
-account (the same "matches inside `engineer_input` are allowed" carve-out
-the older v6 suite uses, per
-`.cline/skills/3gpp-rca-orchestrator/references/orchestrator-finalize-checklist.md`).
-Every other field this skill itself authors — every `statement`,
+account. Every other field this skill itself authors — every `statement`,
 `evidence_gaps` entry, `weak_evidence_notice`, `scenario_says` — is not
 exempt.
 
