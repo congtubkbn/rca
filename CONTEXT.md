@@ -30,6 +30,24 @@ hint, never as proof. Distinct from an **engineer clarification** below —
 a comment is PLM's own historical record, never edited by this pipeline.
 _Avoid_: note, remark
 
+**Recommendation**:
+The top-ranked surviving hypothesis `rca-analyze` names at a round's
+checkpoint — the causal explanation the evidence currently supports best,
+evidence-tiered and revisable across rounds as new rounds run. This is
+`rca-analyze` **finding** a root cause candidate, not the pipeline
+concluding one — an `accept` reply only hands the recommendation to
+`rca-conclude`, which is what actually confirms it.
+_Avoid_: root cause (when describing `rca-analyze`'s own output), finding,
+verdict
+
+**Conclusion**:
+`rca-conclude`'s synthesized deliverable — the root cause, causal chain,
+and reproduction scenario written to `conclusion.json`/`CONCLUSION.md` from
+an accepted `rca-analyze` recommendation, checked against the tester's
+account. The only point in the pipeline where "root cause" names a
+finished, confirmed answer rather than a still-revisable recommendation.
+_Avoid_: result, output, report
+
 **Engineer clarification**:
 An analysing engineer's explicit correction or clarification of the
 tester's account or of a comment, supplied because the original PLM text
