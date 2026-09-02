@@ -300,10 +300,12 @@ Otherwise:
    - A match: its suggested keyword/table feeds exactly one more locate
      query (rung 2 again). Hit: record `failure_point.located: true`, the
      event, `tier: "VERIFIED_LOG"`, and the ledger/raw reference of *this*
-     fresh hit — never the case/playbook's own tier; "cases suggest, they
-     never prove" (`resolution-ladder.md`, rung 6) applies here exactly as
-     it does at Step 6, so the hint alone can never by itself produce
-     `failure_point.located: true`. Name the case/playbook that seeded it
+     fresh hit — never the case/playbook's own tier; "**Cases and
+     playbooks are hints, never evidence**"
+     (`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`)
+     applies here exactly as it does at Step 6, so the hint alone can
+     never by itself produce `failure_point.located: true`. Name the
+     case/playbook that seeded it
      in `case_hints[].used_for` as `"failure_point"` (alongside the
      hypothesis-id values that field already takes).
    - Miss, or no match found: fall through to the concession below.
