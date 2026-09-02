@@ -32,8 +32,8 @@ contract:
 ## Inputs
 
 - `issue_id` (required): PLM issue identifier (e.g. `PLM-12345`).
-- `run_id` (optional): Defaults to `issue.json.active_run` if set, else highest-numbered entry in `issue.json.runs`.
-- `verb` (optional): `"accept"` or `"abort"` from user invocation. Omitted when drafting or re-rendering.
+- `run_id` (optional): Target run ID. Defaults to `issue.json.active_run` if set, else highest-numbered entry in `issue.json.runs`.
+- `verb` (optional): Engineer reply (`"accept"` or `"abort"`). Omitted when drafting fresh conclusion or re-rendering standing draft.
 
 ## Steps
 
@@ -62,10 +62,11 @@ Read `runs/run-NN/conclusion.json` if it exists:
 
 ### 4. Synthesize conclusion draft
 
-Read `input/plm-snapshot.json`, `runs/run-NN/scope.json`, and all `runs/run-NN/analysis/round-NN.json` in round order:
+Read `input/plm-snapshot.json`, `runs/run-NN/scope.json`, and all `runs/run-NN/analysis/round-NN.json` in round order. Synthesize solely from these on-disk records without running new queries:
+
 1. **`problem`**:
    - If any round has `failure_point.located == true`: use latest round's `failure_point` (`statement`, verbatim `tier`, verbatim `evidence_ref`).
-   - Else if `scope.json.failure_time.tier` is non-null: `located: true`, `statement` references scoped failure time, copy `tier`/`evidence_ref` from `scope.json.failure_time`.
+   - Else if `scope.json.failure_time.tier` is non-null: `located: true`, `statement` references scoped failure time, copy `tier`/`evidence_ref` verbatim from `scope.json.failure_time`.
    - Else: `located: false`, `statement: "Failure point not pinned in this run"`, `tier: null`, `evidence_ref: null`.
 2. **`causal_chain`**: Concatenate all rounds' `causal_chain_additions` in round order, preserving `round` number, `tier`, and `evidence_ref`. (`[]` if none).
 3. **`root_cause`**:
@@ -75,16 +76,17 @@ Read `input/plm-snapshot.json`, `runs/run-NN/scope.json`, and all `runs/run-NN/a
    - `preconditions[]`: Required network/device state backed by `causal_chain`/`scope.json` with verbatim tiers (interpolated items tagged `ASSUMED`, `evidence_ref: null`).
    - `steps[]`: Ordered numbered sequence leading to failure point with verbatim tiers (interpolated items tagged `ASSUMED`).
    - `expected_failure`: Restates `problem` statement, tier, and evidence_ref.
-   - `tester_comparison`: `tester_reported_text` = verbatim `input/plm-snapshot.json.description` (never engineer clarification).
+   - `tester_comparison`:
+     - `tester_reported_text`: Copy verbatim from `input/plm-snapshot.json.description` (never from `engineer_clarification`).
      - `matches[]`: Claims aligning with scenario.
      - `divergences[]`: Discrepancies or missing details. Tag `tier: "CONTRADICTED"` when HARD evidence (`VERIFIED_LOG`/`CODE_BOUND`) directly contradicts tester text.
 5. **`evidence_gaps` & weak evidence notice**:
    - Collect all `SPEC_INFERRED`/`ASSUMED`/`TESTER_REPORTED`/`CODE_UNAVAILABLE`/`CONTRADICTED` items across conclusion fields.
-   - If any item in `root_cause`, `causal_chain`, or `reproduction_scenario` carries `ASSUMED` or `CODE_UNAVAILABLE`: set `rests_on_weak_evidence: true` and write explicit `weak_evidence_notice`. Otherwise `rests_on_weak_evidence: false`, `weak_evidence_notice: null`.
+   - If any item in `root_cause`, `causal_chain`, or `reproduction_scenario` carries `ASSUMED` or `CODE_UNAVAILABLE`: set `rests_on_weak_evidence: true` and write explicit `weak_evidence_notice`. Otherwise set `rests_on_weak_evidence: false`, `weak_evidence_notice: null`.
 
 ### 5. Run forbidden-pattern scan
 
-Scan all authored strings in the draft (case-insensitive substring match) for remediation and fix patterns:
+Scan all authored strings across the drafted fields (case-insensitive substring match) for remediation and fix patterns:
 `"fix:"`, `"the fix is"`, `"to fix this"`, `"suggested fix"`, `"proposed fix"`, `"patch:"`, `"proposed patch"`, `"workaround"`, `"configuration change"`, `"config change"`, `"config parameter should"`, `"test case"`, `"regression test"`, `"verification procedure"`, `"recommend"`, `"recommendation:"`, `"action item:"`, `"remediation:"`, `"next step:"`, `"should be changed"`, `"should be modified"`, `"should be updated to"`.
 
 - **Exemption**: Verbatim `tester_reported_text` is exempt from scan.
@@ -159,24 +161,24 @@ Reached when `verb == "accept"` on an existing unconfirmed draft:
 Reached when `verb == "abort"` on an existing unconfirmed draft:
 1. Leave `conclusion.json` untouched (`confirmed: false`).
 2. Update `manifest.json`: `status: "aborted"`, `next_step: null`, `current_step: "rca-conclude"`, `updated_at: <ISO 8601 now>`.
-3. Do **not** set `issue.json.active_run`.
+3. Leave `issue.json.active_run` untouched (remains `null` or prior confirmed run).
 4. Report abort: run is closed without confirmed conclusion. Start new run via `rca-intake` to re-analyze. HALT.
 
 ## Completion Criteria
 
-- `runs/run-NN/conclusion.json` and `runs/run-NN/CONCLUSION.md` written per schema and format specifications.
-- All authored strings pass forbidden-pattern scan with zero remediation, fix, patch, or config change violations.
-- Evidence tiers faithfully copied forward without upward promotion.
-- `rests_on_weak_evidence` and `weak_evidence_notice` prominently highlighted if weak findings exist.
-- Discrepancies between scenario and log-verified facts vs tester report tagged with `CONTRADICTED` where applicable.
-- On `accept`: `confirmed: true`, `issue.json.active_run` set, `manifest.json.next_step == "rca-learn"`.
-- On `abort`: `manifest.json.status == "aborted"`, `next_step == null`, `issue.json.active_run` unassigned.
-- Clear draft or confirmation summary presented to engineer followed by mandatory HALT.
+- `runs/run-NN/conclusion.json` and `runs/run-NN/CONCLUSION.md` written strictly per schema and template format.
+- Every authored string passes the forbidden-pattern scan with zero remediation, fix, patch, or config change patterns.
+- All evidence tiers and references copied verbatim forward without promotion.
+- `rests_on_weak_evidence` and `weak_evidence_notice` prominently surfaced whenever weak findings exist.
+- Discrepancies between scenario/logs and tester description faithfully tagged with `CONTRADICTED` where applicable.
+- On `accept`: `confirmed: true`, `issue.json.active_run` assigned, `manifest.json.next_step == "rca-learn"`.
+- On `abort`: `manifest.json.status == "aborted"`, `manifest.json.next_step == null`, `issue.json.active_run` unassigned.
+- Full draft or confirmation summary presented to engineer followed by mandatory HALT.
 
-## What this skill does not do
+## Invariants and Behavioral Guardrails
 
-- ❌ Never writes or proposes code fixes, patches, workarounds, or test cases.
-- ❌ Never auto-confirms a conclusion or auto-triggers `rca-learn` without explicit user `accept`.
-- ❌ Never performs log, code, or spec queries (synthesis only from `scope.json` and `round-NN.json`).
-- ❌ Never promotes or upgrades evidence tiers when consolidating findings.
-- ❌ Never overwrites raw tester description in PLM snapshot with engineer clarifications.
+- **Pure Synthesis Boundary**: Produce findings solely from `scope.json` and `round-NN.json`. Direct log, code, or spec queries belong exclusively to `rca-scope` and `rca-analyze`.
+- **Zero Remediation Spillover**: Conclude strictly at terminal root cause and reproduction scenario. Remediation, code patches, and test cases belong to downstream engineering.
+- **Strict Tier Immutability**: Copy evidence tiers verbatim from source findings. Tiers never upgrade during synthesis.
+- **ADR-0001 Tester Comparison Integrity**: Ground `tester_comparison` exclusively in verbatim `input/plm-snapshot.json.description`. Engineer clarifications assist hypothesis generation in earlier phases but must never replace raw tester accounts during contradiction checks.
+- **Explicit Engineer Gates**: Every draft presentation halts unconditionally. Progression to `rca-learn` or assigning `issue.json.active_run` requires explicit user `accept`.
