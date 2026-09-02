@@ -108,8 +108,8 @@ Present status to the engineer:
 
 ## Invariants and Behavioral Guardrails
 
-- **Verbatim Capture Discipline**: Record PLM `title`, `description`, and `comments` verbatim without summarization, rephrasing, or parsing reproduction steps. Analysis and classification belong exclusively to downstream skills (`rca-scope`, `rca-analyze`).
-- **Pure Intake Boundary**: Intake interacts strictly with the PLM MCP to capture issue text and record log pointers. Log queries, spec repositories, and code graphs belong exclusively to downstream skills.
-- **ADR-0001 Side-by-Side Separation**: Store verbatim PLM snapshot and engineer clarifications independently side by side. Never merge or overwrite raw PLM text with engineer clarifications, ensuring unedited tester accounts survive for downstream contradiction checks.
-- **Append-Only Run Bundles**: Allocate zero-padded `run-NN` folders sequentially without mutating or overwriting previous run directories or manifests.
+- **Verbatim Capture Discipline** — enforced in Step 2–6; analysis/classification stays downstream.
+- **Pure Intake Boundary** — see frontmatter anti-triggers.
+- **ADR-0001 Side-by-Side Separation** — enforced in Step 6; never merge PLM text with clarifications.
+- **Append-Only Run Bundles** — enforced in Step 3.
 - **Discrete Step Execution**: Halt unconditionally after presenting the intake summary report. Never auto-advance or trigger `rca-scope` automatically.
