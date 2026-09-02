@@ -102,7 +102,11 @@ At the round budget, this section says so explicitly and states that only
 `accept`, `abort`, or an *explicit* override (stated as such, with a
 one-line rationale) can move past it — the round budget is the only one
 of the four gates an override can move past at all, and only for one more
-round at a time. When this round's recommendation instead rests on an
+round at a time: the gate re-applies at every round from the budget
+onward, so an override that got the run to round `round_budget + 1` does
+not carry forward to round `round_budget + 2` — that round's checkpoint
+states the same thing again and needs its own fresh override. When this
+round's recommendation instead rests on an
 `ASSUMED` finding, or the resolution ladder had to reach "ask the
 engineer" for something the recommendation depends on, this section states
 that plainly too, but there is no override for either — only `accept` or

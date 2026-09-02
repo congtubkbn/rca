@@ -227,7 +227,11 @@ Owners").
   step. `override: true` records the one case a reply is honored past a
   gate that would otherwise have blocked it (only the round-budget gate is
   overridable at all, and only with an explicit override phrase carrying
-  `override_rationale` — see that file).
+  `override_rationale` — see that file). The round-budget gate re-applies
+  at every round from `round_budget` onward, not just once: an override
+  that got the run past round `round_budget` does not carry forward to
+  round `round_budget + 1`'s own checkpoint — that round needs its own
+  fresh `override: true` + `override_rationale` entry here too.
 - `input_snapshot_fetched_at` pins *this run* to the PLM snapshot it was
   created from, even though `input/plm-snapshot.json` itself is refreshed
   by later intake re-runs on the same issue.
@@ -380,9 +384,11 @@ above), leaving every round file exactly as fixed as it always was.
   needs it reads this round's file directly, the same slice-read
   discipline as `causal_chain_additions`).
 - `forced_by_round_budget: true` (issue #9) marks a round written at
-  `round == manifest.json.round_budget`, whose `checkpoint.recommendation`
-  is therefore forced to recommend acceptance regardless of what survived
-  — see `rca-analyze/SKILL.md`'s round-budget gate.
+  `round >= manifest.json.round_budget` — every round from the budget
+  onward, not only the one exactly at it — whose
+  `checkpoint.recommendation` is therefore forced to recommend acceptance
+  regardless of what survived — see `rca-analyze/SKILL.md`'s round-budget
+  gate.
 - `contradicted_findings` (issue #11) is the structured record of a
   vendor/spec-documentation claim (a rung 1/4 NotebookLM citation) that a
   HARD finding this round disproved — the same event `keyword-provenance.md`'s
