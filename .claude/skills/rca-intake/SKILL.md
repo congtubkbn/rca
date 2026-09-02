@@ -163,7 +163,7 @@ State plainly:
 - ❌ Hypothesis generation, root cause, and reproduction scenarios belong
   to `rca-analyze`/`rca-conclude` downstream of intake — this skill
   produces none of them.
-- ❌ The next skill is always a separate invocation (or `/rca`'s
-  dispatch), never chained automatically — this skill halts after step 9
-  regardless of autonomy settings; `manifest.json`'s `autonomy` field is
-  a default for later skills to read, not something this skill acts on.
+- ❌ This skill halts after step 9 regardless of autonomy settings —
+  `manifest.json`'s `autonomy` field is a default for later skills to
+  read, not something this skill acts on; the next skill is never
+  chained automatically.
