@@ -168,11 +168,9 @@ invocation is replying to; read its `checkpoint` section (already on disk
    is also supplied with a rationale — otherwise HALT restating the budget
    gate exactly as that round's checkpoint already stated it, and do not
    proceed to Step 4. Because Step 7.2 sets `forced_by_round_budget` for
-   every round from the budget onward, not only the one written exactly
-   at it, this same check re-trips on every subsequent `dig` too — an
-   override that got the run past round `round_budget` does not carry
-   forward to round `round_budget + 1`'s own checkpoint; that round needs
-   its own fresh override.
+   every round from the budget onward, this same check re-trips on every
+   subsequent `dig` too — see `checkpoint-format.md`'s "How to respond"
+   section for why an override never carries forward to the next round.
 4. **`verb` is `"redirect"`**: HALT if `redirect_info` is empty: "`redirect`
    needs the information itself — what should the agent know?" Otherwise
    `engineer_redirect = {"text": redirect_info, "tier":
@@ -504,10 +502,11 @@ finding.
    round's checkpoint halts no matter what `autonomy` says:
    1. **Round budget** — `forced_by_round_budget == true`. Always halts.
       The only gate an explicit, rationale-carrying override (Step 3,
-      case 3) can move past, and only for one more round at a time — the
-      next round is itself subject to the same check against the same
-      `round_budget` (which this skill never raises on its own; only an
-      engineer editing `manifest.json.round_budget` directly changes it).
+      case 3) can move past, one round at a time — see
+      `checkpoint-format.md`'s "How to respond" section for why it never
+      carries forward. This skill never raises `round_budget` on its own;
+      only an engineer editing `manifest.json.round_budget` directly
+      changes it.
    2. **ASSUMED finding** — the round's `checkpoint.recommendation`
       names a direction whose hypothesis carries `untested_tier:
       "ASSUMED"`. Always halts. Not overridable.
