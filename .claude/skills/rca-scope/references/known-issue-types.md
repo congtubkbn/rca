@@ -23,7 +23,7 @@ match, classification is `generic` (see `SKILL.md` step 3).
 
 | `issue_type` | `trigger_keywords` | `tables_in_scope` | `layers` | `failure_indicator_keywords` (for time-anchor queries) |
 |---|---|---|---|---|
-| `volte_call_drop` | "volte", "voice call drop", "call dropped", "call disconnected" | `UE_3gpp_signaling_log`, `UE_Trace_log` | `RRC`, `NAS`, `IMS/SIP` | "BYE", "RRCConnectionRelease", "CallEnd" |
+| `volte_call_drop` | "volte", "voice call drop", "call dropped", "call disconnected" | `UE_3gpp_signaling_log`, `UE_Trace_log` | `PHY`, `RRC`, `NAS`, `IMS/SIP` | "BYE", "RRCConnectionRelease", "CallEnd" |
 | `sms_failure` | "sms fail", "sms not received", "sms send fail", "text message fail" | `UE_3gpp_signaling_log` | `NAS`, `RRC` | "SMS delivery failure", "RP-ERROR", "CP-ERROR" |
 | `no_service` | "no service", "no signal", "lost coverage", "searching for service" | `UE_3gpp_signaling_log`, `UE_Trace_log` | `RRC`, `NAS`, `PHY` | "cell selection failure", "out of service", "RRC_IDLE" |
 | `emergency_call` | "emergency call", "sos call", "e911", "ecall" | `UE_3gpp_signaling_log`, `UE_Trace_log` | `RRC`, `NAS`, `IMS/SIP` | "EMERGENCY", "BYE", "CallEnd" |

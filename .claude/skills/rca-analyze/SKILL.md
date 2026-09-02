@@ -269,8 +269,22 @@ Otherwise:
 ### 6. Generate and test hypotheses
 
 1. **Generate.** Produce 2–4 competing hypotheses for why the failure
-   point (or, if unlocated, the scoped window's failure) occurred. Source
-   them, per the resolution ladder:
+   point (or, if unlocated, the scoped window's failure) occurred.
+
+   Before sourcing them, read `scope.json.layers`. When it lists more than
+   one layer, this round's hypotheses must collectively either address
+   every listed layer or state in `open_notes` why a given layer is not
+   being pursued this round (already ruled out by a prior round; not
+   plausible given what this round has found so far; etc.) — a
+   `causal_chain_additions` entry that terminates inside one layer (e.g.
+   "RRC released the connection") is not itself grounds to skip a layer
+   `scope.json.layers` still lists as in scope (e.g. `PHY`) merely because
+   the chain hasn't reached it yet; skipping it is only valid once stated
+   as a reasoned exclusion, not a silent omission. `layers = []` (the
+   generic-classification case) has nothing to check against and this
+   requirement does not apply.
+
+   Source hypotheses per the resolution ladder:
    - When `engineer_redirect` is set (this round is answering a
      `redirect`): read it first, before any tool call. It may directly
      supply a keyword, rule a hypothesis in or out as a premise, or state
