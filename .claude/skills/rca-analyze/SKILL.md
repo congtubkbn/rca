@@ -266,17 +266,60 @@ Otherwise:
    `log-query-invocation.md`) across `scope.json.tables_in_scope` within
    `scope.json.window`.
    - Hit: record `failure_point.located: true`, the event, `tier:
-     "VERIFIED_LOG"`, and the ledger/raw reference.
-   - Miss: `failure_point.located: false`, `event: null`, `tier: null`.
-     Add an `open_notes` entry stating the failure point could not be
-     pinned this round. This is **not** a HALT — the round continues to
-     Step 6 and generates hypotheses at the broader scoped-window level
-     instead of around a specific event; the checkpoint's evidence gaps
-     states this plainly rather than presenting hypotheses as if they
-     were anchored to something they are not. It **is**, however, a trip
-     of Step 7's "ask the engineer" gate: an unlocated failure point means
-     the ladder had to reach rung 5 for the round's very anchor, so this
-     round's checkpoint always halts regardless of `autonomy`.
+     "VERIFIED_LOG"`, and the ledger/raw reference. Stop here — do not try
+     rungs 4/6 below.
+   - Miss: state in `open_notes` that the rung-1+2 locate query missed,
+     and fall through to the rung 4 → rung 6 sequence below before
+     conceding.
+3. **Rung 4** (only on a rung-1+2 miss): ask the vendor-documentation
+   NotebookLM corpus the same style of locate question, chip-series
+   specific (per `notebooklm-invocation.md`). No vendor-doc mapping for
+   this build/model: state that in `open_notes` and go straight to rung 6.
+   Otherwise, a cited answer's keywords feed exactly one more locate query
+   (rung 2 again, per `log-query-invocation.md`), narrowed to
+   `scope.json.tables_in_scope`.
+   - Hit: record `failure_point.located: true`, the event, `tier:
+     "VERIFIED_LOG"`, and the ledger/raw reference of *this* fresh
+     log-query hit — never the vendor citation itself. Stop here — do not
+     try rung 6 below.
+   - Miss, no citation, or no mapping at all: state which of these
+     happened in `open_notes` and fall through to rung 6.
+4. **Rung 6** (only when rung 4 above did not resolve it): read
+   `.rca/knowledge/cases/*.json` and `.rca/knowledge/playbooks/*.md` for
+   entries whose `issue_type` matches
+   `scope.json.classification.issue_type`. Record every case/playbook
+   actually read — matched or not — in `case_hints[]`, exactly as Step 6
+   does for hypothesis generation (`run-bundle-layout.md`'s `case_hints`
+   description covers both). No matching case/playbook, or neither
+   directory existing yet, is a normal outcome, stated as such in
+   `open_notes`, never a reason to widen the lookup into an unrelated
+   `issue_type`. Rung 3 (code-graph) is not tried at any point in this
+   step, on purpose: it answers "what implements X," not "when did X
+   happen in this log," so it has nothing to contribute to locating a
+   failure point.
+   - A match: its suggested keyword/table feeds exactly one more locate
+     query (rung 2 again). Hit: record `failure_point.located: true`, the
+     event, `tier: "VERIFIED_LOG"`, and the ledger/raw reference of *this*
+     fresh hit — never the case/playbook's own tier; "cases suggest, they
+     never prove" (`resolution-ladder.md`, rung 6) applies here exactly as
+     it does at Step 6, so the hint alone can never by itself produce
+     `failure_point.located: true`. Name the case/playbook that seeded it
+     in `case_hints[].used_for` as `"failure_point"` (alongside the
+     hypothesis-id values that field already takes).
+   - Miss, or no match found: fall through to the concession below.
+5. **Concession** (only once rungs 1+2, 4, and 6 have all been tried and
+   none resolved it): `failure_point.located: false`, `event: null`,
+   `tier: null`. Add an `open_notes` entry stating plainly that all three
+   were tried — rung-1+2 (spec/log), rung 4 (vendor docs), rung 6
+   (cases/playbooks) — and none pinned the failure point this round. This
+   is **not** a HALT — the round continues to Step 6 and generates
+   hypotheses at the broader scoped-window level instead of around a
+   specific event; the checkpoint's evidence gaps states this plainly
+   rather than presenting hypotheses as if they were anchored to
+   something they are not. It **is**, however, a trip of Step 7's "ask
+   the engineer" gate: an unlocated failure point means the ladder had to
+   reach rung 5 for the round's very anchor, so this round's checkpoint
+   always halts regardless of `autonomy`.
 
 ### 6. Generate and test hypotheses
 
