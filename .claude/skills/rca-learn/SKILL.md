@@ -1,10 +1,10 @@
 ---
 name: rca-learn
 description: >
-  Record an accepted PLM-issue RCA conclusion into `.rca/knowledge/cases/` or promote reviewed patterns into `.rca/knowledge/playbooks/`.
+  Record confirmed RCA findings into durable case records (`.rca/knowledge/cases/`) or draft and promote reviewed playbooks (`.rca/knowledge/playbooks/`).
   Triggers: "learn from PLM-12345", "record this case", "promote playbook from <case_id>", "confirm playbook <id>", "discard playbook <id>".
-  Preconditions: `issue.json.active_run` set with confirmed conclusion (case write) or existing cases (playbook promotion).
-  Anti-triggers: log/code analysis (use `rca-analyze`), synthesizing conclusions (use `rca-conclude`), creating technical reports (use `tr-creator`).
+  Preconditions: Target run has confirmed conclusion and `issue.json.active_run` is set (for case write), or existing cases available (for playbook promotion).
+  Anti-triggers: hypothesis testing (use `rca-analyze`), synthesizing conclusions (use `rca-conclude`), creating Technical Reports (use `tr-creator`).
 ---
 
 # rca-learn

@@ -1,12 +1,10 @@
 ---
 name: rca-intake
 description: >
-  Initialize or add a run to a PLM-issue root-cause-analysis run bundle by
-  fetching PLM snapshot data (title, description, comments) via PLM MCP and
-  recording optional engineer clarifications and log pointers.
+  Initialize or add a run to a PLM-issue RCA bundle by fetching verbatim PLM snapshot data via PLM MCP and recording optional engineer clarifications and log pointers.
   Triggers: "start analysis on PLM-12345", "open run for PLM-12345", "intake PLM-12345", "clarify PLM text".
-  Precondition: None (sole pipeline entry point; creates .rca/issues/<issue_id>/).
-  Anti-triggers: issue classification / scoping (use `rca-scope`), log analysis / hypotheses (use `rca-analyze`), concluding (use `rca-conclude`).
+  Preconditions: None (sole pipeline entry point; creates `.rca/issues/<issue_id>/`).
+  Anti-triggers: scoping analysis window or issue type (use `rca-scope`), hypothesis testing (use `rca-analyze`), synthesizing conclusions (use `rca-conclude`).
 ---
 
 # rca-intake
@@ -108,10 +106,10 @@ Present status to the engineer:
 - Verbatim PLM snapshot and independent `engineer_clarification` fields properly stored side by side.
 - Summary report presented to engineer specifying created run, PLM fetch state, and missing log pointers.
 
-## What this skill does not do
+## Invariants and Behavioral Guardrails
 
-- ❌ Never performs analysis, issue classification, or time window calculation (owned by `rca-scope`).
-- ❌ Never queries logs, spec repositories, or code graphs (owned by `rca-analyze`).
-- ❌ Never merges or overwrites verbatim PLM text with engineer clarifications (ADR 0001).
-- ❌ Never extracts or parses reproduction steps from description text (rephrasing is analysis).
-- ❌ Never auto-advances or executes `rca-scope` automatically (intake halts after Step 9).
+- **Verbatim Capture Discipline**: Record PLM `title`, `description`, and `comments` verbatim without summarization, rephrasing, or parsing reproduction steps. Analysis and classification belong exclusively to downstream skills (`rca-scope`, `rca-analyze`).
+- **Pure Intake Boundary**: Intake interacts strictly with the PLM MCP to capture issue text and record log pointers. Log queries, spec repositories, and code graphs belong exclusively to downstream skills.
+- **ADR-0001 Side-by-Side Separation**: Store verbatim PLM snapshot and engineer clarifications independently side by side. Never merge or overwrite raw PLM text with engineer clarifications, ensuring unedited tester accounts survive for downstream contradiction checks.
+- **Append-Only Run Bundles**: Allocate zero-padded `run-NN` folders sequentially without mutating or overwriting previous run directories or manifests.
+- **Discrete Step Execution**: Halt unconditionally after presenting the intake summary report. Never auto-advance or trigger `rca-scope` automatically.

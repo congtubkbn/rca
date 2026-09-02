@@ -1,11 +1,10 @@
 ---
 name: rca-conclude
 description: >
-  Synthesize an existing RCA run's accepted analysis into conclusion artifacts
-  (problem, root cause, causal chain, protocol reproduction scenario) and handle engineer `accept` or `abort`.
+  Synthesize accepted RCA analysis into problem statement, root cause, causal chain, and protocol reproduction scenario checked against raw tester accounts, handling engineer accept or abort.
   Triggers: "conclude PLM-12345", "what is the root cause", "accept conclusion", "abort conclusion", "draft reproduction scenario".
   Preconditions: Target run exists with `manifest.json.next_step == "rca-conclude"` or unconfirmed `conclusion.json`.
-  Anti-triggers: log/code analysis (use `rca-analyze`), creating case studies (use `rca-learn`), writing Technical Reports (use `tr-creator`).
+  Anti-triggers: hypothesis-driven log or code analysis (use `rca-analyze`), recording case studies (use `rca-learn`), writing Technical Reports (use `tr-creator`).
 ---
 
 # rca-conclude

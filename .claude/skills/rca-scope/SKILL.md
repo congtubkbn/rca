@@ -1,11 +1,10 @@
 ---
 name: rca-scope
 description: >
-  Scope an existing PLM-issue RCA run to set its analysis boundary (issue type,
-  failure time, time window, DuckDB tables, protocol layers) and write `scope.json`.
+  Scope an RCA run by classifying the issue type, pinning failure time, and defining the analysis boundary (time window, tables, protocol layers) in `scope.json`.
   Triggers: "scope PLM-12345", "narrow window/tables", "re-scope run", "what issue type".
-  Precondition: `.rca/issues/<issue_id>/` exists (run `rca-intake` first).
-  Anti-triggers: fetching PLM data (use `rca-intake`), hypothesis testing or root cause (use `rca-analyze`).
+  Preconditions: Target run exists in `.rca/issues/<issue_id>/` (`rca-intake` completed).
+  Anti-triggers: fetching PLM snapshot data (use `rca-intake`), hypothesis testing or causal chain (use `rca-analyze`), synthesizing conclusions (use `rca-conclude`).
 ---
 
 # rca-scope
@@ -105,4 +104,11 @@ Present report to engineer:
 - Every log query issued is recorded in `raw/rca-scope-q-NN.json` and appended to `evidence/tools.jsonl`.
 - `manifest.json` updated with `current_step: "rca-scope"` and `next_step: "rca-analyze"`.
 - Summary report presented to engineer containing issue_type, failure_time, window, tables, layers, and open_notes.
+
+## Invariants and Behavioral Guardrails
+
+- **Boundary Setting Sole Ownership**: Establish analysis boundaries (`issue_type`, `failure_time`, `window`, `tables_in_scope`, `layers`) in `scope.json`. Hypothesis generation, root-cause investigation, and final conclusions belong exclusively to `rca-analyze` and `rca-conclude`.
+- **Local Artifact Exclusivity**: Read `input/plm-snapshot.json` and `input/log-pointers.json` directly from disk without re-fetching live PLM data or mutating previous run files.
+- **Evidence-Grounded Scoping**: Determine failure time and classification from engineer assertions or verified log hits with explicit evidence tiers. Record gaps, unlocated times, or missing playbooks in `open_notes[]`.
+- **Discrete Step Execution**: Update `manifest.json` with `next_step: "rca-analyze"` and present the scoping summary report followed by a mandatory halt without auto-invoking downstream analysis.
 

@@ -1,10 +1,10 @@
 ---
 name: rca-analyze
 description: >
-  Run hypothesis-driven analysis rounds on a scoped PLM-issue RCA run (locate failure point, test hypotheses against logs/code/docs, present checkpoints, manage autonomy loops) and handle engineer replies (dig, redirect, accept, abort).
+  Analyze a scoped RCA run through hypothesis-driven rounds across protocol layers, locate failure points, evaluate checkpoints, and process engineer guidance (dig, redirect, accept, abort).
   Triggers: "analyze PLM-12345", "dig <direction>", "redirect <info>", "accept", "abort run", "continue analysis".
   Preconditions: Target run exists with `scope.json` (`rca-scope` completed).
-  Anti-triggers: classifying/scoping run window (use `rca-scope`), synthesizing final conclusion & reproduction scenario (use `rca-conclude`), recording case studies (use `rca-learn`).
+  Anti-triggers: scoping analysis window or issue type (use `rca-scope`), synthesizing conclusions (use `rca-conclude`), recording case studies (use `rca-learn`).
 ---
 
 # rca-analyze
@@ -169,6 +169,7 @@ Render `checkpoint` in 5-section form per `checkpoint-format.md` (Causal Chain, 
 ## Completion Criteria
 
 - `analysis/round-NN.json` written per schema with append-only integrity (never mutating prior rounds).
+- Multi-layer exhaustiveness verified: every layer in `scope.json.layers` is covered by a hypothesis or has an explicit exclusion recorded in `open_notes`.
 - All tool queries recorded in `raw/` and appended to `evidence/tools.jsonl`.
 - Resolution ladder rigorously executed without skipping rungs or treating hints as evidence.
 - Case hint scan verified zero `.rca/knowledge/` pointers in evidence fields.
@@ -177,10 +178,11 @@ Render `checkpoint` in 5-section form per `checkpoint-format.md` (Causal Chain, 
 - On `accept`: `manifest.json.next_step == "rca-conclude"`. On `abort`: `manifest.json.status == "aborted"`.
 - Full checkpoint rendered and execution halted whenever a gate trips or review is required.
 
-## What this skill does not do
+## Invariants and Behavioral Guardrails
 
-- ❌ Never writes or modifies `scope.json` (owned by `rca-scope`).
-- ❌ Never treats uncited NotebookLM text as factual evidence.
-- ❌ Never writes `.rca/knowledge/` paths into `evidence_ref` or `ledger_ref` (cases/playbooks are hints, never evidence).
-- ❌ Never eliminates a hypothesis based on a query miss alone.
-- ❌ Never auto-invokes `rca-conclude` (final acceptance always halts and prompts for explicit handoff).
+- **Hypothesis-Driven Investigation**: Formulate falsifiable hypotheses addressing each layer in `scope.json.layers` and test them using targeted log queries, code-graph traces, and cited NotebookLM specs. Boundary definition belongs strictly to `rca-scope`.
+- **Provenance and Citation Rigor**: Ground all keywords in prior tool hits or verbatim engineer inputs, and cite specific spec sections for NotebookLM findings. Guesses may frame queries but never supply factual answers.
+- **Hints, Never Evidence**: Treat cases and playbooks strictly as search hints to suggest query keywords or tables. Never record `.rca/knowledge/` paths in `evidence_ref` or `ledger_ref`.
+- **Positive Elimination Only**: Eliminate hypotheses exclusively via positive HARD findings (`VERIFIED_LOG` or `CODE_BOUND`) that directly contradict predicted evidence. Query misses leave hypotheses surviving.
+- **Append-Only Round Audit**: Record each round in a distinct, immutable `round-NN.json` and maintain a complete audit trail in `manifest.json.decisions[]`.
+- **Strict Gate Enforcement**: Halt unconditionally whenever any of the 4 never-bypassable gates trip, or when `autonomy == "review_all"`. Transition to `rca-conclude` only upon explicit engineer `accept`.
