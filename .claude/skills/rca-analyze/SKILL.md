@@ -163,10 +163,16 @@ invocation is replying to; read its `checkpoint` section (already on disk
 3. **`verb` is `"dig"`**: `direction` = the supplied direction (HALT if
    none supplied: "`dig` needs a direction — which candidate? [lists
    `checkpoint.candidate_directions` by id]"). `engineer_redirect = null`.
-   If the standing round is at the round budget (Step 7's gate tripped on
-   it), this `dig` is only honored when `override` is also supplied with a
-   rationale — otherwise HALT restating the budget gate exactly as that
-   round's checkpoint already stated it, and do not proceed to Step 4.
+   Read the standing round's own `forced_by_round_budget` field (never
+   re-derive it): when `true`, this `dig` is only honored when `override`
+   is also supplied with a rationale — otherwise HALT restating the budget
+   gate exactly as that round's checkpoint already stated it, and do not
+   proceed to Step 4. Because Step 7.2 sets `forced_by_round_budget` for
+   every round from the budget onward, not only the one written exactly
+   at it, this same check re-trips on every subsequent `dig` too — an
+   override that got the run past round `round_budget` does not carry
+   forward to round `round_budget + 1`'s own checkpoint; that round needs
+   its own fresh override.
 4. **`verb` is `"redirect"`**: HALT if `redirect_info` is empty: "`redirect`
    needs the information itself — what should the agent know?" Otherwise
    `engineer_redirect = {"text": redirect_info, "tier":
@@ -213,10 +219,16 @@ the round it actually produces.
 1. `round_number = manifest.json.current_round + 1`.
 2. If `round_number > manifest.json.round_budget` and no override was
    established in Step 3: this should be unreachable (Step 3's budget
-   check and Step 7's gate both guard it), but if reached anyway, HALT:
-   "Round budget (`<round_budget>`) already reached for run `<run_id>` —
-   reply `accept`, `abort`, or `dig override <direction>` with a
-   rationale." Never silently write a round past budget.
+   check — reading the standing round's own `forced_by_round_budget`,
+   true for every round from the budget onward — and Step 7's gate both
+   guard it), but if reached anyway, HALT: "Round budget
+   (`<round_budget>`) already reached for run `<run_id>` — reply
+   `accept`, `abort`, or `dig override <direction>` with a rationale."
+   Never silently write a round past budget. This stays `>`, not `>=`:
+   `round_number == round_budget` is the forced-acceptance round itself,
+   reached with no override needed (that's what "one more round at a
+   time" in `checkpoint-format.md` measures from) — only a round *after*
+   it requires one, and Step 3 already guards that case.
 3. If `round_number > 1`: read every existing `analysis/round-<01..N-1>.json`
    in order — this is how `causal_chain_additions` accumulate into "the
    causal chain so far" (the checkpoint step). Read only these files' own
@@ -411,12 +423,14 @@ finding.
    4, including `direction`/`engineer_redirect` from Step 3. Never
    overwrite an existing round file, including this run's own prior
    rounds.
-2. `forced_by_round_budget = (round_number == manifest.json.round_budget)`.
+2. `forced_by_round_budget = (round_number >= manifest.json.round_budget)`.
    When true, the recommendation below is forced to acceptance regardless
    of what survived — the round still runs and still reports what it
    found, but section 3 of the checkpoint states plainly that the budget
    is why acceptance is being recommended, and section 4 states what
-   remains unproven.
+   remains unproven. `>=`, not `==`, is what makes Step 3's per-round
+   override check re-trip on every round past the budget instead of only
+   the first one at it — see Step 3, case 3.
 3. Build `checkpoint` per `checkpoint-format.md`:
    - **Causal chain so far**: every `causal_chain_additions` entry from
      every round of this run so far, this round's included, each with its
