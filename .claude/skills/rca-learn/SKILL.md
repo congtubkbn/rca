@@ -18,12 +18,12 @@ description: >
   qc9205_ims_timeout", "discard that playbook draft"). Requires
   `issue.json.active_run` to be set with a confirmed `conclusion.json` —
   invoke `rca-conclude` and reply `accept` to its draft first if it is
-  not; this skill refuses to run at all otherwise and states why. Do NOT
-  use this to reach a
-  conclusion, run further analysis, or generate hypotheses — that is
-  `rca-analyze`/`rca-conclude`, which this skill only reads. Do NOT use
-  this to produce a Technical Report — that is `tr-creator`, a separate,
-  explicitly invoked skill this skill never calls. Do NOT confuse a
+  not; this skill refuses to run at all otherwise and states why. Reaching
+  a conclusion, running further analysis, or generating hypotheses is
+  `rca-analyze`/`rca-conclude`'s job, which this skill only reads — do not
+  use this skill for that. Producing a Technical Report is `tr-creator`'s
+  job, a separate, explicitly invoked skill this skill never calls — do
+  not use this skill for that either. Do NOT confuse a
   `promote`/`confirm playbook` request with
   `scope.json.classification.matched_playbook` — that is a row id in
   `rca-scope`'s hand-maintained `references/known-issue-types.md`, a
@@ -45,11 +45,13 @@ Read `.claude/skills/_shared/run-bundle-layout.md` before changing
 anything below — it is the authoritative schema for
 `knowledge/cases/<case_id>.json` and `knowledge/playbooks/<playbook_id>.md`,
 including which fields this skill may copy forward versus author itself.
-Also read `_shared/evidence-tiers.md` (the "a tier never improves with the
-passage of time" rule this skill exists specifically to not violate) and
-`_shared/keyword-provenance.md` ("cases suggest, they never prove" — the
-rule that governs how the case base this skill writes may later be read
-back by `rca-analyze`). This skill makes no tool calls of any kind — it
+Also read `_shared/evidence-tiers.md`'s **Tier immutability** rule — this
+skill exists specifically not to violate it — and
+`_shared/keyword-provenance.md`'s canonical term, "**Cases and playbooks
+are hints, never evidence**"
+(`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`)
+— the rule that governs how the case base this skill writes may later be
+read back by `rca-analyze`. This skill makes no tool calls of any kind — it
 does not call `log-query-invocation.md`, `code-graph-invocation.md`, or
 `notebooklm-invocation.md` — and does not call `_shared/checkpoint-format.md`
 either, since it presents no checkpoint of its own.
@@ -99,13 +101,16 @@ Two things, reached by different invocations:
    and only after an explicit confirmation step that checks it for
    customer data.
 
-Both are asset-building, not analysis: per `keyword-provenance.md`, a case
-or a playbook may only ever *suggest where to look* to a later
-`rca-analyze` round — it is a hint, never itself evidence for a
-conclusion, and it never mutates the tier a finding already carries. A
-case record read a year from now by a different run still shows an
-`ASSUMED` finding as `ASSUMED`, not as something reinforced by having been
-written down.
+Both are asset-building, not analysis: per
+`_shared/keyword-provenance.md`'s "**Cases and playbooks are hints, never
+evidence**"
+(`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`),
+a case or a playbook may only ever *suggest where to look* to a later
+`rca-analyze` round, never itself evidence for a conclusion — and per
+`_shared/evidence-tiers.md`'s **Tier immutability** rule, it never mutates
+the tier a finding already carries. A case record read a year from now by
+a different run still shows an `ASSUMED` finding as `ASSUMED`, not as
+something reinforced by having been written down.
 
 ## Inputs
 
@@ -388,31 +393,9 @@ reviewed, engineer-confirmed path.
 
 ## What this skill does not do
 
-- ❌ Never runs a new log-query, code-graph, or NotebookLM call — every
-  tier, keyword, and evidence reference in a case record is copied
-  forward from `scope.json`/`analysis/round-NN.json`/`conclusion.json`,
-  never freshly derived.
-- ❌ Never writes a case for any run other than `issue.json.active_run` —
-  an abandoned, aborted, or merely superseded run never enters the case
-  base, even if it once had its own conclusion.
 - ❌ Never upgrades a tier when copying it into a case record, and never
   lets a later `rca-analyze` round upgrade one either by reading it back —
-  see `evidence-tiers.md`'s "a tier never improves with the passage of
-  time" and `keyword-provenance.md`'s "cases suggest, they never prove."
-- ❌ Never rewrites a case file once written — a further analysis of the
-  same issue is a new run via `rca-intake`, which writes its own,
-  differently-named case if it too reaches an accepted conclusion.
-- ❌ Never writes to `knowledge/playbooks/` automatically, as a side
-  effect of writing a case, or from its own judgment about what counts as
-  "repeated" — promotion is always a separate, explicit `promote` request
-  followed by an explicit `confirm playbook` reply.
-- ❌ Never writes a playbook draft straight to `knowledge/playbooks/` —
-  it is staged at the git-ignored `.rca/knowledge/.drafts/` path until
-  the customer-data check passes.
-- ❌ Never commits anything to git itself — writing to
-  `knowledge/playbooks/` only stops `.gitignore` from excluding the file;
-  `git add`/`git commit` remain the engineer's own action.
-- ❌ No chaining into anything further — this is the pipeline's last step;
-  it halts after Step 6 (or after any `promote`/`confirm
-  playbook`/`discard playbook` reply) regardless of `manifest.json.autonomy`,
-  the same as `rca-conclude`.
+  per `_shared/evidence-tiers.md`'s **Tier immutability** rule and
+  `_shared/keyword-provenance.md`'s "**Cases and playbooks are hints,
+  never evidence**"
+  (`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`).
