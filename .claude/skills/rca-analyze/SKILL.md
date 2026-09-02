@@ -13,11 +13,13 @@ description: >
   continue, or reply to a round of analysis on a run that already has a
   `scope.json` (e.g. "analyze PLM-12345", "dig into H2", "redirect: it's a
   Qualcomm 9205 build", "accept this", "abort this run"). Requires
-  `scope.json` to exist — invoke `rca-scope` first if it does not. Do NOT use this to classify an issue or narrow the
-  window/tables/layers — that's `rca-scope`, which this skill only reads.
-  Do NOT use this to actually reach a final root cause or reproduction
-  scenario — that's `rca-conclude`; `accept` here only records the
-  decision and names `rca-conclude` as next, it never invokes it.
+  `scope.json` to exist — invoke `rca-scope` first if it does not.
+  Classifying an issue or narrowing the window/tables/layers is
+  `rca-scope`'s job, which this skill only reads — do not use this skill
+  for that. Reaching a final root cause or reproduction scenario is
+  `rca-conclude`'s job; `accept` here only records the decision and names
+  `rca-conclude` as next without invoking it — do not use this skill to
+  reach one itself.
 ---
 
 # rca-analyze
@@ -295,13 +297,10 @@ Otherwise:
      matches `scope.json.classification.issue_type`. A match may seed a
      hypothesis's `statement` or contribute a candidate keyword to a
      `testing_query`, exactly like a rung-1/4 SOFT source or a
-     FORBIDDEN-origin guess can — per `keyword-provenance.md`'s "Cases and
-     playbooks are hints, never evidence," it may never itself populate
-     `causal_chain_additions`, `failure_point`, or a `queries[]` entry;
-     only this round's own fresh query against this issue's log or code
-     can do that, and whatever tier the case originally recorded stays
-     exactly that tier regardless of how the fresh query turns out. Record
-     every case/playbook actually read (matched or not — a search that
+     FORBIDDEN-origin guess can — always subject to "**Cases and playbooks
+     are hints, never evidence**"
+     (`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`).
+     Record every case/playbook actually read (matched or not — a search that
      found nothing is still a search this round ran) in `case_hints[]`
      (`run-bundle-layout.md`), naming what it suggested and, when a
      hypothesis used it, which one. No matching case or playbook, or
@@ -562,32 +561,20 @@ that the round budget was reached, per Step 7.4/8.
 ## What this skill does not do
 
 - ❌ Never writes or modifies `scope.json` — reads it only.
-- ❌ Never eliminates a hypothesis from a keyword miss, a tool being
-  unavailable, or a module being a lib — only from a positive,
-  contradicting HARD finding.
 - ❌ Never uses an uncited NotebookLM answer for anything — not a
   hypothesis, not a query keyword, nothing (`keyword-provenance.md`,
   `notebooklm-invocation.md`).
 - ❌ Never lets a case or playbook hit populate `causal_chain_additions`,
-  `failure_point`, or a hypothesis's `queries[]` directly — a case/playbook
-  may only suggest a direction or keyword for *this* round to test fresh
-  against this issue's own log or code, and never carries a tier higher
-  than whatever it was originally recorded at (`keyword-provenance.md`'s
-  "Cases and playbooks are hints, never evidence"). Step 7's
-  case/playbook-hint check is the mechanical version of this rule, not
-  just a stated intention — it scans every `evidence_ref`/`ledger_ref`
-  this round is about to write and refuses to let one point at
-  `.rca/knowledge/` rather than this run's own ledger/`raw/` file.
+  `failure_point`, or a hypothesis's `queries[]` directly — per
+  `_shared/keyword-provenance.md`'s canonical term, "**Cases and playbooks
+  are hints, never evidence**"
+  (`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`).
+  Step 7's case/playbook-hint check is the mechanical version of this
+  rule, not just a stated intention — it scans every
+  `evidence_ref`/`ledger_ref` this round is about to write and refuses to
+  let one point at `.rca/knowledge/` rather than this run's own
+  ledger/`raw/` file.
 - ❌ Never presents a `SPEC_INFERRED`/`ASSUMED`/`ENGINEER_PROVIDED`
   finding with the same confidence as a `VERIFIED_LOG`/`CODE_BOUND` one in
   the checkpoint's causal chain or recommendation — that confusion is
   exactly what the evidence-gaps section exists to prevent.
-- ❌ Never auto-continues past a tripped gate, at any `autonomy` setting —
-  the four gates in Step 7.4 are not a suggestion, and only the round
-  budget is overridable at all, and only with an explicit rationale.
-- ❌ Never raises `round_budget` itself, never re-enables an aborted run,
-  never sets `manifest.json.status` back out of `"aborted"`.
-- ❌ Never invokes `rca-conclude` — an `accept` reply only records the
-  decision and names it as the next step.
-- ❌ No reaching a final root cause, causal-chain synthesis, or
-  reproduction scenario — that is `rca-conclude`.
