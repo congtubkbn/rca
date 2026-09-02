@@ -110,9 +110,8 @@ ever committed.
    the model's pretrained knowledge. See `_shared/keyword-provenance.md`'s
    HARD/SOFT/FORBIDDEN ranking and its "guessing may ask, never answer"
    rule — a query that misses does not get to claim a finding either way.
-2. **Evidence tiers never improve with time**: a finding copied forward
-   into a later file (a conclusion, a case record) keeps the tier it was
-   first recorded at — see `_shared/evidence-tiers.md`.
+2. **Tier immutability**: a tier never improves with the passage of
+   time — see `_shared/evidence-tiers.md`'s "Tier immutability" rule.
 3. **Hard termination, no fix generation**: the pipeline's deliverable is a
    verified root cause, causal chain, and reproduction scenario — never a
    fix, patch, config change, test case, or "next step". `rca-conclude` runs

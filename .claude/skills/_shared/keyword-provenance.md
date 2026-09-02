@@ -72,6 +72,13 @@ conclusion by itself. It is promoted only by an independent HARD check:
 
 ## Cases and playbooks are hints, never evidence
 
+**"Cases and playbooks are hints, never evidence" is this rule's canonical,
+citable term.** Other files that need this rule should quote that exact
+phrase plus a pointer to this section
+(`_shared/keyword-provenance.md#cases-and-playbooks-are-hints-never-evidence`)
+rather than reword it independently — it names the same rule as issue #5's
+"cases suggest, they never prove," used interchangeably below.
+
 A fourth source exists alongside HARD/SOFT/FORBIDDEN once `rca-learn`
 (issue #11) has written anything: `.rca/knowledge/cases/` and
 `.rca/knowledge/playbooks/`, read at resolution-ladder rung 6

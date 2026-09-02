@@ -7,12 +7,13 @@ description: >
   `.rca/issues/<issue_id>/` folder on disk. Use ONLY when the engineer
   names a PLM issue ID and wants to start or restart analysis on it (e.g.
   "start analysis on PLM-12345", "open a new run for PLM-12345 with the
-  new logs", "intake this PLM issue"). Do NOT use
-  this mid-analysis to advance an existing run to its next step — that is
-  `/rca`'s job, and the next step after intake is `rca-scope`, not this
-  skill again. Do NOT use this to classify the issue, narrow a time
-  window, query logs, or reach any conclusion — this skill only records
-  what PLM says and opens a place to work; it does no analysis at all.
+  new logs", "intake this PLM issue"). Advancing an existing run to its
+  next step is `/rca`'s dispatch job — the next step after intake is
+  `rca-scope`, never this skill again — so do not reach for this
+  mid-analysis for that. This skill only records what PLM says and opens
+  a place to work, doing no analysis of any kind — do not use it to
+  classify the issue, narrow a time window, query logs, or reach any
+  conclusion.
 ---
 
 # rca-intake
@@ -155,13 +156,14 @@ State plainly:
 
 ## What this skill does not do
 
-- ❌ No log queries, spec queries, or code search of any kind.
-- ❌ No classification of the issue, no time-window narrowing — that is
-  `rca-scope`.
-- ❌ No hypothesis generation, no root cause, no reproduction scenario.
-- ❌ No chaining into any other skill — it halts after step 9 regardless
-  of autonomy settings (there are none yet to consult; `manifest.json`'s
-  `autonomy` field is a default for later skills to read, not something
-  this skill acts on).
-- ❌ Never fabricates a PLM record when the connection is down or the ID
-  is unknown (step 2) — a stated reason beats an invented one every time.
+- ❌ The only outside call this skill makes is the PLM MCP issue-fetch in
+  step 2 — no log queries, spec queries, or code search of any kind.
+- ❌ Classifying the issue and narrowing the time window is `rca-scope`'s
+  job — this skill does neither.
+- ❌ Hypothesis generation, root cause, and reproduction scenarios belong
+  to `rca-analyze`/`rca-conclude` downstream of intake — this skill
+  produces none of them.
+- ❌ This skill halts after step 9 regardless of autonomy settings —
+  `manifest.json`'s `autonomy` field is a default for later skills to
+  read, not something this skill acts on; the next skill is never
+  chained automatically.
