@@ -41,9 +41,11 @@ anything below (the authoritative schema for `analysis/round-NN.json` and
 `manifest.json`, including `manifest.json.decisions[]`), and read these
 before changing how this skill reasons or calls anything:
 `_shared/resolution-ladder.md` (the order in which this skill tries to
-resolve an open question), `_shared/keyword-provenance.md` (what a
+resolve an open question, including rung 6's case/playbook lookup once
+`rca-learn` has written anything), `_shared/keyword-provenance.md` (what a
 finding from where may be used for, including how a `redirect`'s
-`ENGINEER_PROVIDED` input fits in), `_shared/checkpoint-format.md` (the
+`ENGINEER_PROVIDED` input fits in, and its "Cases and playbooks are hints,
+never evidence" section), `_shared/checkpoint-format.md` (the
 presentation this skill's checkpoint step produces, including its
 "How to respond" section), and the three invocation contracts this skill
 calls into — `_shared/log-query-invocation.md`,
@@ -52,7 +54,7 @@ calls into — `_shared/log-query-invocation.md`,
 ```yaml
 contract:
   requires: [issue_id, existing_run, scope]
-  optional: [run_id, verb, direction, redirect_info, override]
+  optional: [run_id, verb, direction, redirect_info, override, case_base]
   produces:
     - .rca/issues/<issue_id>/runs/run-NN/analysis/round-NN.json
     - .rca/issues/<issue_id>/runs/run-NN/evidence/tools.jsonl (appended)
@@ -60,6 +62,13 @@ contract:
     - .rca/issues/<issue_id>/runs/run-NN/manifest.json (current_step, updated_at, current_round, standing_recommendation, decisions always; next_step, status only on accept/abort)
   self_seedable: false
 ```
+
+`case_base` is optional in the fullest sense any input in this contract
+can be: `.rca/knowledge/cases/` and `.rca/knowledge/playbooks/` may not
+exist at all (nothing has been learned from yet, or this is the very
+first issue analyzed in this workspace), and this skill runs identically
+either way — rung 6 of the resolution ladder simply has nothing to read,
+stated as such, exactly like a missing `source_checkout` caps rung 3.
 
 `self_seedable: false` for the same reason as `rca-scope`: this skill
 operates on a run bundle earlier skills already created. There is nothing
@@ -283,9 +292,25 @@ Otherwise:
      `keyword-provenance.md`) may seed a hypothesis when the ladder above
      produced nothing usable — state plainly in the hypothesis that its
      origin is a guess, not a citation.
-   - Rung 6 (prior cases): not yet available (`rca-learn` is issue #11).
-     State this once in `open_notes` rather than silently skipping it if
-     this round would otherwise have consulted it.
+   - Rung 6 (prior cases and playbooks, once `rca-learn` has written
+     anything): read `.rca/knowledge/cases/*.json` and
+     `.rca/knowledge/playbooks/*.md` for entries whose `issue_type`
+     matches `scope.json.classification.issue_type`. A match may seed a
+     hypothesis's `statement` or contribute a candidate keyword to a
+     `testing_query`, exactly like a rung-1/4 SOFT source or a
+     FORBIDDEN-origin guess can — per `keyword-provenance.md`'s "Cases and
+     playbooks are hints, never evidence," it may never itself populate
+     `causal_chain_additions`, `failure_point`, or a `queries[]` entry;
+     only this round's own fresh query against this issue's log or code
+     can do that, and whatever tier the case originally recorded stays
+     exactly that tier regardless of how the fresh query turns out. Record
+     every case/playbook actually read (matched or not — a search that
+     found nothing is still a search this round ran) in `case_hints[]`
+     (`run-bundle-layout.md`), naming what it suggested and, when a
+     hypothesis used it, which one. No matching case or playbook, or
+     neither directory existing yet, is a normal outcome — state it as
+     such in `open_notes`, not as an error, and never widen the lookup
+     into an unrelated `issue_type` to force a match.
    For each hypothesis, state its `predicted_evidence` (what a query
    would show if it were true) and its `testing_query` (precise enough —
    table + keywords, or a code-graph target — that the checkpoint's
@@ -339,8 +364,37 @@ Otherwise:
    vendor-doc claim) is appended to `causal_chain_additions` with its
    tier and evidence reference — this is what accumulates across rounds
    into "the causal chain so far".
+5. **Record a documentation contradiction.** Whenever step 2's HARD check
+   disagrees with a rung-1/4 NotebookLM citation (`keyword-provenance.md`'s
+   "Promotion and verification", third bullet), append one entry to this
+   round's `contradicted_findings[]` (`run-bundle-layout.md`) — the
+   citation's `document`/`section`, what it claimed, what the log actually
+   showed, and the ledger reference of the HARD finding that disagreed —
+   in addition to (not instead of) naming it in `open_notes` for this
+   round's own checkpoint display. `contradicted_findings[]` is the
+   structured record `rca-learn` (issue #11) reads to build its map of
+   where vendor/spec documentation is wrong for a given chip series; a
+   free-text `open_notes` sentence alone is not enough for that skill to
+   pick up.
 
 ### 7. Write `round-NN.json`, build the checkpoint, and evaluate the gates
+
+Before writing anything: **run the case/playbook-hint check.** Scan every
+`evidence_ref`/`ledger_ref` value about to be written in this round —
+`failure_point.evidence_ref`, every `hypotheses[].queries[].ledger_ref`
+and `.eliminated_by`, and every `causal_chain_additions[].evidence_ref` —
+and confirm each one points at *this run's own*
+`evidence/tools.jsonl` line or `raw/` file, never at a path under
+`.rca/knowledge/` (a case or playbook). This is the mechanical
+enforcement of `keyword-provenance.md`'s "Cases and playbooks are hints,
+never evidence": `case_hints[]` entries carry no `tier`/`evidence_ref`
+field at all by schema (`run-bundle-layout.md`), so the only way a case
+could leak into something that looks like evidence is a reference
+pointing at it directly, which this check catches before the round is
+ever written. If the scan finds one: drop that `evidence_ref` and treat
+the underlying claim as unresolved (an open question this round could not
+close), never write a case/playbook path in as if it were this run's own
+finding.
 
 1. Write `analysis/round-<NN>.json` per the schema in
    `run-bundle-layout.md`, zero-padded, at the number determined in Step
@@ -373,8 +427,9 @@ Otherwise:
      finding this round rests on (including any `untested_tier:
      "ASSUMED"` hypothesis), every `ENGINEER_PROVIDED` premise this round
      relied on, every `CODE_UNAVAILABLE` branch, every `CONTRADICTED`
-     finding named explicitly, and every ladder rung this round could not
-     resolve (including "prior cases — not yet available").
+     finding named explicitly, every ladder rung this round could not
+     resolve, and any `case_hints[]` entry that fed the recommended
+     direction (named as a hint, never as if it were itself evidence).
 4. **Evaluate the four never-bypassable gates**, in this order, against
    this round exactly as just written — this determines whether this
    round's checkpoint halts no matter what `autonomy` says:
@@ -516,6 +571,16 @@ that the round budget was reached, per Step 7.4/8.
 - ❌ Never uses an uncited NotebookLM answer for anything — not a
   hypothesis, not a query keyword, nothing (`keyword-provenance.md`,
   `notebooklm-invocation.md`).
+- ❌ Never lets a case or playbook hit populate `causal_chain_additions`,
+  `failure_point`, or a hypothesis's `queries[]` directly — a case/playbook
+  may only suggest a direction or keyword for *this* round to test fresh
+  against this issue's own log or code, and never carries a tier higher
+  than whatever it was originally recorded at (`keyword-provenance.md`'s
+  "Cases and playbooks are hints, never evidence"). Step 7's
+  case/playbook-hint check is the mechanical version of this rule, not
+  just a stated intention — it scans every `evidence_ref`/`ledger_ref`
+  this round is about to write and refuses to let one point at
+  `.rca/knowledge/` rather than this run's own ledger/`raw/` file.
 - ❌ Never presents a `SPEC_INFERRED`/`ASSUMED`/`ENGINEER_PROVIDED`
   finding with the same confidence as a `VERIFIED_LOG`/`CODE_BOUND` one in
   the checkpoint's causal chain or recommendation — that confusion is

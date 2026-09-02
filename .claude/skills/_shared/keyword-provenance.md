@@ -65,8 +65,33 @@ conclusion by itself. It is promoted only by an independent HARD check:
   `CONTRADICTED`, per `evidence-tiers.md`. This is deliberately not
   treated as an error to route around; it is the pipeline's most valuable
   finding (issue #5, "where vendor documentation is wrong is the asset")
-  and belongs in the round's `open_notes`, for `rca-learn` (issue #11,
-  not yet built) to pick up once it exists.
+  and belongs in the round's `contradicted_findings[]` (a structured
+  field, so `rca-learn`, issue #11, can pick it up without parsing prose —
+  see `run-bundle-layout.md`), not only the free-text `open_notes` entry a
+  round also states for the checkpoint's own display.
+
+## Cases and playbooks are hints, never evidence
+
+A fourth source exists alongside HARD/SOFT/FORBIDDEN once `rca-learn`
+(issue #11) has written anything: `.rca/knowledge/cases/` and
+`.rca/knowledge/playbooks/`, read at resolution-ladder rung 6
+(`resolution-ladder.md`). It ranks below even FORBIDDEN in one specific
+sense — a FORBIDDEN guess may still become HARD the moment it hits;
+**a case or playbook hit never can, no matter how many times it is read
+back.** Issue #5's own phrase for this is "cases suggest, they never
+prove," and it is absolute: a case may name a hypothesis worth trying, a
+keyword worth querying, or a table worth looking in, but the fact it
+originally recorded stays at whatever tier it was written at, and using
+that hint still requires running the same fresh query against *this*
+issue's own log or code that any other keyword origin requires. This is
+the mechanism that keeps a case base from becoming a laundering path the
+same way a repeated `ASSUMED` finding could otherwise launder itself into
+something that merely *looks* corroborated by having been written down
+and read back several times (issue #5, "Evidence laundering is the
+failure mode with no symptoms"). See `evidence-tiers.md`'s "a tier never
+improves with the passage of time" for the general rule this is a special
+case of, and `run-bundle-layout.md`'s `case_hints[]` field for how a round
+records which case/playbook it actually read.
 
 ## What this does not change
 

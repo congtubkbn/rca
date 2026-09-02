@@ -79,10 +79,16 @@ correct, exactly as issue #5's "a mistaken account gets corrected here
 rather than carried into a report" states. This is why the table above
 names "the tester's own PLM account" alongside spec/vendor-doc/prior-case
 as a source `CONTRADICTED` can apply to — `rca-conclude` is the first
-skill to contradict that particular source. `rca-learn` does not exist
-yet; this file documents the whole vocabulary regardless, because the
-tier an existing skill writes must stay meaningful once the rest of the
-suite is built.
+skill to contradict that particular source. `rca-learn` (issue #11)
+writes no tier from a fresh query of its own either — like `rca-conclude`,
+it only copies tiers forward, from `conclusion.json` and
+`analysis/round-NN.json` into `knowledge/cases/<case_id>.json`, never
+upgrading any of them. It is, however, the skill whose entire second
+purpose is enforcing "a tier never improves with the passage of time" on
+the read side too: a later `rca-analyze` round consulting a case
+(resolution-ladder rung 6) sees the tier exactly as `rca-learn` wrote it,
+never as something reinforced by having accumulated across cases — see
+`keyword-provenance.md`'s "Cases and playbooks are hints, never evidence."
 
 The keyword-provenance ladder (HARD / SOFT / FORBIDDEN — which *sources*
 may support a conclusion) is a related but separate concept, owned by

@@ -186,12 +186,20 @@ foundation, issue #6), `rca-scope` (issue classification, time anchor, log
 window, issue #7), `rca-analyze` (hypothesis-driven analysis
 round-by-round, issue #8, plus the multi-round loop around it —
 `dig`/`redirect`/`abort`/`accept`, the round budget, `manifest.json.autonomy`,
-and the four never-bypassable gates, issue #9), and `rca-conclude`
+and the four never-bypassable gates, issue #9), `rca-conclude`
 (synthesizing the accepted analysis into `conclusion.json`/
 `CONCLUSION.md` — problem, root cause, causal chain, and a reproduction
 scenario checked against the tester's account — gated on an explicit
-engineer `accept` at every autonomy setting, issue #10) are built; the
-remaining skill (`rca-learn`) is tracked as a separate sub-issue of #5.
+engineer `accept` at every autonomy setting, issue #10), and `rca-learn`
+(the pipeline's last step, issue #11: one `knowledge/cases/<case_id>.json`
+per accepted conclusion of the run named `issue.json.active_run`, never
+any other run, capturing the failure point, the queries and keywords that
+actually proved useful, the root cause, and any `CONTRADICTED`
+vendor/spec-documentation finding with its chip series; plus a separate,
+explicitly engineer-gated `promote`/`confirm playbook` action that drafts
+and, after a customer-data check, commits reviewed prose to
+`knowledge/playbooks/` — the one part of `.rca/` tracked in git) are all
+built. All five pipeline skills now exist.
 
 `.claude/skills/_shared/` is this suite's contract — read it before
 touching any skill in it, the same discipline the v6 suite's own

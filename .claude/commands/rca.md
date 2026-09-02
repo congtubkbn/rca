@@ -69,6 +69,14 @@ anything else afterward. HALT.
    - If `next_step` is `null` (only possible when `status == "aborted"`,
      already handled by step 4 above — this branch should be
      unreachable): treat as step 4's case.
+   - If `next_step` is `"complete"` (set by `rca-learn`, issue #11, once it
+     writes this run's case record): state plainly that this run's
+     pipeline has reached its end — a case record already exists at
+     `.rca/knowledge/cases/<issue_id>-<run_id>.json` — and that starting a
+     new run via `rca-intake` is how to analyze this issue further. Do not
+     invoke anything. HALT. (This is a distinct value from `null`
+     specifically so this case is never confused with an aborted run —
+     see `run-bundle-layout.md`'s note on `next_step`.)
    - If `next_step` is `"rca-intake"` (an engineer explicitly asked to
      re-intake this issue with new information): invoke `rca-intake`
      exactly as in Step 2A, with this issue's ID. HALT.

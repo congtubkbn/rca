@@ -67,8 +67,13 @@ prose above:
   named explicitly, since this is the pipeline's most valuable kind of
   finding, not a failure to hide.
 - Ladder rungs this round could not resolve (missing citation, no source,
-  the "prior cases" rung not yet available because `rca-learn` does not
-  exist) and what would need to be true to try them.
+  no matching case or playbook found at the "prior cases" rung) and what
+  would need to be true to try them. Any case/playbook hint this round did
+  read (`case_hints[]`) is named here too when it fed the recommended
+  direction, precisely because it is a hint and not evidence — the reader
+  should be able to tell "this direction rests on a fresh hit in this
+  log" apart from "this direction was suggested by a prior case and is
+  still unverified in this one."
 
 ### 5. How to respond
 
